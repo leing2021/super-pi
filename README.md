@@ -57,8 +57,13 @@ Phase 1 intentionally ships a basic but working CE loop:
 
 It does not yet include richer review autofix flows, worktree orchestration, session-history integrations, or `ce-next` style navigation.
 
+## Repository
+
+- GitHub: `https://github.com/leing2021/pi-compound-engineering`
+
 ## Development
 
 ```bash
 bun test
+npm publish --dry-run
 ```

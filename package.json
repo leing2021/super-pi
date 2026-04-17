@@ -1,12 +1,17 @@
 {
   "name": "pi-compound-engineering",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "description": "Pi-native Compound Engineering package for iterative development workflows",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jasonle/pi-compound-engineering"
+    "url": "git+https://github.com/leing2021/pi-compound-engineering.git"
+  },
+  "homepage": "https://github.com/leing2021/pi-compound-engineering",
+  "bugs": {
+    "url": "https://github.com/leing2021/pi-compound-engineering/issues"
   },
   "keywords": [
     "pi-package",
@@ -14,6 +19,15 @@
     "coding-agent",
     "compound-engineering"
   ],
+  "files": [
+    "skills",
+    "extensions",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "bun test"
   },

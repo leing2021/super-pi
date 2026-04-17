@@ -55,6 +55,13 @@ describe("package bootstrap structure", () => {
     expect(packageJson).toContain('"pi-package"')
     expect(packageJson).toContain('"license"')
     expect(packageJson).toContain('"repository"')
+    expect(packageJson).toContain('"homepage"')
+    expect(packageJson).toContain('"bugs"')
+    expect(packageJson).toContain('"publishConfig"')
+    expect(packageJson).toContain('"access": "public"')
+    expect(packageJson).toContain('"files"')
+    expect(packageJson).toContain('"private": false')
+    expect(packageJson).toContain('"https://github.com/leing2021/pi-compound-engineering"')
   })
 
   test("repo includes a gitignore for node and Pi package development", () => {
