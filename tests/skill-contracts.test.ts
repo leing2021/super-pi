@@ -12,6 +12,7 @@ const skillNames = [
   "ce-compound",
   "ce-help",
   "ce-status",
+  "ce-next",
 ]
 
 describe("skill package contracts", () => {
@@ -67,6 +68,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("docs/solutions")
     expect(content).toContain(".context/compound-engineering")
     expect(content).toContain("next")
+    expect(content).toContain("workflow_state")
   })
 
   test("ce-brainstorm writes requirements artifacts and hands off to ce-plan", () => {
@@ -199,5 +201,25 @@ describe("skill package contracts", () => {
     expect(reviewerSelection).toContain("reviewer")
     expect(reviewerSelection).toContain("condition")
     expect(handoff).toContain("ce-compound")
+  })
+
+  test("ce-next uses workflow_state to recommend the next skill", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "ce-next", "SKILL.md"), "utf8")
+    const recommendationLogic = readFileSync(
+      path.join(repoRoot, "skills", "ce-next", "references", "recommendation-logic.md"),
+      "utf8",
+    )
+
+    expect(content).toContain("workflow_state")
+    expect(content).toContain("ce-brainstorm")
+    expect(content).toContain("ce-plan")
+    expect(content).toContain("ce-work")
+    expect(content).toContain("ce-review")
+    expect(content).toContain("ce-compound")
+    expect(recommendationLogic).toContain("brainstorm")
+    expect(recommendationLogic).toContain("plan")
+    expect(recommendationLogic).toContain("work")
+    expect(recommendationLogic).toContain("review")
+    expect(recommendationLogic).toContain("compound")
   })
 })

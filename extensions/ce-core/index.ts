@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
 import { createSubagentTool } from "./tools/subagent"
+import { createWorkflowStateTool } from "./tools/workflow-state"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -37,10 +38,15 @@ const subagentParams = Type.Object({
   chain: Type.Optional(Type.Array(subagentTaskSchema, { description: "Serial subagent chain with optional {previous} placeholder" })),
 })
 
+const workflowStateParams = Type.Object({
+  repoRoot: Type.String({ description: "Repository root to scan for workflow artifacts" }),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
   const subagent = createSubagentTool()
+  const workflowState = createWorkflowStateTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -139,11 +145,29 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: workflowState.name,
+    label: "Workflow State",
+    description: "Scan repo-local Compound Engineering artifacts and return structured workflow state.",
+    parameters: workflowStateParams,
+    async execute(_toolCallId, params) {
+      const result = await workflowState.execute({
+        repoRoot: params.repoRoot,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
 export { createSubagentTool } from "./tools/subagent"
+export { createWorkflowStateTool } from "./tools/workflow-state"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

@@ -26,6 +26,7 @@ pi install npm:pi-compound-engineering
 
 - `ce-help` — explain which workflow step to use
 - `ce-status` — inspect repo-local workflow state
+- `ce-next` — get a recommendation for the next workflow step
 - `ce-brainstorm` — create requirements artifacts in `docs/brainstorms/`
 - `ce-plan` — create implementation plans in `docs/plans/`
 - `ce-work` — execute plan-driven work in Phase 1 mode
@@ -58,6 +59,13 @@ Phase 1 intentionally ships a basic but working CE loop:
 It does not yet include richer review autofix flows, worktree orchestration, session-history integrations, or `ce-next` style navigation.
 
 ## Changelog
+
+### 0.2.0
+
+- Added `workflow_state` extension tool: scans artifact directories and returns structured workflow state
+- Added `ce-next` skill: uses `workflow_state` to recommend the single best next skill
+- Updated `ce-status` to reference `workflow_state` tool
+- 46 tests passing
 
 ### 0.1.2
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { mkdir, writeFile } from "node:fs/promises"
 import ceCoreExtension from "../extensions/ce-core/index"
 import {
   getBrainstormArtifactPath,
@@ -10,6 +11,7 @@ import {
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
 import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
 import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
+import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -265,6 +267,63 @@ describe("subagent", () => {
   })
 })
 
+describe("workflow_state", () => {
+  test("reports empty state when no artifacts exist", async () => {
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot: "/tmp/pi-ce-empty-repo-" + Date.now() })
+
+    expect(result.brainstorms.count).toBe(0)
+    expect(result.plans.count).toBe(0)
+    expect(result.solutions.count).toBe(0)
+    expect(result.runs.count).toBe(0)
+    expect(result.brainstorms.latest).toBeNull()
+    expect(result.plans.latest).toBeNull()
+    expect(result.solutions.latest).toBeNull()
+    expect(result.runs.latest).toBeNull()
+  })
+
+  test("reports brainstorm count and latest when artifacts exist", async () => {
+    const repoRoot = "/tmp/pi-ce-ws-brainstorm"
+    const brainstormDir = path.join(repoRoot, "docs", "brainstorms")
+    await mkdir(brainstormDir, { recursive: true })
+    await writeFile(path.join(brainstormDir, "2026-04-17-test-requirements.md"), "content")
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.brainstorms.count).toBe(1)
+    expect(result.brainstorms.latest).toBe("2026-04-17-test-requirements.md")
+    expect(result.plans.count).toBe(0)
+  })
+
+  test("reports solutions recursively across subcategories", async () => {
+    const repoRoot = "/tmp/pi-ce-ws-solutions"
+    const solDir = path.join(repoRoot, "docs", "solutions", "integration")
+    await mkdir(solDir, { recursive: true })
+    await writeFile(path.join(solDir, "2026-04-17-npm-publish.md"), "content")
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.solutions.count).toBe(1)
+    expect(result.solutions.latest).toContain("npm-publish")
+  })
+
+  test("picks the most recent artifact as latest", async () => {
+    const repoRoot = "/tmp/pi-ce-ws-multi"
+    const planDir = path.join(repoRoot, "docs", "plans")
+    await mkdir(planDir, { recursive: true })
+    await writeFile(path.join(planDir, "2026-04-16-old-plan.md"), "old")
+    await writeFile(path.join(planDir, "2026-04-17-new-plan.md"), "new")
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.plans.count).toBe(2)
+    expect(result.plans.latest).toBe("2026-04-17-new-plan.md")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -280,6 +339,7 @@ describe("ce-core extension runtime registration", () => {
       "artifact_helper",
       "ask_user_question",
       "subagent",
+      "workflow_state",
     ])
   })
 })
@@ -293,6 +353,7 @@ describe("public exports", () => {
       "createArtifactHelperTool",
       "createAskUserQuestionTool",
       "createSubagentTool",
+      "createWorkflowStateTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

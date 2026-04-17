@@ -9,14 +9,14 @@ Use this skill when the user wants to know the current state of the Compound Eng
 
 ## What to scan
 
-Inspect these repo-local artifact locations before recommending a next step:
+Use the `workflow_state` tool to get structured artifact state. It scans these repo-local locations:
 
 - `docs/brainstorms/`
 - `docs/plans/`
 - `docs/solutions/`
 - `.context/compound-engineering/`
 
-Use `bash` to check which directories and recent files exist, then use `read` on the most relevant recent artifact if one exists.
+If `workflow_state` is not available, fall back to `bash` with `ls` and `find` to check which directories and recent files exist, then use `read` on the most relevant recent artifact.
 
 ## Recommendation logic
 
