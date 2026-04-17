@@ -71,4 +71,22 @@ describe("package bootstrap structure", () => {
     expect(gitignore).toContain("dist")
     expect(gitignore).toContain(".DS_Store")
   })
+
+  test("includes test workflow triggered on push and PR to main", () => {
+    const workflow = readFileSync(path.join(repoRoot, ".github", "workflows", "test.yml"), "utf8")
+
+    expect(workflow).toContain("push")
+    expect(workflow).toContain("pull_request")
+    expect(workflow).toContain("main")
+    expect(workflow).toContain("bun test")
+  })
+
+  test("includes publish workflow triggered on version tags", () => {
+    const workflow = readFileSync(path.join(repoRoot, ".github", "workflows", "publish.yml"), "utf8")
+
+    expect(workflow).toContain("v*")
+    expect(workflow).toContain("npm publish")
+    expect(workflow).toContain("NPM_TOKEN")
+    expect(workflow).toContain("bun test")
+  })
 })

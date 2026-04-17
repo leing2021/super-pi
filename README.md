@@ -59,6 +59,15 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.1.2
+
+- Added GitHub Actions CI/CD: `test.yml` (push/PR to main) and `publish.yml` (tag-triggered npm publish)
+- Fixed npm publish authentication: added `setup-node` with `registry-url` and `permissions: contents: read`
+- Added workflow tests to package-structure test suite
+- Added CI/CD documentation and release process to README
+- First full CE demo: `brainstorm → plan → work → review → compound` producing real artifacts
+- 41 tests passing
+
 ### 0.1.1
 
 - Added `references/` directories to `ce-help` and `ce-status` for structural consistency
@@ -86,3 +95,26 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 bun test
 npm publish --dry-run
 ```
+
+## CI/CD
+
+### Test workflow
+
+`test.yml` runs `bun test` on every push and pull request to `main`.
+
+### Publish workflow
+
+`publish.yml` runs `bun test` then `npm publish` when a version tag (`v*`) is pushed.
+
+### Release process
+
+1. Bump version in `package.json`
+2. Update `README.md` Changelog
+3. Commit: `git commit -m "chore: bump to x.y.z"`
+4. Tag: `git tag vx.y.z`
+5. Push: `git push origin main --tags`
+6. GitHub Actions runs tests and publishes to npm
+
+### Required secrets
+
+Set `NPM_TOKEN` in GitHub repo settings → Secrets → Actions.
