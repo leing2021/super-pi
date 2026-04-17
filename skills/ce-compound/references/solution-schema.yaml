@@ -1,0 +1,19 @@
+required:
+  - title
+  - category
+  - problem_type
+  - summary
+  - created_at
+properties:
+  title:
+    type: string
+  category:
+    type: string
+  problem_type:
+    type: string
+  summary:
+    type: string
+  created_at:
+    type: string
+  related_paths:
+    type: array
