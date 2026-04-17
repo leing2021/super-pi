@@ -86,6 +86,43 @@ describe("artifact_helper", () => {
       "/tmp/pi-ce-artifact-helper/docs/solutions/workflow",
     )
   })
+
+  test("creates the run artifact directory when ensureDir is true", async () => {
+    const repoRoot = "/tmp/pi-ce-run-artifact"
+    const tool = createArtifactHelperTool()
+
+    const result = await tool.execute({
+      repoRoot,
+      artifactType: "run",
+      skillName: "ce-review",
+      runId: "run-001",
+      ensureDir: true,
+    })
+
+    expect(result.path).toBe(
+      "/tmp/pi-ce-run-artifact/.context/compound-engineering/ce-review/run-001",
+    )
+    expect(result.createdDirectories).toContain(
+      "/tmp/pi-ce-run-artifact/.context/compound-engineering/ce-review",
+    )
+  })
+
+  test("does not create directories when ensureDir is false or absent", async () => {
+    const tool = createArtifactHelperTool()
+
+    const result = await tool.execute({
+      repoRoot: "/tmp/pi-ce-no-dir",
+      artifactType: "brainstorm",
+      date: "2026-04-17",
+      topic: "Test",
+      ensureDir: false,
+    })
+
+    expect(result.path).toBe(
+      "/tmp/pi-ce-no-dir/docs/brainstorms/2026-04-17-test-requirements.md",
+    )
+    expect(result.createdDirectories).toEqual([])
+  })
 })
 
 describe("ask_user_question", () => {
@@ -196,6 +233,36 @@ describe("subagent", () => {
       ),
     ).rejects.toThrow("Provide exactly one mode")
   })
+
+  test("rejects empty agent in single mode", async () => {
+    const tool = createSubagentTool()
+
+    await expect(
+      tool.execute(
+        { agent: "", task: "Design the package" },
+        async () => "ok",
+      ),
+    ).rejects.toThrow()
+  })
+
+  test("rejects empty task in single mode", async () => {
+    const tool = createSubagentTool()
+
+    await expect(
+      tool.execute(
+        { agent: "ce-plan", task: "" },
+        async () => "ok",
+      ),
+    ).rejects.toThrow()
+  })
+
+  test("rejects empty chain array", async () => {
+    const tool = createSubagentTool()
+
+    await expect(
+      tool.execute({ chain: [] }, async () => "ok"),
+    ).rejects.toThrow("Provide exactly one mode")
+  })
 })
 
 describe("ce-core extension runtime registration", () => {
@@ -214,5 +281,25 @@ describe("ce-core extension runtime registration", () => {
       "ask_user_question",
       "subagent",
     ])
+  })
+})
+
+describe("public exports", () => {
+  test("only exports the extension default and public utility functions", async () => {
+    const mod = await import("../extensions/ce-core/index")
+    const exportNames = Object.keys(mod).filter(k => k !== "default")
+
+    const expectedExports = [
+      "createArtifactHelperTool",
+      "createAskUserQuestionTool",
+      "createSubagentTool",
+      "getBrainstormArtifactPath",
+      "getPlanArtifactPath",
+      "getSolutionArtifactPath",
+      "getRunArtifactPath",
+      "normalizeSlug",
+    ]
+
+    expect(exportNames.sort()).toEqual(expectedExports.sort())
   })
 })

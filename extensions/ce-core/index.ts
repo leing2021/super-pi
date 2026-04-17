@@ -141,8 +141,13 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   })
 }
 
-export * from "./tools/artifact-helper"
-export * from "./tools/ask-user-question"
-export * from "./tools/subagent"
-export * from "./utils/artifact-paths"
-export * from "./utils/name-utils"
+export { createArtifactHelperTool } from "./tools/artifact-helper"
+export { createAskUserQuestionTool } from "./tools/ask-user-question"
+export { createSubagentTool } from "./tools/subagent"
+export {
+  getBrainstormArtifactPath,
+  getPlanArtifactPath,
+  getSolutionArtifactPath,
+  getRunArtifactPath,
+} from "./utils/artifact-paths"
+export { normalizeSlug } from "./utils/name-utils"

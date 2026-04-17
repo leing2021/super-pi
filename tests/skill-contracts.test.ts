@@ -25,6 +25,15 @@ describe("skill package contracts", () => {
     }
   })
 
+  test("every skill has a references or assets directory", () => {
+    for (const skillName of skillNames) {
+      const skillDir = path.join(repoRoot, "skills", skillName)
+      const hasReferences = existsSync(path.join(skillDir, "references"))
+      const hasAssets = existsSync(path.join(skillDir, "assets"))
+      expect(hasReferences || hasAssets).toBe(true)
+    }
+  })
+
   test("uses valid frontmatter names and descriptions", () => {
     for (const skillName of skillNames) {
       const skillFile = path.join(repoRoot, "skills", skillName, "SKILL.md")

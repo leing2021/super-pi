@@ -57,9 +57,28 @@ Phase 1 intentionally ships a basic but working CE loop:
 
 It does not yet include richer review autofix flows, worktree orchestration, session-history integrations, or `ce-next` style navigation.
 
+## Changelog
+
+### 0.1.1
+
+- Added `references/` directories to `ce-help` and `ce-status` for structural consistency
+- Fixed `artifact_helper` run-type `ensureDir` to create the parent directory, not the run path itself
+- Cleaned up `index.ts` exports to only expose public API functions
+- Added `bun.lock` to version control
+- Strengthened test suite: subagent edge cases, run-type ensureDir, explicit exports check
+
+### 0.1.0
+
+- Initial release
+- Phase 1 skills: `ce-brainstorm`, `ce-plan`, `ce-work`, `ce-review`, `ce-compound`, `ce-help`, `ce-status`
+- `ce-core` extension with `artifact_helper`, `ask_user_question`, and `subagent` tools
+- Repo-local artifact conventions
+- 32 tests passing
+
 ## Repository
 
 - GitHub: `https://github.com/leing2021/pi-compound-engineering`
+- npm: `https://www.npmjs.com/package/pi-compound-engineering`
 
 ## Development
 

@@ -30,7 +30,7 @@ export function createArtifactHelperTool() {
     name: "artifact_helper",
     async execute(input: ArtifactHelperInput): Promise<ArtifactHelperResult> {
       const artifactPath = resolveArtifactPath(input)
-      const directory = input.artifactType === "run" ? artifactPath : path.dirname(artifactPath)
+      const directory = path.dirname(artifactPath)
       const createdDirectories: string[] = []
 
       if (input.ensureDir) {

@@ -68,7 +68,6 @@ describe("package bootstrap structure", () => {
     const gitignore = readFileSync(path.join(repoRoot, ".gitignore"), "utf8")
 
     expect(gitignore).toContain("node_modules")
-    expect(gitignore).toContain("bun.lock")
     expect(gitignore).toContain("dist")
     expect(gitignore).toContain(".DS_Store")
   })
