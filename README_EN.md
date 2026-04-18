@@ -218,6 +218,15 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 ## Changelog
 
+### 1.0.0
+
+🚀 **First stable release**
+
+- 9 Skills, 12 Tools, 94 tests all passing
+- Complete brainstorm → plan → work → review → compound workflow
+- Merged Superpowers精华: strict TDD gates, design checklist, review discipline
+- CI/CD auto-test + npm publish
+
 ### 0.13.0
 
 - Merged Superpowers skills精华 into CE

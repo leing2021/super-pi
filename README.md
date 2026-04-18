@@ -218,6 +218,15 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 ## 更新日志
 
+### 1.0.0
+
+🚀 **首个稳定版本发布**
+
+- 9 个 Skills，12 个 Tools，94 个测试全部通过
+- 完整的 brainstorm → plan → work → review → compound 工作流
+- 合并了 Superpowers 精华：严格 TDD 门控、设计检查清单、审查纪律
+- CI/CD 自动测试 + npm 发布
+
 ### 0.13.0
 
 - 合并 Superpowers 精华到 CE skills
