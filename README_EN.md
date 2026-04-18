@@ -218,6 +218,15 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 ## Changelog
 
+### 0.13.0
+
+- Merged Superpowers skills精华 into CE
+- `ce-brainstorm`: design checklist, stop conditions, user approval gate
+- `ce-plan`: strict TDD gates (RED→GREEN→REFACTOR), TDD violation rejection
+- `ce-work`: TDD execution discipline, structured completion report
+- `ce-review`: review discipline (technical evaluation), YAGNI check
+- 94 tests passing
+
 ### 0.12.0
 
 - Extended `session_checkpoint` with `fail` and `retry` operations for error recovery

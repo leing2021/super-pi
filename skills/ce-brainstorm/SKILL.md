@@ -19,6 +19,32 @@ Use this skill when the request is ambiguous and needs requirements discovery be
 - Keep the artifact focused on **what** should be built, not implementation details by default.
 - Write the result to `docs/brainstorms/` as a durable requirements document.
 - End by recommending `ce-plan` when the requirements are ready.
+- **Do not proceed to planning without explicit user approval** of the design.
+
+## Design checklist
+
+Before summarizing, ensure the design answers:
+- What are we building?
+- Why does it exist?
+- What files/modules are likely to change?
+- What are the boundaries between responsibilities?
+- What can fail, and how should failure be handled?
+- How will we verify success?
+
+## Stop conditions
+
+Stop and ask the user instead of guessing when:
+- requirements conflict
+- success criteria are unclear
+- the task spans multiple independent systems
+- the user has not approved the design yet
+
+## Approval gate
+
+Before handing off to `ce-plan`:
+1. Present the final design to the user.
+2. Ask for explicit approval.
+3. Only proceed after the user confirms.
 
 ## Workflow
 
@@ -27,9 +53,11 @@ Use this skill when the request is ambiguous and needs requirements discovery be
 3. Present initial analysis and open questions to the user.
 4. Use `brainstorm_dialog` `refine` to incorporate user responses and refine analysis.
 5. Repeat step 4 until all questions are resolved.
-6. Use `brainstorm_dialog` `summarize` to finalize the conversation.
-7. Capture the agreed direction in a requirements artifact under `docs/brainstorms/`.
-8. Hand off to `ce-plan` using `references/handoff.md`.
+6. Validate against the design checklist.
+7. Use `brainstorm_dialog` `summarize` to finalize the conversation.
+8. Capture the agreed direction in a requirements artifact under `docs/brainstorms/`.
+9. Get explicit user approval before handing off.
+10. Hand off to `ce-plan` using `references/handoff.md`.
 
 ## Artifact contract
 

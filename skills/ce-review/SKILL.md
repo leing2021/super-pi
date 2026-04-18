@@ -17,6 +17,24 @@ Use this skill after implementation to review changes against the diff, the rele
 - When findings are **autofixable**, apply fixes and re-review (max 3 iterations).
 - End with a handoff that can point toward fixes, re-review, or `ce-compound`.
 
+## Review discipline — technical evaluation
+
+Code review is **technical evaluation**, not social performance:
+- **Verify before implementing** any suggestion — check against codebase reality.
+- **YAGNI check**: if a suggestion adds a feature nothing uses, question whether it's needed.
+- **No performative agreement** — do not agree with findings without technical verification.
+- **Push back with reasoning** when a finding is technically incorrect for this codebase.
+- **Evidence before assertions** — every finding must cite specific code, not general principles.
+
+## Handling findings
+
+When processing review findings:
+1. **Read** — complete all findings without reacting.
+2. **Verify** — check each finding against codebase reality.
+3. **Evaluate** — is it technically sound for THIS codebase?
+4. **Act** — fix confirmed issues, push back on incorrect ones with reasoning.
+5. **Test** — verify each fix individually, no regressions.
+
 ## Workflow
 
 1. Determine diff scope from the current branch or explicit review target.
@@ -25,5 +43,6 @@ Use this skill after implementation to review changes against the diff, the rele
 4. Search `docs/solutions/` for related learnings.
 5. Apply each reviewer persona returned by `review_router`.
 6. Merge the results into structured findings.
-7. If any findings are autofixable, apply fixes, re-run tests, and re-review.
-8. Hand off using `references/handoff.md`.
+7. Verify each finding against the codebase before acting.
+8. If any findings are autofixable, apply fixes, re-run tests, and re-review.
+9. Hand off using `references/handoff.md`.

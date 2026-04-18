@@ -16,17 +16,50 @@ Use this skill when there is a plan path or a tightly scoped bare prompt ready f
 - Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
 - On execution failure, use `session_checkpoint` `fail` to record the error, then `retry` to get a retry strategy. Follow the suggested strategy to recover.
 - Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `parallel_subagent` and dependent units serially.
-- Keep verification explicit after each execution slice.
 - If inside a **worktree** (created via `ce-worktree`), execute within it. Otherwise, consider recommending `ce-worktree` for isolation.
 - End by recommending `ce-review`.
+
+## Hard gates — TDD enforcement
+
+Every execution step must follow **RED → GREEN → REFACTOR**:
+- No production code before a verified failing test.
+- No skipping RED or GREEN verification.
+- No completion claim without command output evidence.
+- Evidence before assertions — always.
+
+**Blocking violations** — stop and ask if:
+- code is written before the RED test
+- a RED step fails for the wrong reason
+- missing evidence that the test failed before implementation
+- missing evidence that the test passed after implementation
+- tests added only after code
 
 ## Workflow
 
 1. Detect whether the input is a plan path or a bare prompt.
 2. If it is a plan path, read the implementation units and execute from them.
 3. If it is a bare prompt, do a small scope scan before deciding whether to proceed.
-4. Execute in inline mode, serial subagents, or parallel subagents depending on task dependencies.
-5. Use `parallel_subagent` when implementation units have no dependencies on each other.
-5. Record progress using `references/progress-update-format.md`.
-6. Run verification after each meaningful task.
-7. Hand off to `ce-review` using `references/handoff.md`.
+4. Use `session_checkpoint` to load progress and skip completed units.
+5. Use `task_splitter` to identify parallel-safe vs dependent units.
+6. Execute in inline mode, serial subagents, or parallel subagents depending on task dependencies.
+7. For each unit, follow strict TDD:
+   a. Run the RED test and confirm expected failure.
+   b. Apply minimal implementation.
+   c. Run the GREEN test and confirm pass.
+   d. Refactor only while tests stay green.
+   e. Run unit-level verification.
+8. Record progress using `references/progress-update-format.md`.
+9. After each unit, save `session_checkpoint`.
+10. On failure, use `session_checkpoint` `fail` then `retry`.
+11. Provide a **completion report** when done.
+12. Hand off to `ce-review` using `references/handoff.md`.
+
+## Completion report
+
+When all units are done, provide:
+
+- **Completed units**: list of unit names
+- **Files changed**: all files created or modified
+- **Commands run**: all verification commands executed
+- **Verification results**: pass/fail status for each
+- **Follow-up work**: any remaining risks or open questions

@@ -218,6 +218,15 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 ## 更新日志
 
+### 0.13.0
+
+- 合并 Superpowers 精华到 CE skills
+- `ce-brainstorm`: 加入设计检查清单、停止条件、用户审批门控
+- `ce-plan`: 加入严格 TDD 红线（RED→GREEN→REFACTOR）、TDD 违规拒绝标准
+- `ce-work`: 加入 TDD 执行纪律、结构化完成报告格式
+- `ce-review`: 加入审查纪律（技术评估而非表演性同意）、YAGNI 检查
+- 94 个测试通过
+
 ### 0.12.0
 
 - 扩展 `session_checkpoint` 支持 `fail` 和 `retry` 操作，用于错误恢复
