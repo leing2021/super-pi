@@ -177,7 +177,7 @@ describe("skill package contracts", () => {
     expect(handoff).toContain("ce-review")
   })
 
-  test("ce-review detects scope, reads plans and solutions, and emits structured findings", () => {
+  test("ce-review detects scope, reads plans and solutions, uses review_router and autofix", () => {
     const content = readFileSync(path.join(repoRoot, "skills", "ce-review", "SKILL.md"), "utf8")
     const findingsSchema = readFileSync(
       path.join(repoRoot, "skills", "ce-review", "references", "findings-schema.md"),
@@ -196,13 +196,18 @@ describe("skill package contracts", () => {
     expect(content).toContain("plan")
     expect(content).toContain("docs/solutions/")
     expect(content).toContain("structured findings")
+    expect(content).toContain("review_router")
+    expect(content).toContain("autofix")
     expect(findingsSchema).toContain("severity")
     expect(findingsSchema).toContain("summary")
     expect(findingsSchema).toContain("evidence")
     expect(findingsSchema).toContain("recommended action")
-    expect(reviewerSelection).toContain("reviewer")
-    expect(reviewerSelection).toContain("condition")
+    expect(findingsSchema).toContain("autofixable")
+    expect(reviewerSelection).toContain("review_router")
+    expect(reviewerSelection).toContain("correctness-reviewer")
+    expect(reviewerSelection).toContain("security-reviewer")
     expect(handoff).toContain("ce-compound")
+    expect(handoff).toContain("autofix")
   })
 
   test("ce-next uses workflow_state to recommend the next skill", () => {

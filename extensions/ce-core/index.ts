@@ -5,6 +5,7 @@ import { createAskUserQuestionTool } from "./tools/ask-user-question"
 import { createSubagentTool } from "./tools/subagent"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
+import { createReviewRouterTool } from "./tools/review-router"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -55,12 +56,19 @@ const worktreeManagerParams = Type.Object({
   worktreePath: Type.Optional(Type.String({ description: "Worktree directory path for cleanup" })),
 })
 
+const reviewRouterParams = Type.Object({
+  filesChanged: Type.Array(Type.String(), { description: "List of file paths changed in the diff" }),
+  insertions: Type.Number({ description: "Number of lines added" }),
+  deletions: Type.Number({ description: "Number of lines removed" }),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
   const subagent = createSubagentTool()
   const workflowState = createWorkflowStateTool()
   const worktreeManager = createWorktreeManagerTool()
+  const reviewRouter = createReviewRouterTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -211,6 +219,25 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: reviewRouter.name,
+    label: "Review Router",
+    description: "Analyze diff metadata and recommend reviewer personas for structured code review.",
+    parameters: reviewRouterParams,
+    async execute(_toolCallId, params) {
+      const result = await reviewRouter.execute({
+        filesChanged: params.filesChanged,
+        insertions: params.insertions,
+        deletions: params.deletions,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -218,6 +245,7 @@ export { createAskUserQuestionTool } from "./tools/ask-user-question"
 export { createSubagentTool } from "./tools/subagent"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
+export { createReviewRouterTool } from "./tools/review-router"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

@@ -61,6 +61,16 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.4.0
+
+- Added `review_router` extension tool: analyzes diff metadata (file types, change size, paths) and recommends reviewer personas
+- Updated `ce-review` skill to use `review_router` for automatic reviewer routing
+- Added autofix loop guidance: autofixable findings are automatically applied and re-reviewed (max 3 iterations)
+- Updated `findings-schema.md` with autofix tracking fields
+- Updated `reviewer-selection.md` with richer persona definitions and `review_router` integration
+- Updated `handoff.md` with autofix loop support
+- 59 tests passing
+
 ### 0.3.0
 
 - Added `worktree_manager` extension tool: git worktree lifecycle (create, detect, merge, cleanup) with dependency injection

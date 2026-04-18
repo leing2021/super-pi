@@ -13,6 +13,7 @@ import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-
 import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
+import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -448,6 +449,85 @@ describe("worktree_manager", () => {
   })
 })
 
+describe("review_router", () => {
+  test("returns base reviewers for any non-empty diff", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: ["src/index.ts"],
+      insertions: 10,
+      deletions: 2,
+    })
+
+    const names = result.reviewers.map(r => r.name)
+    expect(names).toContain("correctness-reviewer")
+    expect(names).toContain("testing-reviewer")
+    expect(names).toContain("maintainability-reviewer")
+    expect(result.reviewers.length).toBeGreaterThanOrEqual(3)
+  })
+
+  test("adds security reviewer when auth-related paths are changed", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: ["src/auth/login.ts", "src/middleware/permissions.ts"],
+      insertions: 50,
+      deletions: 10,
+    })
+
+    const names = result.reviewers.map(r => r.name)
+    expect(names).toContain("security-reviewer")
+  })
+
+  test("adds performance reviewer when data/query paths are changed", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: ["src/db/queries.ts", "src/cache/manager.ts"],
+      insertions: 30,
+      deletions: 5,
+    })
+
+    const names = result.reviewers.map(r => r.name)
+    expect(names).toContain("performance-reviewer")
+  })
+
+  test("adds integration reviewer when config or CI files change", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: [".github/workflows/test.yml", "package.json"],
+      insertions: 15,
+      deletions: 3,
+    })
+
+    const names = result.reviewers.map(r => r.name)
+    expect(names).toContain("integration-reviewer")
+  })
+
+  test("large diffs add thoroughness reviewer", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: ["src/core.ts", "src/utils.ts", "src/main.ts", "src/config.ts", "src/types.ts", "src/helpers.ts"],
+      insertions: 500,
+      deletions: 200,
+    })
+
+    const names = result.reviewers.map(r => r.name)
+    expect(names).toContain("thoroughness-reviewer")
+  })
+
+  test("each reviewer includes a reason", async () => {
+    const tool = createReviewRouterTool()
+    const result = await tool.execute({
+      filesChanged: ["src/auth/token.ts"],
+      insertions: 20,
+      deletions: 5,
+    })
+
+    for (const reviewer of result.reviewers) {
+      expect(reviewer.reason).toBeTruthy()
+      expect(typeof reviewer.reason).toBe("string")
+    }
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -465,6 +545,7 @@ describe("ce-core extension runtime registration", () => {
       "subagent",
       "workflow_state",
       "worktree_manager",
+      "review_router",
     ])
   })
 })
@@ -480,6 +561,7 @@ describe("public exports", () => {
       "createSubagentTool",
       "createWorkflowStateTool",
       "createWorktreeManagerTool",
+      "createReviewRouterTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",
