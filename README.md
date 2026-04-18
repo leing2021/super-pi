@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.11.0
+
+- Added `pattern_extractor` extension tool: extract recurring patterns from artifacts and categorize them
+- Supports `extract` (keyword-based pattern detection) and `categorize` (group patterns by type) operations
+- Updated `ce-compound` SKILL.md to use `pattern_extractor` for smarter solution generation
+- 98 tests passing
+
 ### 0.10.0
 
 - Added `session_history` extension tool: record, query, and list CE skill execution history

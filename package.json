@@ -1,6 +1,6 @@
 {
   "name": "pi-compound-engineering",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": false,
   "type": "module",
   "description": "Pi-native Compound Engineering package for iterative development workflows",

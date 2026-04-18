@@ -12,6 +12,7 @@ import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
+import { createPatternExtractorTool } from "./tools/pattern-extractor"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -142,6 +143,28 @@ const sessionHistoryParams = Type.Object({
   summary: Type.Optional(Type.String({ description: "Execution summary" })),
 })
 
+const artifactInputSchema = Type.Object({
+  path: Type.String({ description: "Artifact path" }),
+  content: Type.String({ description: "Artifact content" }),
+})
+
+const patternSchema = Type.Object({
+  keyword: Type.String({ description: "Pattern keyword" }),
+  occurrences: Type.Number({ description: "Number of occurrences" }),
+  sources: Type.Array(Type.String(), { description: "Artifact sources" }),
+})
+
+const patternExtractorParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("extract"),
+    Type.Literal("categorize"),
+  ], { description: "Pattern operation" }),
+  artifacts: Type.Optional(Type.Array(artifactInputSchema, { description: "Artifacts to analyze" })),
+  keywords: Type.Optional(Type.Array(Type.String(), { description: "Keywords to search for" })),
+  patterns: Type.Optional(Type.Array(patternSchema, { description: "Patterns to categorize" })),
+  categories: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()), { description: "Category name to keyword mapping" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -155,6 +178,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const brainstormDialog = createBrainstormDialogTool()
   const planDiff = createPlanDiffTool()
   const sessionHistory = createSessionHistoryTool()
+  const patternExtractor = createPatternExtractorTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -453,6 +477,27 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: patternExtractor.name,
+    label: "Pattern Extractor",
+    description: "Extract and categorize recurring patterns from artifacts.",
+    parameters: patternExtractorParams,
+    async execute(_toolCallId, params) {
+      const input: Record<string, unknown> = { operation: params.operation }
+      if (params.artifacts) input.artifacts = params.artifacts
+      if (params.keywords) input.keywords = params.keywords
+      if (params.patterns) input.patterns = params.patterns
+      if (params.categories) input.categories = params.categories
+
+      const result = patternExtractor.execute(input as any)
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -467,6 +512,7 @@ export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export { createPlanDiffTool } from "./tools/plan-diff"
 export { createSessionHistoryTool } from "./tools/session-history"
+export { createPatternExtractorTool } from "./tools/pattern-extractor"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

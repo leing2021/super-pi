@@ -146,6 +146,7 @@ describe("skill package contracts", () => {
       "utf8",
     )
 
+    expect(content).toContain("pattern_extractor")
     expect(content).toContain("docs/solutions/")
     expect(content).toContain("schema")
     expect(content).toContain("overlap")
