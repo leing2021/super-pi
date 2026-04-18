@@ -1,11 +1,11 @@
 ---
 name: 01-brainstorm
-description: Brainstorm feature requirements and produce a durable requirements artifact.
+description: Brainstorm feature requirements and produce a durable requirements artifact. Supports three modes: CE requirements discovery, Startup Diagnostic (YC-style forcing questions), and Builder Mode (design thinking for side projects).
 ---
 
 # Brainstorm
 
-Use this skill when the request is ambiguous and needs requirements discovery before planning.
+Use this skill when the request is ambiguous, needs requirements discovery before planning, or the user describes a new idea/product.
 
 ## Core rules
 
@@ -20,6 +20,62 @@ Use this skill when the request is ambiguous and needs requirements discovery be
 - Write the result to `docs/brainstorms/` as a durable requirements document.
 - End by recommending `02-plan` when the requirements are ready.
 - **Do not proceed to planning without explicit user approval** of the design.
+
+## Mode selection
+
+After initial context gathering, determine which mode to use. Use `ask_user_question`:
+
+> Before we dig in, what's your goal with this?
+>
+> - **Building a startup** (or thinking about it)
+> - **Intrapreneurship** — internal project, need to ship fast
+> - **Side project / hackathon / learning** — building for fun or exploration
+> - **Adding a feature** — already have a project, need to design a change
+
+**Mode mapping:**
+- Startup, intrapreneurship → **Startup Diagnostic** (see `references/startup-diagnostic.md`)
+- Side project, hackathon, learning → **Builder Mode** (see `references/builder-mode.md`)
+- Adding a feature → **CE Brainstorm** (the existing requirements discovery flow below)
+
+If the user's request already makes the mode obvious (e.g., "I have a startup idea"), skip the question and go directly to the matching mode.
+
+## Startup Diagnostic mode
+
+Read `references/startup-diagnostic.md` for the full YC-style forcing questions, pushback patterns, and anti-sycophancy rules.
+
+Key differences from CE mode:
+- **Operating principles:** Specificity is the only currency. Interest is not demand. The status quo is your real competitor. Narrow beats wide, early.
+- **Ask the six forcing questions** one at a time, pushing until answers are specific and uncomfortable.
+- **Smart routing:** Pre-product (Q1-Q3), Has users (Q2, Q4, Q5), Paying customers (Q4, Q5, Q6).
+- **End with the assignment:** One concrete action the founder should take next.
+
+After the diagnostic, run Premise Challenge (see `references/premise-challenge.md`), then proceed to Alternatives Generation and design checklist.
+
+## Builder Mode
+
+Read `references/builder-mode.md` for the full generative question set and response posture.
+
+Key differences from CE mode:
+- **Operating principles:** Delight is the currency. Ship something you can show. Solve your own problem. Explore before you optimize.
+- **Ask generative questions** one at a time (coolest version, who would you show, fastest path, what's different, 10x version).
+- **End with concrete build steps**, not business validation tasks.
+- **Vibe shift detection:** If the user starts talking about customers/revenue, upgrade to Startup Diagnostic.
+
+After the questions, run Premise Challenge (see `references/premise-challenge.md`), then proceed to Alternatives Generation and design checklist.
+
+## CE Brainstorm mode (existing flow)
+
+This is the original Compound Engineering brainstorm. Use when adding a feature to an existing project.
+
+1. Scan the repository for nearby context.
+2. Use `brainstorm_dialog` `start` to begin multi-round refinement.
+3. Present initial analysis and open questions to the user.
+4. Use `brainstorm_dialog` `refine` to incorporate user responses and refine analysis.
+5. Repeat step 4 until all questions are resolved.
+
+## Premise Challenge (all modes)
+
+After the mode-specific questions are complete, run the Premise Challenge. See `references/premise-challenge.md`.
 
 ## Design checklist
 
@@ -49,10 +105,10 @@ Before handing off to `02-plan`:
 ## Workflow
 
 1. Scan the repository for nearby context.
-2. Use `brainstorm_dialog` `start` to begin multi-round refinement.
-3. Present initial analysis and open questions to the user.
-4. Use `brainstorm_dialog` `refine` to incorporate user responses and refine analysis.
-5. Repeat step 4 until all questions are resolved.
+2. Determine mode (Startup / Builder / CE) via the mode selection step.
+3. Run mode-specific questions using the appropriate reference file.
+4. Run Premise Challenge.
+5. Generate 2-3 alternatives (at least one "minimal viable" and one "ideal architecture").
 6. Validate against the design checklist.
 7. Use `brainstorm_dialog` `summarize` to finalize the conversation.
 8. Capture the agreed direction in a requirements artifact under `docs/brainstorms/`.

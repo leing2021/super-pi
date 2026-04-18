@@ -1,6 +1,6 @@
 ---
 name: 02-plan
-description: Turn requirements or a clear request into an implementation plan.
+description: Turn requirements or a clear request into an implementation plan. Optionally run a CEO-style strategic review after the plan is ready.
 ---
 
 # Plan
@@ -18,7 +18,7 @@ Use this skill when requirements are ready to become an execution-ready plan.
 
 ## Hard gates — TDD enforcement
 
-Every implementation unit must follow **RED → GREEN → REFACTOR**:
+Every implementation unit must follow **RED, GREEN, REFACTOR**:
 - No production code step may appear before a failing test step.
 - Every unit must include exact verification commands.
 - No placeholders allowed — replace "handle edge cases" with concrete steps.
@@ -42,7 +42,24 @@ Every implementation unit must follow **RED → GREEN → REFACTOR**:
 5. If no plan exists, write a new plan artifact under `docs/plans/` using `references/plan-template.md`.
 6. Structure the work using `references/implementation-unit-template.md`.
 7. Verify every unit follows strict TDD — reject units that violate the gates above.
-8. Hand off to `03-work` using `references/handoff.md`.
+
+## Optional: CEO Review
+
+After the plan artifact is written (step 5 or 6 above), offer the user a strategic review:
+
+> Plan ready. How do you want to review it?
+>
+> - **A) Just go** — trust the plan, skip review
+> - **B) CEO Review** — challenge premises, check for better alternatives, dream-state mapping
+> - **C) Strict Review** — full CEO Review plus error maps, failure modes, test diagrams
+
+If the user picks A, proceed directly to the `03-work` handoff.
+If the user picks B or C, read `references/ceo-review-mode.md` and execute the review flow.
+
+After CEO/Strict Review:
+1. Update the plan artifact with any changes the user approved.
+2. Note the review mode and key decisions in the plan.
+3. Proceed to the `03-work` handoff.
 
 ## Implementation unit format
 

@@ -1,6 +1,6 @@
 ---
 name: 04-review
-description: Review code changes with structured findings using routed reviewer personas and optional autofix.
+description: Review code changes with structured findings using routed reviewer personas and optional autofix. Optionally extend to browser-based QA testing and regression test generation.
 ---
 
 # Review
@@ -45,4 +45,28 @@ When processing review findings:
 6. Merge the results into structured findings.
 7. Verify each finding against the codebase before acting.
 8. If any findings are autofixable, apply fixes, re-run tests, and re-review.
-9. Hand off using `references/handoff.md`.
+
+## Optional: QA Test Mode
+
+After step 8 (code review complete), offer browser-based QA testing:
+
+> Code review complete. Want me to also run the app through browser-based QA?
+>
+> - **A) Just code review** — done here
+> - **B) Run browser QA** — use agent-browser to test the live app, find visual/functional bugs
+> - **C) Browser QA + write regression tests** — find bugs, fix them, add regression tests
+
+If the user picks B or C, read `references/qa-test-mode.md` and execute the QA workflow.
+
+After QA:
+1. Include QA findings in the review handoff alongside code review findings.
+2. If bugs were fixed, note the fix commits.
+3. If regression tests were written, note the test files.
+
+## Handoff
+
+After review (and optional QA) is complete, hand off using `references/handoff.md`:
+1. Summarize all findings (code review + QA if run).
+2. Note fix commits if any were applied.
+3. Recommend `05-compound` if learnings are worth capturing.
+4. Recommend `03-work` if fixes need further implementation.
