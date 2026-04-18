@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.7.0
+
+- Added `task_splitter` extension tool: file-based dependency analysis with union-find algorithm
+- Outputs parallel-safe execution groups and identifies shared file dependencies
+- Updated `ce-work` to use `task_splitter` for intelligent parallel vs serial execution decisions
+- 75 tests passing
+
 ### 0.6.0
 
 - Added `session_checkpoint` extension tool: save, load, and list plan execution checkpoints for resume-from-checkpoint behavior

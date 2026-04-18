@@ -16,6 +16,7 @@ import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
 import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel-subagent"
 import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session-checkpoint"
+import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitter"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -718,6 +719,110 @@ describe("session_checkpoint", () => {
   })
 })
 
+describe("task_splitter", () => {
+  test("all independent units are parallel-safe", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({
+      units: [
+        { name: "Unit 1: auth", files: ["src/auth.ts"] },
+        { name: "Unit 2: docs", files: ["README.md"] },
+        { name: "Unit 3: CI", files: [".github/workflows/test.yml"] },
+      ],
+    })
+
+    expect(result.groups.length).toBe(3)
+    for (const group of result.groups) {
+      expect(group.parallelSafe).toBe(true)
+    }
+    expect(result.independentUnits.length).toBe(3)
+    expect(result.dependentUnits.length).toBe(0)
+  })
+
+  test("two units sharing a file are grouped as dependent", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({
+      units: [
+        { name: "Unit 1: types", files: ["src/types.ts", "src/auth.ts"] },
+        { name: "Unit 2: user", files: ["src/types.ts", "src/user.ts"] },
+        { name: "Unit 3: docs", files: ["README.md"] },
+      ],
+    })
+
+    expect(result.groups.length).toBe(2)
+
+    const depGroup = result.groups.find(g => !g.parallelSafe)
+    expect(depGroup).toBeTruthy()
+    expect(depGroup!.units.sort()).toEqual(["Unit 1: types", "Unit 2: user"])
+    expect(depGroup!.sharedFiles).toContain("src/types.ts")
+
+    const indGroup = result.groups.find(g => g.parallelSafe)
+    expect(indGroup!.units).toEqual(["Unit 3: docs"])
+
+    expect(result.independentUnits).toEqual(["Unit 3: docs"])
+    expect(result.dependentUnits.sort()).toEqual(["Unit 1: types", "Unit 2: user"])
+  })
+
+  test("three units all sharing files merge into one group", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({
+      units: [
+        { name: "Unit 1", files: ["a.ts", "b.ts"] },
+        { name: "Unit 2", files: ["b.ts", "c.ts"] },
+        { name: "Unit 3", files: ["c.ts", "d.ts"] },
+      ],
+    })
+
+    expect(result.groups.length).toBe(1)
+    expect(result.groups[0].parallelSafe).toBe(false)
+    expect(result.groups[0].units.sort()).toEqual(["Unit 1", "Unit 2", "Unit 3"])
+    expect(result.independentUnits.length).toBe(0)
+    expect(result.dependentUnits.length).toBe(3)
+  })
+
+  test("single unit is one parallel-safe group", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({
+      units: [
+        { name: "Unit 1: solo", files: ["src/solo.ts"] },
+      ],
+    })
+
+    expect(result.groups.length).toBe(1)
+    expect(result.groups[0].parallelSafe).toBe(true)
+    expect(result.groups[0].units).toEqual(["Unit 1: solo"])
+    expect(result.independentUnits).toEqual(["Unit 1: solo"])
+  })
+
+  test("empty input returns empty output", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({ units: [] })
+
+    expect(result.groups).toEqual([])
+    expect(result.independentUnits).toEqual([])
+    expect(result.dependentUnits).toEqual([])
+  })
+
+  test("unit with no files is treated as independent", () => {
+    const tool = createTaskSplitterTool()
+
+    const result = tool.execute({
+      units: [
+        { name: "Unit 1: no files", files: [] },
+        { name: "Unit 2: has files", files: ["src/main.ts"] },
+      ],
+    })
+
+    expect(result.groups.length).toBe(2)
+    expect(result.independentUnits.length).toBe(2)
+    expect(result.dependentUnits.length).toBe(0)
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -738,6 +843,7 @@ describe("ce-core extension runtime registration", () => {
       "review_router",
       "parallel_subagent",
       "session_checkpoint",
+      "task_splitter",
     ])
   })
 })
@@ -756,6 +862,7 @@ describe("public exports", () => {
       "createReviewRouterTool",
       "createParallelSubagentTool",
       "createSessionCheckpointTool",
+      "createTaskSplitterTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

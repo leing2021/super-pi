@@ -14,6 +14,7 @@ Use this skill when there is a plan path or a tightly scoped bare prompt ready f
 - Use **serial subagents** for tasks with dependencies.
 - Use **`parallel_subagent`** for independent tasks that can run concurrently.
 - Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
+- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `parallel_subagent` and dependent units serially.
 - Keep verification explicit after each execution slice.
 - If inside a **worktree** (created via `ce-worktree`), execute within it. Otherwise, consider recommending `ce-worktree` for isolation.
 - End by recommending `ce-review`.

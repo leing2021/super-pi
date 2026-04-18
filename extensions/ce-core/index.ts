@@ -8,6 +8,7 @@ import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
 import { createParallelSubagentTool } from "./tools/parallel-subagent"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
+import { createTaskSplitterTool } from "./tools/task-splitter"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -84,6 +85,15 @@ const sessionCheckpointParams = Type.Object({
   completedUnits: Type.Optional(Type.Array(Type.String(), { description: "List of completed implementation unit names" })),
 })
 
+const splitterUnitSchema = Type.Object({
+  name: Type.String({ description: "Implementation unit name" }),
+  files: Type.Array(Type.String(), { description: "Files this unit touches" }),
+})
+
+const taskSplitterParams = Type.Object({
+  units: Type.Array(splitterUnitSchema, { description: "Implementation units to analyze for dependencies" }),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -93,6 +103,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const reviewRouter = createReviewRouterTool()
   const parallelSubagent = createParallelSubagentTool()
   const sessionCheckpoint = createSessionCheckpointTool()
+  const taskSplitter = createTaskSplitterTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -311,6 +322,23 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: taskSplitter.name,
+    label: "Task Splitter",
+    description: "Analyze implementation units for file-level dependencies and output parallel-safe execution groups.",
+    parameters: taskSplitterParams,
+    async execute(_toolCallId, params) {
+      const result = taskSplitter.execute({
+        units: params.units,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -321,6 +349,7 @@ export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
 export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export { createSessionCheckpointTool } from "./tools/session-checkpoint"
+export { createTaskSplitterTool } from "./tools/task-splitter"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,
