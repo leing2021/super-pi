@@ -721,6 +721,62 @@ describe("session_checkpoint", () => {
       }),
     ).rejects.toThrow("Unknown operation")
   })
+
+  test("fail records error context on a checkpoint", async () => {
+    const repoRoot = `/tmp/pi-ce-cp-fail-${Date.now()}`
+    const tool = createSessionCheckpointTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/plan-a.md",
+      completedUnits: ["Unit 1"],
+    })
+
+    const result = await tool.execute({
+      operation: "fail",
+      repoRoot,
+      planPath: "docs/plans/plan-a.md",
+      failedUnit: "Unit 2: auth module",
+      error: "TypeError: Cannot read property 'token' of undefined",
+    })
+
+    expect(result.status).toBe("failed")
+    expect(result.failedUnit).toBe("Unit 2: auth module")
+    expect(result.error).toContain("TypeError")
+    expect(result.completedUnits).toEqual(["Unit 1"])
+  })
+
+  test("retry returns retry strategy for a failed checkpoint", async () => {
+    const repoRoot = `/tmp/pi-ce-cp-retry-${Date.now()}`
+    const tool = createSessionCheckpointTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/plan-b.md",
+      completedUnits: ["Unit 1", "Unit 2"],
+    })
+
+    await tool.execute({
+      operation: "fail",
+      repoRoot,
+      planPath: "docs/plans/plan-b.md",
+      failedUnit: "Unit 3",
+      error: "Test timeout",
+    })
+
+    const result = await tool.execute({
+      operation: "retry",
+      repoRoot,
+      planPath: "docs/plans/plan-b.md",
+    })
+
+    expect(result.status).toBe("retry")
+    expect(result.retryFrom).toBe("Unit 3")
+    expect(result.completedUnits).toEqual(["Unit 1", "Unit 2"])
+    expect(result.strategy).toBeTruthy()
+  })
 })
 
 describe("task_splitter", () => {

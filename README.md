@@ -61,6 +61,14 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.12.0
+
+- Extended `session_checkpoint` with `fail` and `retry` operations for error recovery
+- `fail` records error context (failed unit, error message) on a checkpoint
+- `retry` returns a retry strategy based on error type (timeout, permission, syntax, file-not-found)
+- Updated `ce-work` SKILL.md with error recovery workflow
+- 104 tests passing
+
 ### 0.11.0
 
 - Added `pattern_extractor` extension tool: extract recurring patterns from artifacts and categorize them

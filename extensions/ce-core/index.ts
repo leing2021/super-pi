@@ -83,10 +83,14 @@ const sessionCheckpointParams = Type.Object({
     Type.Literal("save"),
     Type.Literal("load"),
     Type.Literal("list"),
+    Type.Literal("fail"),
+    Type.Literal("retry"),
   ], { description: "Checkpoint operation" }),
   repoRoot: Type.String({ description: "Repository root" }),
   planPath: Type.Optional(Type.String({ description: "Plan artifact path" })),
   completedUnits: Type.Optional(Type.Array(Type.String(), { description: "List of completed implementation unit names" })),
+  failedUnit: Type.Optional(Type.String({ description: "Name of the unit that failed" })),
+  error: Type.Optional(Type.String({ description: "Error message from the failure" })),
 })
 
 const splitterUnitSchema = Type.Object({
@@ -389,6 +393,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         repoRoot: params.repoRoot,
         planPath: params.planPath,
         completedUnits: params.completedUnits,
+        failedUnit: params.failedUnit,
+        error: params.error,
       })
 
       return {
