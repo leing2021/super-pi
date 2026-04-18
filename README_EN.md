@@ -9,7 +9,7 @@ A Pi-native Compound Engineering package for iterative development workflows.
 ## Install
 
 ```bash
-pi install npm:super-pi
+pi install npm:@leing2021/super-pi
 ```
 
 ---

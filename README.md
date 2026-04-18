@@ -9,7 +9,7 @@
 ## 安装
 
 ```bash
-pi install npm:super-pi
+pi install npm:@leing2021/super-pi
 ```
 
 ---

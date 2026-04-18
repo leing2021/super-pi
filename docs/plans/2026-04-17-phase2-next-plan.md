@@ -157,4 +157,4 @@ npm publish --dry-run
 ### Broader
 - `bun test` — all tests pass (41+ existing + new)
 - `npm publish --dry-run` — still passes
-- `npm view super-pi` — verify after publish
+- `npm view @leing2021/super-pi` — verify after publish

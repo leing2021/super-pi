@@ -1,5 +1,5 @@
 {
-  "name": "super-pi",
+  "name": "@leing2021/super-pi",
   "version": "1.0.0",
   "private": false,
   "type": "module",
@@ -14,6 +14,7 @@
     "url": "https://github.com/leing2021/super-pi/issues"
   },
   "keywords": [
+    "@leing2021/super-pi",
     "pi-package",
     "pi",
     "super-pi",
