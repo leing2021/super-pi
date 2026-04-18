@@ -15,6 +15,7 @@ import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-st
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
 import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel-subagent"
+import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session-checkpoint"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -613,6 +614,110 @@ describe("parallel_subagent", () => {
   })
 })
 
+describe("session_checkpoint", () => {
+  test("save creates a checkpoint file", async () => {
+    const repoRoot = `/tmp/pi-ce-cp-save-${Date.now()}`
+    const tool = createSessionCheckpointTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
+      completedUnits: ["Unit 1: test.yml", "Unit 2: publish.yml"],
+    })
+
+    const result = await tool.execute({
+      operation: "load",
+      repoRoot,
+      planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
+    })
+
+    expect(result.planPath).toBe("docs/plans/2026-04-18-ci-cd-plan.md")
+    expect(result.completedUnits).toEqual(["Unit 1: test.yml", "Unit 2: publish.yml"])
+    expect(result.updatedAt).toBeTruthy()
+  })
+
+  test("load returns empty array when no checkpoint exists", async () => {
+    const tool = createSessionCheckpointTool()
+
+    const result = await tool.execute({
+      operation: "load",
+      repoRoot: `/tmp/pi-ce-cp-empty-${Date.now()}`,
+      planPath: "docs/plans/nonexistent.md",
+    })
+
+    expect(result.completedUnits).toEqual([])
+  })
+
+  test("save appends additional completed units", async () => {
+    const repoRoot = `/tmp/pi-ce-cp-append-${Date.now()}`
+    const tool = createSessionCheckpointTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
+      completedUnits: ["Unit 1"],
+    })
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
+      completedUnits: ["Unit 1", "Unit 2", "Unit 3"],
+    })
+
+    const result = await tool.execute({
+      operation: "load",
+      repoRoot,
+      planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
+    })
+
+    expect(result.completedUnits).toEqual(["Unit 1", "Unit 2", "Unit 3"])
+  })
+
+  test("list returns all checkpoints", async () => {
+    const repoRoot = `/tmp/pi-ce-cp-list-${Date.now()}`
+    const tool = createSessionCheckpointTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/plan-a.md",
+      completedUnits: ["Unit 1"],
+    })
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      planPath: "docs/plans/plan-b.md",
+      completedUnits: ["Unit 1", "Unit 2"],
+    })
+
+    const result = await tool.execute({
+      operation: "list",
+      repoRoot,
+    })
+
+    expect(result.checkpoints.length).toBe(2)
+    const paths = result.checkpoints.map((c: { planPath: string }) => c.planPath)
+    expect(paths).toContain("docs/plans/plan-a.md")
+    expect(paths).toContain("docs/plans/plan-b.md")
+  })
+
+  test("rejects unknown operations", async () => {
+    const tool = createSessionCheckpointTool()
+
+    await expect(
+      tool.execute({
+        operation: "unknown",
+        repoRoot: "/tmp/test",
+        planPath: "docs/plans/test.md",
+      }),
+    ).rejects.toThrow("Unknown operation")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -632,6 +737,7 @@ describe("ce-core extension runtime registration", () => {
       "worktree_manager",
       "review_router",
       "parallel_subagent",
+      "session_checkpoint",
     ])
   })
 })
@@ -649,6 +755,7 @@ describe("public exports", () => {
       "createWorktreeManagerTool",
       "createReviewRouterTool",
       "createParallelSubagentTool",
+      "createSessionCheckpointTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

@@ -171,6 +171,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("inline")
     expect(content).toContain("serial subagents")
     expect(content).toContain("parallel_subagent")
+    expect(content).toContain("session_checkpoint")
     expect(content).toContain("verification")
     expect(content).toContain("worktree")
     expect(progress).toContain("Completed")

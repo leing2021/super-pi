@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.6.0
+
+- Added `session_checkpoint` extension tool: save, load, and list plan execution checkpoints for resume-from-checkpoint behavior
+- Updated `ce-work` to use `session_checkpoint` for automatic resume on interrupted plan execution
+- Checkpoints stored in `.context/compound-engineering/checkpoints/` as lightweight JSON files
+- 69 tests passing
+
 ### 0.5.0
 
 - Added `parallel_subagent` extension tool: run multiple independent skill-based tasks concurrently with `Promise.allSettled`

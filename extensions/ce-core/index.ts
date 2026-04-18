@@ -7,6 +7,7 @@ import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
 import { createParallelSubagentTool } from "./tools/parallel-subagent"
+import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -72,6 +73,17 @@ const parallelSubagentParams = Type.Object({
   tasks: Type.Array(parallelSubagentTaskSchema, { description: "Array of independent tasks to run concurrently" }),
 })
 
+const sessionCheckpointParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("save"),
+    Type.Literal("load"),
+    Type.Literal("list"),
+  ], { description: "Checkpoint operation" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  planPath: Type.Optional(Type.String({ description: "Plan artifact path" })),
+  completedUnits: Type.Optional(Type.Array(Type.String(), { description: "List of completed implementation unit names" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -80,6 +92,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const worktreeManager = createWorktreeManagerTool()
   const reviewRouter = createReviewRouterTool()
   const parallelSubagent = createParallelSubagentTool()
+  const sessionCheckpoint = createSessionCheckpointTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -278,6 +291,26 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: sessionCheckpoint.name,
+    label: "Session Checkpoint",
+    description: "Save and load plan execution checkpoints for resume-from-checkpoint behavior.",
+    parameters: sessionCheckpointParams,
+    async execute(_toolCallId, params) {
+      const result = await sessionCheckpoint.execute({
+        operation: params.operation,
+        repoRoot: params.repoRoot,
+        planPath: params.planPath,
+        completedUnits: params.completedUnits,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -287,6 +320,7 @@ export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
 export { createParallelSubagentTool } from "./tools/parallel-subagent"
+export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,
