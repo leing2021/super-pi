@@ -4,6 +4,7 @@ import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-he
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
 import { createSubagentTool } from "./tools/subagent"
 import { createWorkflowStateTool } from "./tools/workflow-state"
+import { createWorktreeManagerTool } from "./tools/worktree-manager"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -42,11 +43,24 @@ const workflowStateParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root to scan for workflow artifacts" }),
 })
 
+const worktreeManagerParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("create"),
+    Type.Literal("detect"),
+    Type.Literal("merge"),
+    Type.Literal("cleanup"),
+  ], { description: "Worktree operation to perform" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  branchName: Type.Optional(Type.String({ description: "Feature branch name for create/merge/cleanup" })),
+  worktreePath: Type.Optional(Type.String({ description: "Worktree directory path for cleanup" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
   const subagent = createSubagentTool()
   const workflowState = createWorkflowStateTool()
+  const worktreeManager = createWorktreeManagerTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -162,12 +176,48 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: worktreeManager.name,
+    label: "Worktree Manager",
+    description: "Manage git worktree lifecycle: create, detect, merge, and cleanup worktrees for isolated feature development.",
+    parameters: worktreeManagerParams,
+    async execute(_toolCallId, params, signal) {
+      const result = await worktreeManager.execute(
+        {
+          operation: params.operation,
+          repoRoot: params.repoRoot,
+          branchName: params.branchName,
+          worktreePath: params.worktreePath,
+        },
+        async (args: string[]) => {
+          const execResult = await pi.exec("git", args.slice(1), {
+            signal,
+            timeout: 60 * 1000,
+            cwd: params.repoRoot,
+          })
+
+          if (execResult.code !== 0) {
+            throw new Error(execResult.stderr || `git ${args.slice(1).join(" ")} failed`)
+          }
+
+          return (execResult.stdout || "").trim()
+        },
+      )
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
 export { createSubagentTool } from "./tools/subagent"
 export { createWorkflowStateTool } from "./tools/workflow-state"
+export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

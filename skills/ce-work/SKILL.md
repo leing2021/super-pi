@@ -13,6 +13,7 @@ Use this skill when there is a plan path or a tightly scoped bare prompt ready f
 - Prefer deriving execution tasks from plan **implementation units**.
 - In Phase 1, execution may be **inline** or via **serial subagents** only.
 - Keep verification explicit after each execution slice.
+- If inside a **worktree** (created via `ce-worktree`), execute within it. Otherwise, consider recommending `ce-worktree` for isolation.
 - End by recommending `ce-review`.
 
 ## Workflow

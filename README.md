@@ -27,6 +27,7 @@ pi install npm:pi-compound-engineering
 - `ce-help` — explain which workflow step to use
 - `ce-status` — inspect repo-local workflow state
 - `ce-next` — get a recommendation for the next workflow step
+- `ce-worktree` — create and manage git worktrees for isolated feature development
 - `ce-brainstorm` — create requirements artifacts in `docs/brainstorms/`
 - `ce-plan` — create implementation plans in `docs/plans/`
 - `ce-work` — execute plan-driven work in Phase 1 mode
@@ -59,6 +60,13 @@ Phase 1 intentionally ships a basic but working CE loop:
 It does not yet include richer review autofix flows, worktree orchestration, session-history integrations, or `ce-next` style navigation.
 
 ## Changelog
+
+### 0.3.0
+
+- Added `worktree_manager` extension tool: git worktree lifecycle (create, detect, merge, cleanup) with dependency injection
+- Added `ce-worktree` skill: standalone worktree management using `worktree_manager`
+- Updated `ce-work` to detect and recommend worktree isolation
+- 53 tests passing
 
 ### 0.2.0
 

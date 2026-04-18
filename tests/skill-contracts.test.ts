@@ -13,6 +13,7 @@ const skillNames = [
   "ce-help",
   "ce-status",
   "ce-next",
+  "ce-worktree",
 ]
 
 describe("skill package contracts", () => {
@@ -170,6 +171,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("inline")
     expect(content).toContain("serial subagents")
     expect(content).toContain("verification")
+    expect(content).toContain("worktree")
     expect(progress).toContain("Completed")
     expect(progress).toContain("Verification")
     expect(handoff).toContain("ce-review")
@@ -221,5 +223,15 @@ describe("skill package contracts", () => {
     expect(recommendationLogic).toContain("work")
     expect(recommendationLogic).toContain("review")
     expect(recommendationLogic).toContain("compound")
+  })
+
+  test("ce-worktree manages git worktree lifecycle using worktree_manager", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "ce-worktree", "SKILL.md"), "utf8")
+
+    expect(content).toContain("worktree_manager")
+    expect(content).toContain("create")
+    expect(content).toContain("merge")
+    expect(content).toContain("cleanup")
+    expect(content).toContain("ce-work")
   })
 })

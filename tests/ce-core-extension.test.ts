@@ -12,6 +12,7 @@ import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-h
 import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
 import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
+import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -324,6 +325,129 @@ describe("workflow_state", () => {
   })
 })
 
+describe("worktree_manager", () => {
+  test("create operation generates correct git commands", async () => {
+    const calls: string[][] = []
+    const tool = createWorktreeManagerTool()
+
+    const result = await tool.execute(
+      {
+        operation: "create",
+        repoRoot: "/tmp/my-repo",
+        branchName: "feat-add-ci",
+      },
+      async (args: string[]) => {
+        calls.push(args)
+        return ""
+      },
+    )
+
+    expect(calls.length).toBe(2)
+    // Branch creation
+    expect(calls[0]).toContain("branch")
+    expect(calls[0]).toContain("feat-add-ci")
+    // Worktree add
+    expect(calls[1]).toContain("worktree")
+    expect(calls[1]).toContain("add")
+    expect(result.worktreePath).toContain("feat-add-ci")
+  })
+
+  test("detect operation returns false when not in a worktree", async () => {
+    const tool = createWorktreeManagerTool()
+
+    const result = await tool.execute(
+      {
+        operation: "detect",
+        repoRoot: "/tmp/my-repo",
+      },
+      async () => "",
+    )
+
+    expect(result.isWorktree).toBe(false)
+  })
+
+  test("detect operation returns true when in a worktree", async () => {
+    const tool = createWorktreeManagerTool()
+
+    const result = await tool.execute(
+      {
+        operation: "detect",
+        repoRoot: "/tmp/my-repo",
+      },
+      async (args: string[]) => {
+        if (args.includes("worktree") && args.includes("list")) {
+          return "/tmp/my-repo  abc123 [main]\n/tmp/my-repo-feat  def456 [feat-add-ci]"
+        }
+        return ""
+      },
+    )
+
+    expect(result.isWorktree).toBe(true)
+    expect(result.worktreePath).toBe("/tmp/my-repo-feat")
+  })
+
+  test("merge operation generates correct git commands", async () => {
+    const calls: string[][] = []
+    const tool = createWorktreeManagerTool()
+
+    const result = await tool.execute(
+      {
+        operation: "merge",
+        repoRoot: "/tmp/my-repo",
+        branchName: "feat-add-ci",
+      },
+      async (args: string[]) => {
+        calls.push(args)
+        return ""
+      },
+    )
+
+    // Checkout main, merge branch
+    expect(calls[0]).toContain("checkout")
+    expect(calls[0]).toContain("main")
+    expect(calls[1]).toContain("merge")
+    expect(calls[1]).toContain("feat-add-ci")
+    expect(result.merged).toBe(true)
+  })
+
+  test("cleanup operation removes the worktree", async () => {
+    const calls: string[][] = []
+    const tool = createWorktreeManagerTool()
+
+    const result = await tool.execute(
+      {
+        operation: "cleanup",
+        repoRoot: "/tmp/my-repo",
+        branchName: "feat-add-ci",
+        worktreePath: "/tmp/my-repo-feat-add-ci",
+      },
+      async (args: string[]) => {
+        calls.push(args)
+        return ""
+      },
+    )
+
+    expect(calls[0]).toContain("worktree")
+    expect(calls[0]).toContain("remove")
+    expect(calls[0]).toContain("/tmp/my-repo-feat-add-ci")
+    expect(calls[1]).toContain("branch")
+    expect(calls[1]).toContain("-d")
+    expect(calls[1]).toContain("feat-add-ci")
+    expect(result.cleanedUp).toBe(true)
+  })
+
+  test("rejects unknown operations", async () => {
+    const tool = createWorktreeManagerTool()
+
+    await expect(
+      tool.execute(
+        { operation: "unknown", repoRoot: "/tmp/my-repo" },
+        async () => "",
+      ),
+    ).rejects.toThrow("Unknown operation")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -340,6 +464,7 @@ describe("ce-core extension runtime registration", () => {
       "ask_user_question",
       "subagent",
       "workflow_state",
+      "worktree_manager",
     ])
   })
 })
@@ -354,6 +479,7 @@ describe("public exports", () => {
       "createAskUserQuestionTool",
       "createSubagentTool",
       "createWorkflowStateTool",
+      "createWorktreeManagerTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",
