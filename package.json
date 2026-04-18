@@ -1,5 +1,5 @@
 {
-  "name": "pi-compound-engineering",
+  "name": "super-pi",
   "version": "1.0.0",
   "private": false,
   "type": "module",
@@ -7,15 +7,16 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leing2021/pi-compound-engineering.git"
+    "url": "git+https://github.com/leing2021/super-pi.git"
   },
-  "homepage": "https://github.com/leing2021/pi-compound-engineering",
+  "homepage": "https://github.com/leing2021/super-pi",
   "bugs": {
-    "url": "https://github.com/leing2021/pi-compound-engineering/issues"
+    "url": "https://github.com/leing2021/super-pi/issues"
   },
   "keywords": [
     "pi-package",
     "pi",
+    "super-pi",
     "coding-agent",
     "compound-engineering"
   ],

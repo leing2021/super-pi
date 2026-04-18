@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "pi-compound-engineering",
+      "name": "super-pi",
       "dependencies": {
         "@mariozechner/pi-coding-agent": "0.67.6",
         "@sinclair/typebox": "0.34.41",

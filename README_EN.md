@@ -9,7 +9,7 @@ A Pi-native Compound Engineering package for iterative development workflows.
 ## Install
 
 ```bash
-pi install npm:pi-compound-engineering
+pi install npm:super-pi
 ```
 
 ---
@@ -311,8 +311,8 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 ## Repository
 
-- **GitHub**: https://github.com/leing2021/pi-compound-engineering
-- **npm**: https://www.npmjs.com/package/pi-compound-engineering
+- **GitHub**: https://github.com/leing2021/super-pi
+- **npm**: https://www.npmjs.com/package/super-pi
 
 ## Development
 

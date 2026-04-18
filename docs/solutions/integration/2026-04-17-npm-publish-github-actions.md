@@ -4,7 +4,7 @@
 
 # Context
 
-Discovered while adding CI/CD to pi-compound-engineering. The initial `publish.yml` workflow set `NODE_AUTH_TOKEN` as an env variable on the `npm publish` step but did not configure the npm registry URL. Without `registry-url` configuration, npm does not know to use `NODE_AUTH_TOKEN` for authentication against the npm registry.
+Discovered while adding CI/CD to super-pi. The initial `publish.yml` workflow set `NODE_AUTH_TOKEN` as an env variable on the `npm publish` step but did not configure the npm registry URL. Without `registry-url` configuration, npm does not know to use `NODE_AUTH_TOKEN` for authentication against the npm registry.
 
 This is a common pitfall when combining Bun for install/test with npm for publish in the same workflow.
 

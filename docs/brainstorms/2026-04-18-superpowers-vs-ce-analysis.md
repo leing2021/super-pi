@@ -136,7 +136,7 @@
 | 完成报告 | `ce-work` | 加入结构化完成报告格式 |
 | 审查纪律 | `ce-review` | 加入技术评估纪律 + YAGNI 检查 |
 
-合并后，**只保留 `pi-compound-engineering` 一个工作流**，卸载 Superpowers 的 `01-brainstorm`、`02-write-plan`、`03-execute-plan`、`requesting-code-review`、`receiving-code-review`、`test-driven-development`。
+合并后，**只保留 `super-pi` 一个工作流**，卸载 Superpowers 的 `01-brainstorm`、`02-write-plan`、`03-execute-plan`、`requesting-code-review`、`receiving-code-review`、`test-driven-development`。
 
 保留不合并的 Superpowers skills：
 - `systematic-debugging` — 独立有用

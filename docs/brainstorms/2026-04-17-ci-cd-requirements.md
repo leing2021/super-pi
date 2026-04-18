@@ -2,7 +2,7 @@
 
 ## Problem
 
-pi-compound-engineering has no CI/CD. Tests and publishing rely entirely on manual execution in a local environment. This means:
+super-pi has no CI/CD. Tests and publishing rely entirely on manual execution in a local environment. This means:
 - No automated test verification on push or PR
 - No guard against publishing broken packages
 - No consistent release process tied to version tags
