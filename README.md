@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.9.0
+
+- Added `plan_diff` extension tool: compare and patch plan units for incremental plan updates
+- Supports `compare` (detect added/removed/modified/unchanged units) and `patch` (apply changes) operations
+- Updated `ce-plan` SKILL.md with incremental update workflow using `plan_diff`
+- 88 tests passing
+
 ### 0.8.0
 
 - Added `brainstorm_dialog` extension tool: manage multi-round brainstorm conversations with start/refine/summarize operations

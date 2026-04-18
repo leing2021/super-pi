@@ -10,6 +10,7 @@ import { createParallelSubagentTool } from "./tools/parallel-subagent"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
+import { createPlanDiffTool } from "./tools/plan-diff"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -108,6 +109,26 @@ const brainstormDialogParams = Type.Object({
   userResponses: Type.Optional(Type.Array(Type.String(), { description: "User's answers from previous round" })),
 })
 
+const planUnitSchema = Type.Object({
+  name: Type.String({ description: "Unit name" }),
+  description: Type.String({ description: "Unit description" }),
+  files: Type.Array(Type.String(), { description: "Files this unit touches" }),
+})
+
+const planChangeSchema = Type.Object({
+  action: Type.Union([Type.Literal("add"), Type.Literal("remove"), Type.Literal("modify")], { description: "Change action" }),
+  name: Type.String({ description: "Unit name" }),
+  description: Type.Optional(Type.String({ description: "Updated description" })),
+  files: Type.Optional(Type.Array(Type.String(), { description: "Updated file list" })),
+})
+
+const planDiffParams = Type.Object({
+  operation: Type.Union([Type.Literal("compare"), Type.Literal("patch")], { description: "Diff operation" }),
+  existingUnits: Type.Array(planUnitSchema, { description: "Current plan units" }),
+  newRequirements: Type.Optional(Type.Array(planUnitSchema, { description: "Updated requirements for compare" })),
+  changes: Type.Optional(Type.Array(planChangeSchema, { description: "Changes to apply for patch" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -119,6 +140,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const sessionCheckpoint = createSessionCheckpointTool()
   const taskSplitter = createTaskSplitterTool()
   const brainstormDialog = createBrainstormDialogTool()
+  const planDiff = createPlanDiffTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -376,6 +398,26 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: planDiff.name,
+    label: "Plan Diff",
+    description: "Compare plan units with new requirements or apply incremental changes to an existing plan.",
+    parameters: planDiffParams,
+    async execute(_toolCallId, params) {
+      const result = planDiff.execute({
+        operation: params.operation,
+        existingUnits: params.existingUnits,
+        newRequirements: params.newRequirements,
+        changes: params.changes,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -388,6 +430,7 @@ export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
+export { createPlanDiffTool } from "./tools/plan-diff"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

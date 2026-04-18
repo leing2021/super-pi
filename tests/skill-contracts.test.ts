@@ -111,6 +111,7 @@ describe("skill package contracts", () => {
       "utf8",
     )
 
+    expect(content).toContain("plan_diff")
     expect(content).toContain("docs/brainstorms/")
     expect(content).toContain("docs/solutions/")
     expect(content).toContain("docs/plans/")

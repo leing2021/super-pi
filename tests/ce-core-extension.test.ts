@@ -18,6 +18,7 @@ import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel
 import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session-checkpoint"
 import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitter"
 import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainstorm-dialog"
+import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -940,6 +941,86 @@ describe("brainstorm_dialog", () => {
   })
 })
 
+describe("plan_diff", () => {
+  const existingUnits = [
+    { name: "Unit 1: auth", description: "Add auth module", files: ["src/auth.ts"] },
+    { name: "Unit 2: user API", description: "Add user endpoints", files: ["src/user.ts"] },
+    { name: "Unit 3: tests", description: "Write tests", files: ["tests/auth.test.ts"] },
+  ]
+
+  test("compare detects added, removed, modified, unchanged units", () => {
+    const tool = createPlanDiffTool()
+
+    const result = tool.execute({
+      operation: "compare",
+      existingUnits,
+      newRequirements: [
+        { name: "Unit 1: auth", description: "Add auth module with OAuth2", files: ["src/auth.ts", "src/oauth.ts"] },
+        { name: "Unit 2: user API", description: "Add user endpoints", files: ["src/user.ts"] },
+        { name: "Unit 4: docs", description: "Add API docs", files: ["docs/api.md"] },
+      ],
+    })
+
+    expect(result.added.length).toBe(1)
+    expect(result.added[0].name).toBe("Unit 4: docs")
+    expect(result.removed.length).toBe(1)
+    expect(result.removed[0].name).toBe("Unit 3: tests")
+    expect(result.modified.length).toBe(1)
+    expect(result.modified[0].name).toBe("Unit 1: auth")
+    expect(result.unchanged.length).toBe(1)
+    expect(result.unchanged[0].name).toBe("Unit 2: user API")
+  })
+
+  test("compare with identical inputs returns all unchanged", () => {
+    const tool = createPlanDiffTool()
+
+    const result = tool.execute({
+      operation: "compare",
+      existingUnits,
+      newRequirements: existingUnits,
+    })
+
+    expect(result.added).toEqual([])
+    expect(result.removed).toEqual([])
+    expect(result.modified).toEqual([])
+    expect(result.unchanged.length).toBe(3)
+  })
+
+  test("patch applies changes and returns merged result", () => {
+    const tool = createPlanDiffTool()
+
+    const result = tool.execute({
+      operation: "patch",
+      existingUnits,
+      changes: [
+        { action: "modify", name: "Unit 1: auth", description: "Add OAuth2", files: ["src/auth.ts", "src/oauth.ts"] },
+        { action: "remove", name: "Unit 3: tests" },
+        { action: "add", name: "Unit 4: docs", description: "API docs", files: ["docs/api.md"] },
+      ],
+    })
+
+    expect(result.units.length).toBe(3)
+    const names = result.units.map((u: { name: string }) => u.name)
+    expect(names).toContain("Unit 1: auth")
+    expect(names).toContain("Unit 2: user API")
+    expect(names).toContain("Unit 4: docs")
+    expect(names).not.toContain("Unit 3: tests")
+    expect(result.appliedChanges).toBe(3)
+  })
+
+  test("rejects unknown operations", () => {
+    const tool = createPlanDiffTool()
+
+    expect(() =>
+      tool.execute({
+        operation: "unknown",
+        existingUnits: [],
+        newRequirements: [],
+      }),
+    ).toThrow("Unknown operation")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -962,6 +1043,7 @@ describe("ce-core extension runtime registration", () => {
       "session_checkpoint",
       "task_splitter",
       "brainstorm_dialog",
+      "plan_diff",
     ])
   })
 })
@@ -982,6 +1064,7 @@ describe("public exports", () => {
       "createSessionCheckpointTool",
       "createTaskSplitterTool",
       "createBrainstormDialogTool",
+      "createPlanDiffTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",
