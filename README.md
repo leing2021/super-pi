@@ -23,38 +23,38 @@ pi install npm:@leing2021/super-pi
 ```
 你: 我想给项目加一个用户认证功能
 
-→ /skill:ce-brainstorm
+→ /skill:01-brainstorm
 → 多轮对话澄清需求（OAuth2? JWT? MFA?）
 → 生成 docs/brainstorms/2026-04-18-auth-requirements.md
-→ 推荐下一步: ce-plan
+→ 推荐下一步: 02-plan
 
 你: 继续
 
-→ /skill:ce-plan
+→ /skill:02-plan
 → 读取 requirements artifact
 → task_splitter 分析依赖，拆分 implementation units
 → 生成 docs/plans/2026-04-18-auth-plan.md
-→ 推荐下一步: ce-work
+→ 推荐下一步: 03-work
 
 你: 继续
 
-→ /skill:ce-work
+→ /skill:03-work
 → session_checkpoint 加载断点（首次为空）
 → task_splitter 分析哪些 units 可并行
 → parallel_subagent 并行执行独立任务
 → session_checkpoint 记录每个完成的单元
-→ 推荐下一步: ce-review
+→ 推荐下一步: 04-review
 
 你: 继续
 
-→ /skill:ce-review
+→ /skill:04-review
 → review_router 推荐 reviewer 角色（security, performance...）
 → 结构化 findings（autofixable 的问题自动修复）
-→ 推荐下一步: ce-compound
+→ 推荐下一步: 05-compound
 
 你: 继续
 
-→ /skill:ce-compound
+→ /skill:05-compound
 → pattern_extractor 从 artifacts 中提取可复用模式
 → 写入 docs/solutions/auth/oauth2-solution.md
 ```
@@ -62,7 +62,7 @@ pi install npm:@leing2021/super-pi
 ### 场景 B：随时检查项目状态
 
 ```
-你: /skill:ce-status
+你: /skill:08-status
 
 → 扫描 docs/brainstorms/、docs/plans/、docs/solutions/
 → 查询 session_history 了解最近执行记录
@@ -72,7 +72,7 @@ pi install npm:@leing2021/super-pi
 ### 场景 C：不知道下一步做什么
 
 ```
-你: /skill:ce-next
+你: /skill:06-next
 
 → workflow_state 扫描 artifacts
 → session_history 查询历史
@@ -84,7 +84,7 @@ pi install npm:@leing2021/super-pi
 ```
 你: 需求变了，需要加 SSO 支持
 
-→ /skill:ce-plan
+→ /skill:02-plan
 → plan_diff compare 检测 added/removed/modified units
 → plan_diff patch 增量更新 plan
 → 不需要重写整个 plan
@@ -93,7 +93,7 @@ pi install npm:@leing2021/super-pi
 ### 场景 E：执行中断后恢复
 
 ```
-你: /skill:ce-work docs/plans/auth-plan.md
+你: /skill:03-work docs/plans/auth-plan.md
 
 → session_checkpoint.load 发现已完成的单元
 → 自动跳过已完成部分，从断点继续
@@ -102,17 +102,17 @@ pi install npm:@leing2021/super-pi
 ### 场景 F：隔离开发
 
 ```
-你: /skill:ce-worktree
+你: /skill:03-worktree
 
 → worktree_manager 创建 git worktree 隔离环境
-→ 在 worktree 中执行 ce-work
+→ 在 worktree 中执行 03-work
 → 完成后 merge 回主分支
 ```
 
 ### 场景 G：执行失败后恢复
 
 ```
-你: /skill:ce-work docs/plans/auth-plan.md
+你: /skill:03-work docs/plans/auth-plan.md
 
 → session_checkpoint.fail 记录失败上下文
 → session_checkpoint.retry 返回重试策略
@@ -129,15 +129,15 @@ pi install npm:@leing2021/super-pi
 
 | Skill | 命令 | 描述 | 关联 Tools |
 |-------|------|------|-----------|
-| `ce-help` | `/skill:ce-help` | 使用指南 | — |
-| `ce-status` | `/skill:ce-status` | 检查项目状态 | `workflow_state`, `session_history` |
-| `ce-next` | `/skill:ce-next` | 推荐下一步 | `workflow_state`, `session_history` |
-| `ce-brainstorm` | `/skill:ce-brainstorm` | 多轮需求发现 | `brainstorm_dialog` |
-| `ce-plan` | `/skill:ce-plan` | 创建/更新实施计划 | `plan_diff` |
-| `ce-work` | `/skill:ce-work` | 执行计划（并行+断点+恢复） | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
-| `ce-review` | `/skill:ce-review` | 结构化代码审查 | `review_router` |
-| `ce-compound` | `/skill:ce-compound` | 知识复合 | `pattern_extractor` |
-| `ce-worktree` | `/skill:ce-worktree` | Worktree 隔离开发 | `worktree_manager` |
+| `09-help` | `/skill:09-help` | 使用指南 | — |
+| `08-status` | `/skill:08-status` | 检查项目状态 | `workflow_state`, `session_history` |
+| `06-next` | `/skill:06-next` | 推荐下一步 | `workflow_state`, `session_history` |
+| `01-brainstorm` | `/skill:01-brainstorm` | 多轮需求发现 | `brainstorm_dialog` |
+| `02-plan` | `/skill:02-plan` | 创建/更新实施计划 | `plan_diff` |
+| `03-work` | `/skill:03-work` | 执行计划（并行+断点+恢复） | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
+| `04-review` | `/skill:04-review` | 结构化代码审查 | `review_router` |
+| `05-compound` | `/skill:05-compound` | 知识复合 | `pattern_extractor` |
+| `07-worktree` | `/skill:03-worktree` | Worktree 隔离开发 | `worktree_manager` |
 
 ---
 
@@ -168,11 +168,11 @@ pi install npm:@leing2021/super-pi
 ```
 your-project/
 ├── docs/
-│   ├── brainstorms/                        # ce-brainstorm 生成
+│   ├── brainstorms/                        # 01-brainstorm 生成
 │   │   └── 2026-04-18-auth-requirements.md
-│   ├── plans/                              # ce-plan 生成
+│   ├── plans/                              # 02-plan 生成
 │   │   └── 2026-04-18-auth-plan.md
-│   └── solutions/                          # ce-compound 生成
+│   └── solutions/                          # 05-compound 生成
 │       └── auth/
 │           └── oauth2-solution.md
 └── .context/
@@ -182,7 +182,7 @@ your-project/
         ├── dialogs/                        # brainstorm_dialog 生成
         │   └── docs-brainstorms-auth.json
         └── history/                        # session_history 生成
-            └── 1745000000-ce-brainstorm.json
+            └── 1745000000-01-brainstorm.json
 ```
 
 ---
@@ -190,7 +190,7 @@ your-project/
 ## 核心工作流
 
 ```
-ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
+01-brainstorm → 02-plan → 03-work → 04-review → 05-compound
       ↑              ↑         ↑          ↑           ↑
  brainstorm_dialog  plan_diff  task_splitter  review_router  pattern_extractor
                               parallel_subagent
@@ -198,7 +198,7 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
                               session_history
 ```
 
-`ce-help`、`ce-status`、`ce-next`、`ce-worktree` 可在任意阶段使用。
+`09-help`、`08-status`、`06-next`、`07-worktree` 可在任意阶段使用。
 
 ---
 
@@ -206,12 +206,12 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 
 | 建议 | 说明 |
 |------|------|
-| **每次从 ce-brainstorm 开始** | 即使需求很明确，也值得快速走一遍 |
-| **用 ce-status 检查进度** | 不确定做到哪了就用 ce-status |
-| **用 ce-next 找方向** | 不知道下一步就用 ce-next |
+| **每次从 01-brainstorm 开始** | 即使需求很明确，也值得快速走一遍 |
+| **用 08-status 检查进度** | 不确定做到哪了就用 08-status |
+| **用 06-next 找方向** | 不知道下一步就用 06-next |
 | **把 artifacts 纳入 git** | `docs/` 和 `.context/` 都应该 commit |
-| **大功能用 ce-worktree** | 隔离开发，不影响主分支 |
-| **执行中断不要慌** | 下次 ce-work 会自动从 checkpoint 恢复 |
+| **大功能用 03-worktree** | 隔离开发，不影响主分支 |
+| **执行中断不要慌** | 下次 03-work 会自动从 checkpoint 恢复 |
 | **失败后用 retry** | session_checkpoint 会根据错误类型推荐恢复策略 |
 
 ---
@@ -230,10 +230,10 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 ### 0.13.0
 
 - 合并 Superpowers 精华到 CE skills
-- `ce-brainstorm`: 加入设计检查清单、停止条件、用户审批门控
-- `ce-plan`: 加入严格 TDD 红线（RED→GREEN→REFACTOR）、TDD 违规拒绝标准
-- `ce-work`: 加入 TDD 执行纪律、结构化完成报告格式
-- `ce-review`: 加入审查纪律（技术评估而非表演性同意）、YAGNI 检查
+- `01-brainstorm`: 加入设计检查清单、停止条件、用户审批门控
+- `02-plan`: 加入严格 TDD 红线（RED→GREEN→REFACTOR）、TDD 违规拒绝标准
+- `03-work`: 加入 TDD 执行纪律、结构化完成报告格式
+- `04-review`: 加入审查纪律（技术评估而非表演性同意）、YAGNI 检查
 - 94 个测试通过
 
 ### 0.12.0
@@ -241,65 +241,65 @@ ce-brainstorm → ce-plan → ce-work → ce-review → ce-compound
 - 扩展 `session_checkpoint` 支持 `fail` 和 `retry` 操作，用于错误恢复
 - `fail` 记录失败上下文（失败单元、错误信息）
 - `retry` 根据错误类型返回恢复策略（timeout、permission、syntax、file-not-found）
-- 更新 `ce-work` 加入错误恢复工作流
+- 更新 `03-work` 加入错误恢复工作流
 - 94 个测试通过
 
 ### 0.11.0
 
 - 新增 `pattern_extractor` tool：从 artifacts 中提取重复模式并分类
-- 更新 `ce-compound` 使用 `pattern_extractor` 生成更智能的 solution
+- 更新 `05-compound` 使用 `pattern_extractor` 生成更智能的 solution
 - 92 个测试通过
 
 ### 0.10.0
 
 - 新增 `session_history` tool：记录、查询 CE skill 执行历史
-- 更新 `ce-status` 和 `ce-next` 利用 session history 提供更智能的建议
+- 更新 `08-status` 和 `06-next` 利用 session history 提供更智能的建议
 - 87 个测试通过
 
 ### 0.9.0
 
 - 新增 `plan_diff` tool：比较和补丁 plan units，支持增量更新
-- 更新 `ce-plan` 支持增量更新工作流
+- 更新 `02-plan` 支持增量更新工作流
 - 83 个测试通过
 
 ### 0.8.0
 
 - 新增 `brainstorm_dialog` tool：管理多轮 brainstorm 对话
-- 更新 `ce-brainstorm` 支持迭代细化工作流
+- 更新 `01-brainstorm` 支持迭代细化工作流
 - 79 个测试通过
 
 ### 0.7.0
 
 - 新增 `task_splitter` tool：基于 union-find 的文件级依赖分析
-- 更新 `ce-work` 使用 `task_splitter` 智能决定并行/串行执行
+- 更新 `03-work` 使用 `task_splitter` 智能决定并行/串行执行
 - 74 个测试通过
 
 ### 0.6.0
 
 - 新增 `session_checkpoint` tool：断点续传
-- 更新 `ce-work` 支持中断后自动恢复
+- 更新 `03-work` 支持中断后自动恢复
 - 68 个测试通过
 
 ### 0.5.0
 
 - 新增 `parallel_subagent` tool：并发执行独立任务
-- 更新 `ce-work` 推荐对独立单元使用并行执行
+- 更新 `03-work` 推荐对独立单元使用并行执行
 - 63 个测试通过
 
 ### 0.4.0
 
 - 新增 `review_router` tool：基于 diff 的 reviewer 路由
-- 更新 `ce-review` 加入 autofix 循环指导
+- 更新 `04-review` 加入 autofix 循环指导
 - 59 个测试通过
 
 ### 0.3.0
 
-- 新增 `worktree_manager` tool 和 `ce-worktree` skill
+- 新增 `worktree_manager` tool 和 `07-worktree` skill
 - 53 个测试通过
 
 ### 0.2.0
 
-- 新增 `workflow_state` tool 和 `ce-next` skill
+- 新增 `workflow_state` tool 和 `06-next` skill
 - 46 个测试通过
 
 ### 0.1.0–0.1.2

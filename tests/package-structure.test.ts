@@ -39,13 +39,13 @@ describe("package bootstrap structure", () => {
     const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8")
 
     expect(readme).toContain("pi install")
-    expect(readme).toContain("ce-brainstorm")
-    expect(readme).toContain("ce-plan")
-    expect(readme).toContain("ce-work")
-    expect(readme).toContain("ce-review")
-    expect(readme).toContain("ce-compound")
-    expect(readme).toContain("ce-help")
-    expect(readme).toContain("ce-status")
+    expect(readme).toContain("01-brainstorm")
+    expect(readme).toContain("02-plan")
+    expect(readme).toContain("03-work")
+    expect(readme).toContain("04-review")
+    expect(readme).toContain("05-compound")
+    expect(readme).toContain("09-help")
+    expect(readme).toContain("08-status")
   })
 
   test("package metadata is publish-ready", () => {

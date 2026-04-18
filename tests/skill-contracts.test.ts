@@ -5,15 +5,15 @@ import path from "node:path"
 const repoRoot = path.resolve(import.meta.dir, "..")
 
 const skillNames = [
-  "ce-brainstorm",
-  "ce-plan",
-  "ce-work",
-  "ce-review",
-  "ce-compound",
-  "ce-help",
-  "ce-status",
-  "ce-next",
-  "ce-worktree",
+  "01-brainstorm",
+  "02-plan",
+  "03-work",
+  "04-review",
+  "05-compound",
+  "06-next",
+  "07-worktree",
+  "08-status",
+  "09-help",
 ]
 
 describe("skill package contracts", () => {
@@ -50,19 +50,19 @@ describe("skill package contracts", () => {
     expect(existsSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"))).toBe(true)
   })
 
-  test("ce-help explains when to use each Phase 1 skill", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-help", "SKILL.md"), "utf8")
+  test("09-help explains when to use each Phase 1 skill", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "09-help", "SKILL.md"), "utf8")
 
-    expect(content).toContain("ce-brainstorm")
-    expect(content).toContain("ce-plan")
-    expect(content).toContain("ce-work")
-    expect(content).toContain("ce-review")
-    expect(content).toContain("ce-compound")
-    expect(content).toContain("ce-status")
+    expect(content).toContain("01-brainstorm")
+    expect(content).toContain("02-plan")
+    expect(content).toContain("03-work")
+    expect(content).toContain("04-review")
+    expect(content).toContain("05-compound")
+    expect(content).toContain("08-status")
   })
 
-  test("ce-status scans repo-local artifacts before recommending next steps", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-status", "SKILL.md"), "utf8")
+  test("08-status scans repo-local artifacts before recommending next steps", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "08-status", "SKILL.md"), "utf8")
 
     expect(content).toContain("workflow_state")
     expect(content).toContain("session_history")
@@ -74,14 +74,14 @@ describe("skill package contracts", () => {
     expect(content).toContain("workflow_state")
   })
 
-  test("ce-brainstorm writes requirements artifacts and hands off to ce-plan", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-brainstorm", "SKILL.md"), "utf8")
+  test("01-brainstorm writes requirements artifacts and hands off to 02-plan", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "01-brainstorm", "SKILL.md"), "utf8")
     const template = readFileSync(
-      path.join(repoRoot, "skills", "ce-brainstorm", "references", "requirements-template.md"),
+      path.join(repoRoot, "skills", "01-brainstorm", "references", "requirements-template.md"),
       "utf8",
     )
     const handoff = readFileSync(
-      path.join(repoRoot, "skills", "ce-brainstorm", "references", "handoff.md"),
+      path.join(repoRoot, "skills", "01-brainstorm", "references", "handoff.md"),
       "utf8",
     )
 
@@ -98,21 +98,21 @@ describe("skill package contracts", () => {
     expect(content).toContain("implementation details")
     expect(template).toContain("Requirements")
     expect(template).toContain("Success criteria")
-    expect(handoff).toContain("ce-plan")
+    expect(handoff).toContain("02-plan")
   })
 
-  test("ce-plan searches brainstorms and solutions, then writes implementation units", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-plan", "SKILL.md"), "utf8")
+  test("02-plan searches brainstorms and solutions, then writes implementation units", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "02-plan", "SKILL.md"), "utf8")
     const template = readFileSync(
-      path.join(repoRoot, "skills", "ce-plan", "references", "plan-template.md"),
+      path.join(repoRoot, "skills", "02-plan", "references", "plan-template.md"),
       "utf8",
     )
     const unitTemplate = readFileSync(
-      path.join(repoRoot, "skills", "ce-plan", "references", "implementation-unit-template.md"),
+      path.join(repoRoot, "skills", "02-plan", "references", "implementation-unit-template.md"),
       "utf8",
     )
     const handoff = readFileSync(
-      path.join(repoRoot, "skills", "ce-plan", "references", "handoff.md"),
+      path.join(repoRoot, "skills", "02-plan", "references", "handoff.md"),
       "utf8",
     )
 
@@ -131,25 +131,25 @@ describe("skill package contracts", () => {
     expect(unitTemplate).toContain("Test scenarios")
     expect(unitTemplate).toContain("Verification")
     expect(unitTemplate).toContain("Dependencies")
-    expect(handoff).toContain("ce-work")
+    expect(handoff).toContain("03-work")
   })
 
-  test("ce-compound writes structured solution artifacts and checks overlap", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-compound", "SKILL.md"), "utf8")
+  test("05-compound writes structured solution artifacts and checks overlap", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "05-compound", "SKILL.md"), "utf8")
     const schema = readFileSync(
-      path.join(repoRoot, "skills", "ce-compound", "references", "solution-schema.yaml"),
+      path.join(repoRoot, "skills", "05-compound", "references", "solution-schema.yaml"),
       "utf8",
     )
     const categoryMap = readFileSync(
-      path.join(repoRoot, "skills", "ce-compound", "references", "category-map.md"),
+      path.join(repoRoot, "skills", "05-compound", "references", "category-map.md"),
       "utf8",
     )
     const overlapRules = readFileSync(
-      path.join(repoRoot, "skills", "ce-compound", "references", "overlap-rules.md"),
+      path.join(repoRoot, "skills", "05-compound", "references", "overlap-rules.md"),
       "utf8",
     )
     const template = readFileSync(
-      path.join(repoRoot, "skills", "ce-compound", "assets", "solution-template.md"),
+      path.join(repoRoot, "skills", "05-compound", "assets", "solution-template.md"),
       "utf8",
     )
 
@@ -157,8 +157,8 @@ describe("skill package contracts", () => {
     expect(content).toContain("docs/solutions/")
     expect(content).toContain("schema")
     expect(content).toContain("overlap")
-    expect(content).toContain("ce-plan")
-    expect(content).toContain("ce-review")
+    expect(content).toContain("02-plan")
+    expect(content).toContain("04-review")
     expect(schema).toContain("category")
     expect(schema).toContain("problem_type")
     expect(categoryMap).toContain("workflow")
@@ -168,14 +168,14 @@ describe("skill package contracts", () => {
     expect(template).toContain("Solution")
   })
 
-  test("ce-work distinguishes plan-path execution from bare prompts and hands off to ce-review", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-work", "SKILL.md"), "utf8")
+  test("03-work distinguishes plan-path execution from bare prompts and hands off to 04-review", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "03-work", "SKILL.md"), "utf8")
     const progress = readFileSync(
-      path.join(repoRoot, "skills", "ce-work", "references", "progress-update-format.md"),
+      path.join(repoRoot, "skills", "03-work", "references", "progress-update-format.md"),
       "utf8",
     )
     const handoff = readFileSync(
-      path.join(repoRoot, "skills", "ce-work", "references", "handoff.md"),
+      path.join(repoRoot, "skills", "03-work", "references", "handoff.md"),
       "utf8",
     )
 
@@ -195,21 +195,21 @@ describe("skill package contracts", () => {
     expect(content).toContain("worktree")
     expect(progress).toContain("Completed")
     expect(progress).toContain("Verification")
-    expect(handoff).toContain("ce-review")
+    expect(handoff).toContain("04-review")
   })
 
-  test("ce-review detects scope, reads plans and solutions, uses review_router and autofix", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-review", "SKILL.md"), "utf8")
+  test("04-review detects scope, reads plans and solutions, uses review_router and autofix", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
     const findingsSchema = readFileSync(
-      path.join(repoRoot, "skills", "ce-review", "references", "findings-schema.md"),
+      path.join(repoRoot, "skills", "04-review", "references", "findings-schema.md"),
       "utf8",
     )
     const reviewerSelection = readFileSync(
-      path.join(repoRoot, "skills", "ce-review", "references", "reviewer-selection.md"),
+      path.join(repoRoot, "skills", "04-review", "references", "reviewer-selection.md"),
       "utf8",
     )
     const handoff = readFileSync(
-      path.join(repoRoot, "skills", "ce-review", "references", "handoff.md"),
+      path.join(repoRoot, "skills", "04-review", "references", "handoff.md"),
       "utf8",
     )
 
@@ -229,24 +229,24 @@ describe("skill package contracts", () => {
     expect(reviewerSelection).toContain("review_router")
     expect(reviewerSelection).toContain("correctness-reviewer")
     expect(reviewerSelection).toContain("security-reviewer")
-    expect(handoff).toContain("ce-compound")
+    expect(handoff).toContain("05-compound")
     expect(handoff).toContain("autofix")
   })
 
-  test("ce-next uses workflow_state to recommend the next skill", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-next", "SKILL.md"), "utf8")
+  test("06-next uses workflow_state to recommend the next skill", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "06-next", "SKILL.md"), "utf8")
     const recommendationLogic = readFileSync(
-      path.join(repoRoot, "skills", "ce-next", "references", "recommendation-logic.md"),
+      path.join(repoRoot, "skills", "06-next", "references", "recommendation-logic.md"),
       "utf8",
     )
 
     expect(content).toContain("workflow_state")
     expect(content).toContain("session_history")
-    expect(content).toContain("ce-brainstorm")
-    expect(content).toContain("ce-plan")
-    expect(content).toContain("ce-work")
-    expect(content).toContain("ce-review")
-    expect(content).toContain("ce-compound")
+    expect(content).toContain("01-brainstorm")
+    expect(content).toContain("02-plan")
+    expect(content).toContain("03-work")
+    expect(content).toContain("04-review")
+    expect(content).toContain("05-compound")
     expect(recommendationLogic).toContain("brainstorm")
     expect(recommendationLogic).toContain("plan")
     expect(recommendationLogic).toContain("work")
@@ -254,13 +254,13 @@ describe("skill package contracts", () => {
     expect(recommendationLogic).toContain("compound")
   })
 
-  test("ce-worktree manages git worktree lifecycle using worktree_manager", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "ce-worktree", "SKILL.md"), "utf8")
+  test("07-worktree manages git worktree lifecycle using worktree_manager", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "07-worktree", "SKILL.md"), "utf8")
 
     expect(content).toContain("worktree_manager")
     expect(content).toContain("create")
     expect(content).toContain("merge")
     expect(content).toContain("cleanup")
-    expect(content).toContain("ce-work")
+    expect(content).toContain("03-work")
   })
 })
