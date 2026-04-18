@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.5.0
+
+- Added `parallel_subagent` extension tool: run multiple independent skill-based tasks concurrently with `Promise.allSettled`
+- Graceful failure handling: reports which tasks succeeded and which failed
+- Updated `ce-work` to recommend parallel execution for independent implementation units
+- 63 tests passing
+
 ### 0.4.0
 
 - Added `review_router` extension tool: analyzes diff metadata (file types, change size, paths) and recommends reviewer personas

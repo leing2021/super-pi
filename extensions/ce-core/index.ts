@@ -6,6 +6,7 @@ import { createSubagentTool } from "./tools/subagent"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
+import { createParallelSubagentTool } from "./tools/parallel-subagent"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -62,6 +63,15 @@ const reviewRouterParams = Type.Object({
   deletions: Type.Number({ description: "Number of lines removed" }),
 })
 
+const parallelSubagentTaskSchema = Type.Object({
+  agent: Type.String({ description: "Skill name to invoke via /skill:<name>" }),
+  task: Type.String({ description: "Task text passed to the subagent" }),
+})
+
+const parallelSubagentParams = Type.Object({
+  tasks: Type.Array(parallelSubagentTaskSchema, { description: "Array of independent tasks to run concurrently" }),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -69,6 +79,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const workflowState = createWorkflowStateTool()
   const worktreeManager = createWorktreeManagerTool()
   const reviewRouter = createReviewRouterTool()
+  const parallelSubagent = createParallelSubagentTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -238,6 +249,35 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: parallelSubagent.name,
+    label: "Parallel Subagent",
+    description: "Run multiple skill-based subagent tasks concurrently.",
+    parameters: parallelSubagentParams,
+    async execute(_toolCallId, params, signal) {
+      const result = await parallelSubagent.execute(
+        { tasks: params.tasks },
+        async (prompt: string) => {
+          const execResult = await pi.exec("pi", ["--no-session", "-p", prompt], {
+            signal,
+            timeout: 10 * 60 * 1000,
+          })
+
+          if (execResult.code !== 0) {
+            throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
+          }
+
+          return (execResult.stdout || "").trim()
+        },
+      )
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -246,6 +286,7 @@ export { createSubagentTool } from "./tools/subagent"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
+export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

@@ -14,6 +14,7 @@ import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
+import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel-subagent"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -528,6 +529,90 @@ describe("review_router", () => {
   })
 })
 
+describe("parallel_subagent", () => {
+  test("runs multiple tasks concurrently and returns all outputs", async () => {
+    const calls: string[] = []
+    const tool = createParallelSubagentTool()
+
+    const result = await tool.execute(
+      {
+        tasks: [
+          { agent: "ce-brainstorm", task: "Scope feature A" },
+          { agent: "ce-brainstorm", task: "Scope feature B" },
+          { agent: "ce-plan", task: "Plan feature C" },
+        ],
+      },
+      async (prompt: string) => {
+        calls.push(prompt)
+        return `result-${calls.length}`
+      },
+    )
+
+    expect(result.outputs.length).toBe(3)
+    expect(result.outputs.map(o => o.status)).toEqual(["fulfilled", "fulfilled", "fulfilled"])
+    expect(result.outputs[0].value).toBe("result-1")
+    expect(result.outputs[1].value).toBe("result-2")
+    expect(result.outputs[2].value).toBe("result-3")
+  })
+
+  test("handles individual task failures gracefully", async () => {
+    const tool = createParallelSubagentTool()
+
+    const result = await tool.execute(
+      {
+        tasks: [
+          { agent: "ce-brainstorm", task: "Good task" },
+          { agent: "ce-plan", task: "Fail task" },
+          { agent: "ce-work", task: "Another good task" },
+        ],
+      },
+      async (prompt: string) => {
+        if (prompt.includes("Fail")) throw new Error("Task failed")
+        return "ok"
+      },
+    )
+
+    expect(result.outputs.length).toBe(3)
+    expect(result.outputs[0].status).toBe("fulfilled")
+    expect(result.outputs[0].value).toBe("ok")
+    expect(result.outputs[1].status).toBe("rejected")
+    expect(result.outputs[1].reason).toContain("Task failed")
+    expect(result.outputs[2].status).toBe("fulfilled")
+    expect(result.outputs[2].value).toBe("ok")
+  })
+
+  test("rejects empty task array", async () => {
+    const tool = createParallelSubagentTool()
+
+    await expect(
+      tool.execute({ tasks: [] }, async () => ""),
+    ).rejects.toThrow("at least one task")
+  })
+
+  test("returns results in the same order as input tasks", async () => {
+    const tool = createParallelSubagentTool()
+
+    const result = await tool.execute(
+      {
+        tasks: [
+          { agent: "ce-work", task: "Slow task" },
+          { agent: "ce-plan", task: "Fast task" },
+        ],
+      },
+      async (prompt: string) => {
+        if (prompt.includes("Slow")) {
+          await new Promise(r => setTimeout(r, 50))
+          return "slow-done"
+        }
+        return "fast-done"
+      },
+    )
+
+    expect(result.outputs[0].value).toBe("slow-done")
+    expect(result.outputs[1].value).toBe("fast-done")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -546,6 +631,7 @@ describe("ce-core extension runtime registration", () => {
       "workflow_state",
       "worktree_manager",
       "review_router",
+      "parallel_subagent",
     ])
   })
 })
@@ -562,6 +648,7 @@ describe("public exports", () => {
       "createWorkflowStateTool",
       "createWorktreeManagerTool",
       "createReviewRouterTool",
+      "createParallelSubagentTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",
