@@ -11,6 +11,7 @@ import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
+import { createSessionHistoryTool } from "./tools/session-history"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -129,6 +130,18 @@ const planDiffParams = Type.Object({
   changes: Type.Optional(Type.Array(planChangeSchema, { description: "Changes to apply for patch" })),
 })
 
+const sessionHistoryParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("record"),
+    Type.Literal("query"),
+    Type.Literal("latest"),
+  ], { description: "History operation" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  skill: Type.Optional(Type.String({ description: "Skill name to filter or record" })),
+  artifactPath: Type.Optional(Type.String({ description: "Artifact path" })),
+  summary: Type.Optional(Type.String({ description: "Execution summary" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -141,6 +154,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const taskSplitter = createTaskSplitterTool()
   const brainstormDialog = createBrainstormDialogTool()
   const planDiff = createPlanDiffTool()
+  const sessionHistory = createSessionHistoryTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -418,6 +432,27 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: sessionHistory.name,
+    label: "Session History",
+    description: "Record and query CE skill execution history.",
+    parameters: sessionHistoryParams,
+    async execute(_toolCallId, params) {
+      const result = await sessionHistory.execute({
+        operation: params.operation,
+        repoRoot: params.repoRoot,
+        skill: params.skill,
+        artifactPath: params.artifactPath,
+        summary: params.summary,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -431,6 +466,7 @@ export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export { createPlanDiffTool } from "./tools/plan-diff"
+export { createSessionHistoryTool } from "./tools/session-history"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

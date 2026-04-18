@@ -10,6 +10,7 @@ Use this skill when the user wants to know what to run next in the Compound Engi
 ## Core rules
 
 - Use the `workflow_state` tool to scan repo artifacts before making a recommendation.
+- Use the `session_history` tool to check recent executions and avoid recommending already-completed steps.
 - Recommend exactly **one** next skill with a clear reason.
 - Do not execute the recommended skill — only suggest it.
 - If the workflow state suggests multiple valid paths, pick the one closest to completing a full loop.

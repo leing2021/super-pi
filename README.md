@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.10.0
+
+- Added `session_history` extension tool: record, query, and list CE skill execution history
+- History persisted in `.context/compound-engineering/history/` as lightweight JSON files
+- Updated `ce-status` and `ce-next` to leverage session history for smarter recommendations
+- 93 tests passing
+
 ### 0.9.0
 
 - Added `plan_diff` extension tool: compare and patch plan units for incremental plan updates

@@ -19,6 +19,7 @@ import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session
 import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitter"
 import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainstorm-dialog"
 import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
+import { createSessionHistoryTool } from "../extensions/ce-core/tools/session-history"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -1021,6 +1022,119 @@ describe("plan_diff", () => {
   })
 })
 
+describe("session_history", () => {
+  const { _resetCounter } = require("../extensions/ce-core/tools/session-history")
+  _resetCounter()
+
+  test("record logs an execution and query returns it", async () => {
+    const repoRoot = `/tmp/pi-ce-sh-record-${Date.now()}`
+    const tool = createSessionHistoryTool()
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-brainstorm",
+      artifactPath: "docs/brainstorms/auth-requirements.md",
+      summary: "Discovered auth requirements",
+    })
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-plan",
+      artifactPath: "docs/plans/auth-plan.md",
+      summary: "Created auth implementation plan",
+    })
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-brainstorm",
+      artifactPath: "docs/brainstorms/payment-requirements.md",
+      summary: "Discovered payment requirements",
+    })
+
+    const result = await tool.execute({
+      operation: "query",
+      repoRoot,
+      skill: "ce-brainstorm",
+    })
+
+    expect(result.entries.length).toBe(2)
+    expect(result.entries.every((e: { skill: string }) => e.skill === "ce-brainstorm")).toBe(true)
+  })
+
+  test("latest returns most recent per skill", async () => {
+    const repoRoot = `/tmp/pi-ce-sh-latest-${Date.now()}`
+    const tool = createSessionHistoryTool()
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-work",
+      artifactPath: "docs/plans/auth-plan.md",
+      summary: "Executed unit 1",
+    })
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-work",
+      artifactPath: "docs/plans/auth-plan.md",
+      summary: "Executed unit 2",
+    })
+
+    const result = await tool.execute({
+      operation: "latest",
+      repoRoot,
+    })
+
+    expect(result.entries.length).toBe(1)
+    expect(result.entries[0].skill).toBe("ce-work")
+    expect(result.entries[0].summary).toBe("Executed unit 2")
+  })
+
+  test("query with no skill returns all entries", async () => {
+    const repoRoot = `/tmp/pi-ce-sh-all-${Date.now()}`
+    const tool = createSessionHistoryTool()
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-brainstorm",
+      artifactPath: "docs/brainstorms/a.md",
+      summary: "Brainstorm A",
+    })
+
+    await tool.execute({
+      operation: "record",
+      repoRoot,
+      skill: "ce-plan",
+      artifactPath: "docs/plans/b.md",
+      summary: "Plan B",
+    })
+
+    const result = await tool.execute({
+      operation: "query",
+      repoRoot,
+    })
+
+    expect(result.entries.length).toBe(2)
+  })
+
+  test("rejects unknown operations", async () => {
+    const tool = createSessionHistoryTool()
+
+    await expect(
+      tool.execute({
+        operation: "unknown",
+        repoRoot: "/tmp/test",
+        skill: "ce-work",
+      }),
+    ).rejects.toThrow("Unknown operation")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -1044,6 +1158,7 @@ describe("ce-core extension runtime registration", () => {
       "task_splitter",
       "brainstorm_dialog",
       "plan_diff",
+      "session_history",
     ])
   })
 })
@@ -1065,6 +1180,7 @@ describe("public exports", () => {
       "createTaskSplitterTool",
       "createBrainstormDialogTool",
       "createPlanDiffTool",
+      "createSessionHistoryTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

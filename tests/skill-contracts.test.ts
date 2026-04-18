@@ -64,6 +64,8 @@ describe("skill package contracts", () => {
   test("ce-status scans repo-local artifacts before recommending next steps", () => {
     const content = readFileSync(path.join(repoRoot, "skills", "ce-status", "SKILL.md"), "utf8")
 
+    expect(content).toContain("workflow_state")
+    expect(content).toContain("session_history")
     expect(content).toContain("docs/brainstorms")
     expect(content).toContain("docs/plans")
     expect(content).toContain("docs/solutions")
@@ -225,6 +227,7 @@ describe("skill package contracts", () => {
     )
 
     expect(content).toContain("workflow_state")
+    expect(content).toContain("session_history")
     expect(content).toContain("ce-brainstorm")
     expect(content).toContain("ce-plan")
     expect(content).toContain("ce-work")
