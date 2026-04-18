@@ -1,6 +1,6 @@
 ---
 name: 04-review
-description: Review code changes with structured findings using routed reviewer personas and optional autofix. Optionally extend to browser-based QA testing and regression test generation.
+description: "Review code with structured findings. Optional browser QA and regression tests."
 ---
 
 # Review

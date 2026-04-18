@@ -1,6 +1,6 @@
 ---
 name: 01-brainstorm
-description: Brainstorm feature requirements and produce a durable requirements artifact. Supports three modes: CE requirements discovery, Startup Diagnostic (YC-style forcing questions), and Builder Mode (design thinking for side projects).
+description: "Brainstorm requirements with three modes: CE discovery, Startup Diagnostic, Builder Mode."
 ---
 
 # Brainstorm

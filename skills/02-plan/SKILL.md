@@ -1,6 +1,6 @@
 ---
 name: 02-plan
-description: Turn requirements or a clear request into an implementation plan. Optionally run a CEO-style strategic review after the plan is ready.
+description: "Turn requirements into a plan. Optional CEO-style strategic review after."
 ---
 
 # Plan
