@@ -1,8 +1,6 @@
-# Pi Compound Engineering
+# Super Pi
 
-A Pi-native Compound Engineering package for iterative development workflows.
-
-**94 tests passing · 9 skills · 12 tools · CI/CD automated publishing**
+A Pi-native iterative development workflow package, integrating the best ideas from four outstanding open-source projects.
 
 [中文文档](README.md)
 
@@ -18,48 +16,77 @@ pi install npm:@leing2021/super-pi
 
 After installation, tell Pi what you want to build, then keep saying "continue" to walk through the full workflow.
 
-### Scenario A: Start a new feature from scratch
+### Scenario A: Starting a new idea
 
 ```
-You: I want to add user authentication to the project
+You: I want to build a tool that helps indie devs find users
 
 → /skill:01-brainstorm
-→ Multi-round dialog to clarify requirements (OAuth2? JWT? MFA?)
-→ Generates docs/brainstorms/2026-04-18-auth-requirements.md
+→ AI asks your goal → you pick "Building a startup"
+→ Enters Startup Diagnostic mode
+→ YC-style forcing questions one at a time: demand evidence? current alternatives? narrowest wedge?
+→ Challenges premises, generates 2-3 approaches
+→ Generates docs/brainstorms/2026-04-18-find-users-requirements.md
 → Recommends next step: 02-plan
 
 You: continue
 
 → /skill:02-plan
 → Reads requirements artifact
-→ task_splitter analyzes dependencies, splits into implementation units
-→ Generates docs/plans/2026-04-18-auth-plan.md
+→ Generates docs/plans/2026-04-18-find-users-plan.md
+→ Asks if you want CEO Review → you pick "CEO Review"
+→ Challenges plan premises, dream-state mapping, forces alternatives, temporal interrogation
 → Recommends next step: 03-work
 
 You: continue
 
 → /skill:03-work
-→ session_checkpoint loads checkpoint (empty on first run)
-→ task_splitter identifies which units can run in parallel
-→ parallel_subagent executes independent tasks concurrently
-→ session_checkpoint records each completed unit
+→ Parallel execution, checkpoint resume
 → Recommends next step: 04-review
 
 You: continue
 
 → /skill:04-review
-→ review_router recommends reviewer personas (security, performance...)
-→ Structured findings (autofixable issues are automatically fixed)
+→ Structured code review + autofix
+→ Asks if you want browser QA → you pick "Browser QA"
+→ Opens your app with agent-browser, tests page by page
+→ Fixes bugs found, screenshots as evidence
 → Recommends next step: 05-compound
 
 You: continue
 
 → /skill:05-compound
-→ pattern_extractor identifies reusable patterns from artifacts
-→ Writes docs/solutions/auth/oauth2-solution.md
+→ Extracts reusable patterns
+→ Writes to docs/solutions/ for lasting knowledge
 ```
 
-### Scenario B: Check project status anytime
+### Scenario B: Side Project / Hackathon
+
+```
+You: I want to make a fun music visualization side project
+
+→ /skill:01-brainstorm
+→ AI asks your goal → you pick "Side project / hackathon"
+→ Enters Builder Mode
+→ Asks: what's the coolest version? fastest path to something you can show?
+→ No business validation, focused on building the coolest thing
+→ If conversation shifts to revenue → auto-upgrades to Startup Diagnostic
+```
+
+### Scenario C: Adding a feature to an existing project
+
+```
+You: I want to add user authentication to the project
+
+→ /skill:01-brainstorm
+→ AI asks your goal → you pick "Adding a feature"
+→ Enters CE Brainstorm (classic requirements discovery)
+→ Multi-round dialog to clarify requirements (OAuth2? JWT? MFA?)
+→ Generates docs/brainstorms/2026-04-18-auth-requirements.md
+→ Recommends next step: 02-plan
+```
+
+### Scenario D: Check project status anytime
 
 ```
 You: /skill:08-status
@@ -69,17 +96,7 @@ You: /skill:08-status
 → Shows current progress + recommends next step
 ```
 
-### Scenario C: Don't know what to do next
-
-```
-You: /skill:06-next
-
-→ workflow_state scans artifacts
-→ session_history queries history
-→ Recommends the single best next skill + reason
-```
-
-### Scenario D: Requirements changed, update the plan
+### Scenario E: Requirements changed, update the plan
 
 ```
 You: Requirements changed, need to add SSO support
@@ -90,7 +107,7 @@ You: Requirements changed, need to add SSO support
 → No need to rewrite the entire plan
 ```
 
-### Scenario E: Resume after interruption
+### Scenario F: Resume after interruption
 
 ```
 You: /skill:03-work docs/plans/auth-plan.md
@@ -99,28 +116,14 @@ You: /skill:03-work docs/plans/auth-plan.md
 → Automatically skips completed parts, resumes from checkpoint
 ```
 
-### Scenario F: Isolated development
+### Scenario G: Isolated development
 
 ```
-You: /skill:03-worktree
+You: /skill:07-worktree
 
 → worktree_manager creates git worktree isolation
 → Execute 03-work within the worktree
 → Merge back to main branch when done
-```
-
-### Scenario G: Recover from execution failure
-
-```
-You: /skill:03-work docs/plans/auth-plan.md
-
-→ session_checkpoint.fail records failure context
-→ session_checkpoint.retry returns recovery strategy
-  - timeout → retry-with-longer-timeout
-  - permission → check-permissions-then-retry
-  - TypeError/SyntaxError → fix-code-then-retry
-  - file-not-found → verify-files-then-retry
-→ Follow strategy to fix and continue execution
 ```
 
 ---
@@ -129,19 +132,19 @@ You: /skill:03-work docs/plans/auth-plan.md
 
 | Skill | Command | Description | Associated Tools |
 |-------|---------|-------------|-----------------|
-| `09-help` | `/skill:09-help` | Usage guide | — |
-| `08-status` | `/skill:08-status` | Check project status | `workflow_state`, `session_history` |
-| `06-next` | `/skill:06-next` | Recommend next step | `workflow_state`, `session_history` |
-| `01-brainstorm` | `/skill:01-brainstorm` | Multi-round requirements discovery | `brainstorm_dialog` |
-| `02-plan` | `/skill:02-plan` | Create/update implementation plans | `plan_diff` |
+| `01-brainstorm` | `/skill:01-brainstorm` | Requirements discovery, three modes: CE / Startup Diagnostic / Builder | `brainstorm_dialog` |
+| `02-plan` | `/skill:02-plan` | Create/update plans, optional CEO Review | `plan_diff` |
 | `03-work` | `/skill:03-work` | Execute plans (parallel + checkpoint + recovery) | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
-| `04-review` | `/skill:04-review` | Structured code review | `review_router` |
+| `04-review` | `/skill:04-review` | Code review + optional browser QA | `review_router` |
 | `05-compound` | `/skill:05-compound` | Knowledge compounding | `pattern_extractor` |
-| `07-worktree` | `/skill:03-worktree` | Worktree isolated development | `worktree_manager` |
+| `06-next` | `/skill:06-next` | Recommend next step | `workflow_state`, `session_history` |
+| `07-worktree` | `/skill:07-worktree` | Worktree isolated development | `worktree_manager` |
+| `08-status` | `/skill:08-status` | Check project status | `workflow_state`, `session_history` |
+| `09-help` | `/skill:09-help` | Usage guide | — |
 
 ---
 
-## Tools (12)
+## Tools (13)
 
 | Tool | Description |
 |------|-------------|
@@ -161,9 +164,20 @@ You: /skill:03-work docs/plans/auth-plan.md
 
 ---
 
-## Generated File Structure
+## Core Workflow
 
-After usage, the following files are generated in your project:
+```
+01-brainstorm → 02-plan → 03-work → 04-review → 05-compound
+   Three modes      CEO Review    Parallel      Browser QA     Knowledge
+   (CE/Startup/     (optional)    Checkpoint    (optional)    compounding
+    Builder)                       Resume
+```
+
+`06-next`, `07-worktree`, `08-status`, `09-help` can be used at any stage.
+
+---
+
+## Generated File Structure
 
 ```
 your-project/
@@ -187,36 +201,88 @@ your-project/
 
 ---
 
-## Core Workflow
-
-```
-01-brainstorm → 02-plan → 03-work → 04-review → 05-compound
-      ↑              ↑         ↑          ↑           ↑
- brainstorm_dialog  plan_diff  task_splitter  review_router  pattern_extractor
-                              parallel_subagent
-                              session_checkpoint (save/fail/retry)
-                              session_history
-```
-
-`09-help`, `08-status`, `06-next`, `07-worktree` can be used at any stage.
-
----
-
 ## Best Practices
 
 | Tip | Description |
 |-----|-------------|
-| **Always start with 01-brainstorm** | Even if requirements seem clear, it's worth a quick pass |
+| **Start with 01-brainstorm** | New ideas → Startup/Builder Mode, features → CE Mode |
 | **Use 08-status to check progress** | Not sure where you are? Use 08-status |
 | **Use 06-next for direction** | Don't know the next step? Use 06-next |
 | **Commit artifacts to git** | Both `docs/` and `.context/` should be committed |
-| **Use 03-worktree for big features** | Isolated development without affecting main branch |
+| **Use 07-worktree for big features** | Isolated development without affecting main branch |
 | **Don't panic on interruption** | Next 03-work will auto-resume from checkpoint |
-| **Use retry after failure** | session_checkpoint recommends recovery strategy based on error type |
+| **Use CEO Review to stress-test plans** | After planning, pick CEO Review to challenge premises and find blind spots |
+| **Use Browser QA for acceptance** | After code review, pick Browser QA for real-app testing |
+
+---
+
+## Acknowledgments & Sources
+
+Super Pi integrates ideas and practices from four outstanding open-source projects. This is not a fork — it's a Pi-native reimplementation of their core insights.
+
+### [Compound Engineering](https://github.com/EveryInc/compound-engineering-plugin) — Every Inc.
+
+> "Each unit of engineering work should make subsequent units easier — not harder."
+
+The foundational workflow of Super Pi comes directly from Compound Engineering's core philosophy: the **brainstorm → plan → work → review → compound** cycle. The "80% planning and review, 20% execution" philosophy is the backbone of the entire package.
+
+**What we adopted:**
+- Five-step workflow architecture (brainstorm → plan → work → review → compound)
+- Knowledge compounding: every engineering cycle produces a reusable solution artifact
+- Artifact-driven state management (tracking progress through persistent docs under `docs/`)
+- Structured review methodology (reviewer persona routing, findings schema)
+
+### [Superpowers](https://github.com/obra/superpowers) — Jesse Vincent
+
+> "A complete software development methodology for your coding agents."
+
+Superpowers' main contribution to Super Pi is **engineering discipline**: strict TDD gates, design checklists, and the anti-performative-agreement principle in reviews.
+
+**What we adopted:**
+- Strict TDD gates (RED → GREEN → REFACTOR) with violation rejection criteria
+- Design checklist (what/why/boundaries/failure/verification)
+- Review discipline: technical evaluation over performative agreement, YAGNI checks
+- User approval gates: no advancing to the next step without explicit confirmation
+- Subagent-driven development patterns
+
+### [Everything Claude Code](https://github.com/affaan-m/everything-claude-code) — Affaan Mustafa
+
+> "The performance optimization system for AI agent harnesses. Not just configs — a complete system."
+
+With 140K+ stars, ECC demonstrated best practices for AI agent toolchains. Super Pi adopted its systematic approach to token optimization, continuous learning, parallelization, and subagent orchestration.
+
+**What we adopted:**
+- Session history management and continuous learning mechanisms
+- Parallel subagent orchestration patterns (`Promise.allSettled` style)
+- Checkpoint-based resume and error recovery strategies
+- Systematic tool design: each skill paired with a dedicated tool
+
+### [gstack](https://github.com/garrytan/gstack) — Garry Tan / Y Combinator
+
+> "One person's software factory. 23 specialist roles and 8 power tools."
+
+gstack is Y Combinator CEO Garry Tan's personal AI toolchain, representing the "AI-native founder" way of working. Super Pi integrated the methodology from three core gstack modules in v1.2.0.
+
+**What we adopted:**
+- **office-hours → 01-brainstorm Startup Diagnostic**: YC-style six forcing questions (demand evidence, status quo alternatives, narrowest wedge), anti-sycophancy rules, per-question pushback patterns
+- **plan-ceo-review → 02-plan CEO Review**: CEO cognitive frameworks (Bezos irreversible decisions, Munger inversion, Jobs subtraction), dream-state mapping, mandatory alternative generation, error maps and failure mode registries
+- **qa → 04-review Browser QA**: Browser-driven QA testing workflow (using Pi-native `agent-browser` instead of gstack's `$B`), health scoring system, diff-aware test scoping, fix loops and regression test generation
+
+**Design decisions:** gstack depends on its own infrastructure (`$B` browser binary, `gstack-*` scripts, `~/.gstack/` directory, telemetry). Super Pi replaces all of these with Pi-native tools — zero external infrastructure. All gstack capabilities are integrated as optional branch points within the existing flow; not selecting a new path = identical to the original behavior.
 
 ---
 
 ## Changelog
+
+### 1.2.0
+
+**Integrated three gstack modules**
+
+- `01-brainstorm`: Added Startup Diagnostic mode (YC-style six forcing questions) and Builder Mode (design thinking for side projects)
+- `02-plan`: Added CEO Review (premise challenge, dream-state mapping, mandatory alternatives) and Strict Review (error maps, failure modes, test diagrams)
+- `04-review`: Added Browser QA mode (agent-browser-driven testing, health scoring, fix loops, regression test generation)
+- `09-help`: Updated skill descriptions and workflow diagram
+- Added 5 reference files: `startup-diagnostic.md`, `builder-mode.md`, `premise-challenge.md`, `ceo-review-mode.md`, `qa-test-mode.md`
 
 ### 1.0.0
 
@@ -224,95 +290,71 @@ your-project/
 
 - 9 Skills, 12 Tools, 94 tests all passing
 - Complete brainstorm → plan → work → review → compound workflow
-- Merged Superpowers精华: strict TDD gates, design checklist, review discipline
+- Merged Superpowers insights: strict TDD gates, design checklist, review discipline
 - CI/CD auto-test + npm publish
 
 ### 0.13.0
 
-- Merged Superpowers skills精华 into CE
+- Merged Superpowers insights into CE skills
 - `01-brainstorm`: design checklist, stop conditions, user approval gate
 - `02-plan`: strict TDD gates (RED→GREEN→REFACTOR), TDD violation rejection
 - `03-work`: TDD execution discipline, structured completion report
 - `04-review`: review discipline (technical evaluation), YAGNI check
-- 94 tests passing
 
 ### 0.12.0
 
-- Extended `session_checkpoint` with `fail` and `retry` operations for error recovery
-- `fail` records error context (failed unit, error message) on a checkpoint
-- `retry` returns a retry strategy based on error type (timeout, permission, syntax, file-not-found)
-- Updated `03-work` with error recovery workflow
-- 94 tests passing
+- Extended `session_checkpoint` with `fail` and `retry` operations
 
 ### 0.11.0
 
-- Added `pattern_extractor` tool: extract recurring patterns from artifacts and categorize them
-- Updated `05-compound` to use `pattern_extractor` for smarter solution generation
-- 92 tests passing
+- Added `pattern_extractor` tool
 
 ### 0.10.0
 
-- Added `session_history` tool: record, query, and list CE skill execution history
-- Updated `08-status` and `06-next` to leverage session history
-- 87 tests passing
+- Added `session_history` tool
 
 ### 0.9.0
 
-- Added `plan_diff` tool: compare and patch plan units for incremental plan updates
-- Updated `02-plan` with incremental update workflow
-- 83 tests passing
+- Added `plan_diff` tool: incremental plan updates
 
 ### 0.8.0
 
-- Added `brainstorm_dialog` tool: manage multi-round brainstorm conversations
-- Updated `01-brainstorm` with iterative refinement workflow
-- 79 tests passing
+- Added `brainstorm_dialog` tool
 
 ### 0.7.0
 
-- Added `task_splitter` tool: file-based dependency analysis with union-find
-- Updated `03-work` to use `task_splitter` for parallel vs serial execution
-- 74 tests passing
+- Added `task_splitter` tool: union-find parallel grouping
 
 ### 0.6.0
 
-- Added `session_checkpoint` tool: resume-from-checkpoint behavior
-- Updated `03-work` for automatic resume on interrupted execution
-- 68 tests passing
+- Added `session_checkpoint` tool: resume-from-checkpoint
 
 ### 0.5.0
 
-- Added `parallel_subagent` tool: concurrent task execution
-- Updated `03-work` to recommend parallel execution for independent units
-- 63 tests passing
+- Added `parallel_subagent` tool
 
 ### 0.4.0
 
-- Added `review_router` tool: diff-based reviewer routing
-- Updated `04-review` with autofix loop guidance
-- 59 tests passing
+- Added `review_router` tool
 
 ### 0.3.0
 
 - Added `worktree_manager` tool and `07-worktree` skill
-- 53 tests passing
 
 ### 0.2.0
 
 - Added `workflow_state` tool and `06-next` skill
-- 46 tests passing
 
 ### 0.1.0–0.1.2
 
 - Initial release: 7 skills, 3 tools, CI/CD
-- 32–41 tests passing
 
 ---
 
 ## Repository
 
 - **GitHub**: https://github.com/leing2021/super-pi
-- **npm**: https://www.npmjs.com/package/super-pi
+- **npm**: https://www.npmjs.com/package/@leing2021/super-pi
 
 ## Development
 
