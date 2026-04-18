@@ -4,6 +4,8 @@
 
 **94 个测试通过 · 9 个 Skills · 12 个 Tools · CI/CD 自动发布**
 
+[English](README_EN.md)
+
 ## 安装
 
 ```bash
