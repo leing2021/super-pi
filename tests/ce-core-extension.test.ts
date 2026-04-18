@@ -17,6 +17,7 @@ import { createReviewRouterTool } from "../extensions/ce-core/tools/review-route
 import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel-subagent"
 import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session-checkpoint"
 import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitter"
+import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainstorm-dialog"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -823,6 +824,122 @@ describe("task_splitter", () => {
   })
 })
 
+describe("brainstorm_dialog", () => {
+  test("start creates a dialog with round 1", async () => {
+    const repoRoot = `/tmp/pi-ce-bd-start-${Date.now()}`
+    const tool = createBrainstormDialogTool()
+
+    const result = await tool.execute({
+      operation: "start",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Initial analysis: user authentication needed",
+      questions: ["What auth provider?", "MFA required?"],
+    })
+
+    expect(result.round).toBe(1)
+    expect(result.status).toBe("in_progress")
+    expect(result.analysis).toBe("Initial analysis: user authentication needed")
+    expect(result.openQuestions).toEqual(["What auth provider?", "MFA required?"])
+  })
+
+  test("refine increments round and incorporates responses", async () => {
+    const repoRoot = `/tmp/pi-ce-bd-refine-${Date.now()}`
+    const tool = createBrainstormDialogTool()
+
+    await tool.execute({
+      operation: "start",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Initial analysis",
+      questions: ["What auth provider?"],
+    })
+
+    const result = await tool.execute({
+      operation: "refine",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Refined analysis: OAuth2 with Google",
+      questions: ["Session timeout preference?"],
+      userResponses: ["Google OAuth2"],
+    })
+
+    expect(result.round).toBe(2)
+    expect(result.status).toBe("in_progress")
+    expect(result.analysis).toBe("Refined analysis: OAuth2 with Google")
+    expect(result.openQuestions).toEqual(["Session timeout preference?"])
+  })
+
+  test("summarize marks dialog as complete", async () => {
+    const repoRoot = `/tmp/pi-ce-bd-summarize-${Date.now()}`
+    const tool = createBrainstormDialogTool()
+
+    await tool.execute({
+      operation: "start",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Initial",
+      questions: ["Q1?"],
+    })
+
+    const result = await tool.execute({
+      operation: "summarize",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Final: OAuth2 with Google, 30min timeout",
+    })
+
+    expect(result.round).toBe(1)
+    expect(result.status).toBe("complete")
+    expect(result.analysis).toBe("Final: OAuth2 with Google, 30min timeout")
+    expect(result.openQuestions).toEqual([])
+  })
+
+  test("start on existing dialog returns current state", async () => {
+    const repoRoot = `/tmp/pi-ce-bd-restart-${Date.now()}`
+    const tool = createBrainstormDialogTool()
+
+    await tool.execute({
+      operation: "start",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Initial",
+      questions: ["Q1?"],
+    })
+
+    await tool.execute({
+      operation: "refine",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+      analysis: "Refined",
+      questions: ["Q2?"],
+      userResponses: ["A1"],
+    })
+
+    const result = await tool.execute({
+      operation: "start",
+      repoRoot,
+      artifactPath: "docs/brainstorms/2026-04-18-auth-requirements.md",
+    })
+
+    expect(result.round).toBe(2)
+    expect(result.status).toBe("in_progress")
+    expect(result.analysis).toBe("Refined")
+  })
+
+  test("rejects unknown operations", async () => {
+    const tool = createBrainstormDialogTool()
+
+    await expect(
+      tool.execute({
+        operation: "unknown",
+        repoRoot: "/tmp/test",
+        artifactPath: "docs/test.md",
+      }),
+    ).rejects.toThrow("Unknown operation")
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -844,6 +961,7 @@ describe("ce-core extension runtime registration", () => {
       "parallel_subagent",
       "session_checkpoint",
       "task_splitter",
+      "brainstorm_dialog",
     ])
   })
 })
@@ -863,6 +981,7 @@ describe("public exports", () => {
       "createParallelSubagentTool",
       "createSessionCheckpointTool",
       "createTaskSplitterTool",
+      "createBrainstormDialogTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

@@ -9,6 +9,7 @@ import { createReviewRouterTool } from "./tools/review-router"
 import { createParallelSubagentTool } from "./tools/parallel-subagent"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
+import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -94,6 +95,19 @@ const taskSplitterParams = Type.Object({
   units: Type.Array(splitterUnitSchema, { description: "Implementation units to analyze for dependencies" }),
 })
 
+const brainstormDialogParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("start"),
+    Type.Literal("refine"),
+    Type.Literal("summarize"),
+  ], { description: "Dialog operation" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  artifactPath: Type.String({ description: "Brainstorm artifact path" }),
+  analysis: Type.Optional(Type.String({ description: "Agent's current analysis" })),
+  questions: Type.Optional(Type.Array(Type.String(), { description: "Open questions for the user" })),
+  userResponses: Type.Optional(Type.Array(Type.String(), { description: "User's answers from previous round" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -104,6 +118,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const parallelSubagent = createParallelSubagentTool()
   const sessionCheckpoint = createSessionCheckpointTool()
   const taskSplitter = createTaskSplitterTool()
+  const brainstormDialog = createBrainstormDialogTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -339,6 +354,28 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  pi.registerTool({
+    name: brainstormDialog.name,
+    label: "Brainstorm Dialog",
+    description: "Manage multi-round brainstorm conversations with iterative refinement.",
+    parameters: brainstormDialogParams,
+    async execute(_toolCallId, params) {
+      const result = await brainstormDialog.execute({
+        operation: params.operation,
+        repoRoot: params.repoRoot,
+        artifactPath: params.artifactPath,
+        analysis: params.analysis,
+        questions: params.questions,
+        userResponses: params.userResponses,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
 }
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
@@ -350,6 +387,7 @@ export { createReviewRouterTool } from "./tools/review-router"
 export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export { createTaskSplitterTool } from "./tools/task-splitter"
+export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

@@ -61,6 +61,13 @@ It does not yet include richer review autofix flows, worktree orchestration, ses
 
 ## Changelog
 
+### 0.8.0
+
+- Added `brainstorm_dialog` extension tool: manage multi-round brainstorm conversations with start/refine/summarize operations
+- Updated `ce-brainstorm` SKILL.md with iterative refinement workflow using `brainstorm_dialog`
+- Dialog state persisted in `.context/compound-engineering/dialogs/`
+- 83 tests passing
+
 ### 0.7.0
 
 - Added `task_splitter` extension tool: file-based dependency analysis with union-find algorithm
