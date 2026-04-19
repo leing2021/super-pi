@@ -1282,6 +1282,12 @@ describe("ce-core extension runtime registration", () => {
       registerTool(definition: { name: string }) {
         registeredNames.push(definition.name)
       },
+      on(_event: string, _handler: any) {
+        // no-op for tests
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op for tests
+      },
     }
 
     ceCoreExtension(pi as never)
