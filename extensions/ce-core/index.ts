@@ -14,6 +14,8 @@ import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
 import { createPatternExtractorTool } from "./tools/pattern-extractor"
 import { filterBashOutput } from "./tools/bash-output-filter"
+import { filterReadOutput } from "./tools/read-output-filter"
+import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -543,6 +545,50 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       },
     }
   })
+
+  // Read output smart filter — reduces context waste from large file reads
+  pi.on("tool_result", async (event, _ctx) => {
+    if (event.toolName !== "read") return undefined
+
+    // Extract path from input
+    const path = (event.input as any)?.path ?? ""
+    if (!path) return undefined
+
+    // Extract text content from tool result
+    const textBlocks = (event.content as Array<any>)?.filter((b: any) => b.type === "text") ?? []
+    if (textBlocks.length === 0) return undefined
+
+    const output = textBlocks.map((b: any) => b.text).join("")
+    const isImage = (event.content as Array<any>)?.some((b: any) => b.type === "image") ?? false
+
+    const result = filterReadOutput({
+      path,
+      output,
+      isError: event.isError ?? false,
+      isImage,
+    })
+
+    if (!result.filtered) return undefined
+
+    return {
+      content: [{ type: "text", text: result.output }],
+      details: {
+        ...event.details,
+        readFilter: {
+          strategy: result.strategy,
+          originalBytes: result.originalBytes,
+          filteredBytes: result.filteredBytes,
+        },
+      },
+    }
+  })
+
+  // Compaction prompt optimizer — makes summaries more focused and useful
+  pi.on("session_before_compact", async (_event, _ctx) => {
+    return {
+      customInstructions: COMPACTION_FOCUS_INSTRUCTIONS,
+    }
+  })
 }
 
 
@@ -567,3 +613,5 @@ export {
 } from "./utils/artifact-paths"
 export { normalizeSlug } from "./utils/name-utils"
 export { filterBashOutput } from "./tools/bash-output-filter"
+export { filterReadOutput } from "./tools/read-output-filter"
+export { COMPACTION_FOCUS_INSTRUCTIONS, TURN_PREFIX_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
