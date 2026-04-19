@@ -13,6 +13,7 @@ import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
 import { createPatternExtractorTool } from "./tools/pattern-extractor"
+import { filterBashOutput } from "./tools/bash-output-filter"
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -504,6 +505,44 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
+
+  // Bash output smart filter — reduces context waste from verbose command output
+  pi.on("tool_result", async (event, _ctx) => {
+    if (event.toolName !== "bash") return undefined
+
+    // Extract command from input
+    const command = (event.input as any)?.command ?? ""
+    if (!command) return undefined
+
+    // Extract text content from tool result
+    const textBlocks = (event.content as Array<any>)?.filter((b: any) => b.type === "text") ?? []
+    if (textBlocks.length === 0) return undefined
+
+    const output = textBlocks.map((b: any) => b.text).join("")
+    const fullOutputPath = (event.details as any)?.fullOutputPath
+
+    const result = filterBashOutput({
+      command,
+      output,
+      isError: event.isError ?? false,
+      fullOutputPath,
+    })
+
+    if (!result.filtered) return undefined
+
+    // Replace content with filtered version
+    return {
+      content: [{ type: "text", text: result.output }],
+      details: {
+        ...event.details,
+        bashFilter: {
+          strategy: result.strategy,
+          originalBytes: result.originalBytes,
+          filteredBytes: result.filteredBytes,
+        },
+      },
+    }
+  })
 }
 
 
@@ -527,3 +566,4 @@ export {
   getRunArtifactPath,
 } from "./utils/artifact-paths"
 export { normalizeSlug } from "./utils/name-utils"
+export { filterBashOutput } from "./tools/bash-output-filter"
