@@ -10,7 +10,7 @@ Use this skill when requirements are ready to become an execution-ready plan.
 ## Core rules
 
 - Search `docs/brainstorms/` for a relevant requirements artifact first.
-- Search `docs/solutions/` for prior learnings before structuring the plan.
+- Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
 - Write the final plan to `docs/plans/`.
 - Break the work into implementation units instead of writing an execution script.
 - If a plan already exists, use **`plan_diff`** to compare existing units with new requirements and apply incremental changes instead of rewriting.
@@ -33,7 +33,7 @@ Every implementation unit must follow **RED, GREEN, REFACTOR**:
 ## Planning flow
 
 1. Read the most relevant brainstorm artifact from `docs/brainstorms/` when one exists.
-2. Search `docs/solutions/` for related learnings and fold them into the planning context.
+2. Execute the solution search strategy: extract keywords → grep frontmatter fields (tags, title) in `docs/solutions/` and `~/.pi/agent/docs/solutions/` → read frontmatter of candidates only → score and rank → fully read top 3.
 3. Gather repository context from the affected areas.
 4. If a plan already exists:
    a. Use `plan_diff` `compare` to identify added, removed, modified, and unchanged units.

@@ -122,8 +122,11 @@ describe("skill package contracts", () => {
     expect(content).toContain("REFACTOR")
     expect(content).toContain("TDD violation")
     expect(content).toContain("docs/brainstorms/")
-    expect(content).toContain("docs/solutions/")
     expect(content).toContain("docs/plans/")
+    // Must include grep-first solution search strategy
+    expect(content).toContain("grep -rl")
+    expect(content).toContain("~/.pi/agent/docs/solutions")
+    expect(content).toContain("frontmatter")
     expect(template).toContain("Implementation units")
     expect(unitTemplate).toContain("Goal")
     expect(unitTemplate).toContain("Files")
@@ -159,11 +162,19 @@ describe("skill package contracts", () => {
     expect(content).toContain("overlap")
     expect(content).toContain("02-plan")
     expect(content).toContain("04-review")
+    // Schema: 5-field frontmatter (title, category, severity, tags, applies_when)
+    expect(schema).toContain("title")
     expect(schema).toContain("category")
-    expect(schema).toContain("problem_type")
+    expect(schema).toContain("severity")
+    expect(schema).toContain("tags")
+    expect(schema).toContain("applies_when")
     expect(categoryMap).toContain("workflow")
     expect(overlapRules).toContain("High")
     expect(overlapRules).toContain("Moderate")
+    // Template must include YAML frontmatter block
+    expect(template).toContain("---")
+    expect(template).toContain("title:")
+    expect(template).toContain("category:")
     expect(template).toContain("Problem")
     expect(template).toContain("Solution")
   })
@@ -215,12 +226,15 @@ describe("skill package contracts", () => {
 
     expect(content).toContain("diff scope")
     expect(content).toContain("plan")
-    expect(content).toContain("docs/solutions/")
     expect(content).toContain("structured findings")
     expect(content).toContain("review_router")
     expect(content).toContain("autofix")
     expect(content).toContain("YAGNI")
     expect(content).toContain("technical evaluation")
+    // Must include grep-first solution search strategy
+    expect(content).toContain("grep -rl")
+    expect(content).toContain("~/.pi/agent/docs/solutions")
+    expect(content).toContain("frontmatter")
     expect(findingsSchema).toContain("severity")
     expect(findingsSchema).toContain("summary")
     expect(findingsSchema).toContain("evidence")
@@ -262,5 +276,19 @@ describe("skill package contracts", () => {
     expect(content).toContain("merge")
     expect(content).toContain("cleanup")
     expect(content).toContain("03-work")
+  })
+
+  test("05-compound solution-search-strategy defines grep-first retrieval steps", () => {
+    const strategy = readFileSync(
+      path.join(repoRoot, "skills", "05-compound", "references", "solution-search-strategy.md"),
+      "utf8",
+    )
+
+    expect(strategy).toContain("grep")
+    expect(strategy).toContain("frontmatter")
+    expect(strategy).toContain("severity")
+    expect(strategy).toContain("tags")
+    // Must define two-level search: project-level + global-level
+    expect(strategy).toContain("~/.pi/agent/docs/solutions")
   })
 })

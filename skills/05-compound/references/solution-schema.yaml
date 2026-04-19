@@ -1,19 +1,27 @@
 required:
   - title
   - category
-  - problem_type
-  - summary
-  - created_at
+  - severity
+  - tags
+  - applies_when
 properties:
   title:
     type: string
+    description: Human-readable title for the solution
   category:
     type: string
-  problem_type:
+    description: Subdirectory name (tooling, integration, workflow, testing, architecture)
+  severity:
     type: string
-  summary:
-    type: string
-  created_at:
-    type: string
-  related_paths:
+    enum: [critical, high, medium, low]
+    description: Priority for retrieval ranking
+  tags:
     type: array
+    items:
+      type: string
+    description: Keywords for grep-based search matching
+  applies_when:
+    type: array
+    items:
+      type: string
+    description: Conditions where this solution is relevant

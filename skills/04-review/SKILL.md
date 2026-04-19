@@ -12,7 +12,7 @@ Use this skill after implementation to review changes against the diff, the rele
 - Determine the **diff scope** before selecting reviewers.
 - Use the **`review_router`** tool to automatically select reviewer personas based on diff metadata.
 - Read the relevant **plan** artifact when one exists.
-- Search `docs/solutions/` for related prior failures or practices.
+- Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
 - Produce **structured findings** using `references/findings-schema.md`.
 - When findings are **autofixable**, apply fixes and re-review (max 3 iterations).
 - End with a handoff that can point toward fixes, re-review, or `05-compound`.
@@ -40,7 +40,7 @@ When processing review findings:
 1. Determine diff scope from the current branch or explicit review target.
 2. Collect diff stats (files changed, insertions, deletions) and call `review_router`.
 3. Read the matching plan artifact when one exists.
-4. Search `docs/solutions/` for related learnings.
+4. Execute the solution search strategy: extract keywords → grep frontmatter fields (tags, title) in `docs/solutions/` and `~/.pi/agent/docs/solutions/` → read frontmatter of candidates only → score and rank → fully read top 3.
 5. Apply each reviewer persona returned by `review_router`.
 6. Merge the results into structured findings.
 7. Verify each finding against the codebase before acting.

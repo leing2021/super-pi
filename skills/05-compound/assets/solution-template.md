@@ -1,3 +1,11 @@
+---
+title:
+category:
+severity: medium
+tags: []
+applies_when: []
+---
+
 # Problem
 
 Describe the solved problem or reusable learning.
