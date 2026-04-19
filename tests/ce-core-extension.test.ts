@@ -1335,6 +1335,9 @@ describe("public exports", () => {
       "getRunArtifactPath",
       "normalizeSlug",
       "filterBashOutput",
+      "filterReadOutput",
+      "COMPACTION_FOCUS_INSTRUCTIONS",
+      "TURN_PREFIX_FOCUS_INSTRUCTIONS",
     ]
 
     expect(exportNames.sort()).toEqual(expectedExports.sort())
