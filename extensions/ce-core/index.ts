@@ -1,7 +1,5 @@
-import type { AssistantMessage } from "@mariozechner/pi-ai"
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
 import { Type } from "@sinclair/typebox"
-import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
 import { createSubagentTool } from "./tools/subagent"
@@ -170,36 +168,6 @@ const patternExtractorParams = Type.Object({
   patterns: Type.Optional(Type.Array(patternSchema, { description: "Patterns to categorize" })),
   categories: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()), { description: "Category name to keyword mapping" })),
 })
-
-// Session-scoped stats for custom footer
-let statsEnabled = false
-const toolCounts = new Map<string, number>()
-let subagentCount = 0
-let projectPath = ""
-let footerTui: any = null
-
-function renderStatsFooter(ctx: any, tui: any, theme: any, footerData: any, width: number): string[] {
-  const shortPath = projectPath
-    .replace(/^\/Users\/[^/]+/, "~")
-    .split("/")
-    .slice(-2)
-    .join("/")
-
-  const sorted = [...toolCounts.entries()].sort((a, b) => b[1] - a[1])
-  const total = sorted.reduce((sum, e) => sum + e[1], 0)
-  const top3 = sorted.slice(0, 3).map(([name, count]) => `${name}:${count}`).join(" ")
-  const toolsStr = total > 0 ? `tools(${total}) ${top3}` : ""
-  const subStr = subagentCount > 0 ? `sub:${subagentCount}` : ""
-  const branch = footerData.getGitBranch()
-  const branchStr = branch ? ` (${branch})` : ""
-
-  const left = theme.fg("dim", `${shortPath}${branchStr}`)
-  const rightParts = [subStr, toolsStr].filter(Boolean)
-  const right = rightParts.length > 0 ? theme.fg("dim", rightParts.join(" │ ")) : ""
-
-  const pad = " ".repeat(Math.max(1, width - visibleWidth(left) - visibleWidth(right)))
-  return [truncateToWidth(left + pad + right, width)]
-}
 
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
@@ -536,68 +504,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
   })
-
-  // Track tool calls for stats footer
-  pi.on("tool_call", async (event, _ctx) => {
-    if (!statsEnabled) return
-    const name = event.toolName
-    toolCounts.set(name, (toolCounts.get(name) || 0) + 1)
-    if (name === "subagent" || name === "parallel_subagent") {
-      subagentCount++
-    }
-    if (footerTui) footerTui.requestRender()
-  })
-
-  // Enable custom footer on session start
-  pi.on("session_start", async (_event, ctx) => {
-    projectPath = process.cwd()
-    statsEnabled = true
-    toolCounts.clear()
-    subagentCount = 0
-    ctx.ui.setFooter((tui, theme, footerData) => {
-      footerTui = tui
-      const unsub = footerData.onBranchChange(() => tui.requestRender())
-      return {
-        dispose: () => {
-          unsub()
-          footerTui = null
-        },
-        invalidate() {},
-        render(width: number): string[] {
-          return renderStatsFooter(ctx, tui, theme, footerData, width)
-        },
-      }
-    })
-  })
-
-  // /stats command to toggle footer
-  pi.registerCommand("stats", {
-    description: "Toggle stats footer (project path, tool usage, subagent count)",
-    handler: async (_args, ctx) => {
-      statsEnabled = !statsEnabled
-      if (statsEnabled) {
-        ctx.ui.setFooter((tui, theme, footerData) => {
-          footerTui = tui
-          const unsub = footerData.onBranchChange(() => tui.requestRender())
-          return {
-            dispose: () => {
-              unsub()
-              footerTui = null
-            },
-            invalidate() {},
-            render(width: number): string[] {
-              return renderStatsFooter(ctx, tui, theme, footerData, width)
-            },
-          }
-        })
-        ctx.ui.notify("Stats footer enabled", "info")
-      } else {
-        ctx.ui.setFooter(undefined)
-        ctx.ui.notify("Default footer restored", "info")
-      }
-    },
-  })
 }
+
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
