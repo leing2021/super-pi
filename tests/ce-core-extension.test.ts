@@ -22,6 +22,11 @@ import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
 import { createSessionHistoryTool } from "../extensions/ce-core/tools/session-history"
 import { createPatternExtractorTool } from "../extensions/ce-core/tools/pattern-extractor"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
+import {
+  checkSubagentDepth,
+  getChildDepthEnv,
+  DEFAULT_MAX_SUBAGENT_DEPTH,
+} from "../extensions/ce-core/tools/subagent-depth-guard"
 
 describe("artifact paths", () => {
   const repoRoot = "/tmp/pi-ce-repo"
@@ -616,6 +621,260 @@ describe("parallel_subagent", () => {
 
     expect(result.outputs[0].value).toBe("slow-done")
     expect(result.outputs[1].value).toBe("fast-done")
+  })
+})
+
+describe("subagent_depth_guard", () => {
+  const originalDepth = process.env.PI_SUBAGENT_DEPTH
+  const originalMax = process.env.PI_SUBAGENT_MAX_DEPTH
+
+  const cleanup = () => {
+    if (originalDepth === undefined) {
+      delete process.env.PI_SUBAGENT_DEPTH
+    } else {
+      process.env.PI_SUBAGENT_DEPTH = originalDepth
+    }
+    if (originalMax === undefined) {
+      delete process.env.PI_SUBAGENT_MAX_DEPTH
+    } else {
+      process.env.PI_SUBAGENT_MAX_DEPTH = originalMax
+    }
+  }
+
+  test("defaults to depth=0, max=2 when env vars unset", () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(true)
+    expect(result.depth).toBe(0)
+    expect(result.max).toBe(DEFAULT_MAX_SUBAGENT_DEPTH)
+
+    cleanup()
+  })
+
+  test("allows execution at depth < max", () => {
+    process.env.PI_SUBAGENT_DEPTH = "1"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "3"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(true)
+    expect(result.depth).toBe(1)
+    expect(result.max).toBe(3)
+
+    cleanup()
+  })
+
+  test("blocks execution at depth >= max", () => {
+    process.env.PI_SUBAGENT_DEPTH = "2"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(false)
+    expect(result.reason).toContain("depth limit reached")
+
+    cleanup()
+  })
+
+  test("blocks execution at depth > max", () => {
+    process.env.PI_SUBAGENT_DEPTH = "5"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(false)
+
+    cleanup()
+  })
+
+  test("depth=0, max=0 disables subagent entirely", () => {
+    process.env.PI_SUBAGENT_DEPTH = "0"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "0"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(false)
+    expect(result.reason).toContain("depth limit reached")
+
+    cleanup()
+  })
+
+  test("handles invalid depth as 0", () => {
+    process.env.PI_SUBAGENT_DEPTH = "not-a-number"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(true)
+    expect(result.depth).toBe(0)
+
+    cleanup()
+  })
+
+  test("handles invalid max as default", () => {
+    process.env.PI_SUBAGENT_DEPTH = "0"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "not-a-number"
+
+    const result = checkSubagentDepth()
+    expect(result.allowed).toBe(true)
+    expect(result.max).toBe(DEFAULT_MAX_SUBAGENT_DEPTH)
+
+    cleanup()
+  })
+
+  test("getChildDepthEnv increments depth and preserves max", () => {
+    process.env.PI_SUBAGENT_DEPTH = "1"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "3"
+
+    const env = getChildDepthEnv()
+    expect(env.PI_SUBAGENT_DEPTH).toBe("2")
+    expect(env.PI_SUBAGENT_MAX_DEPTH).toBe("3")
+
+    cleanup()
+  })
+
+  test("getChildDepthEnv accepts custom maxDepth override", () => {
+    process.env.PI_SUBAGENT_DEPTH = "0"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const env = getChildDepthEnv({ maxDepth: 1 })
+    expect(env.PI_SUBAGENT_DEPTH).toBe("1")
+    expect(env.PI_SUBAGENT_MAX_DEPTH).toBe("1")
+
+    cleanup()
+  })
+
+  test("subagent tool blocks execution when depth exceeded", async () => {
+    process.env.PI_SUBAGENT_DEPTH = "2"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const tool = createSubagentTool()
+    await expect(
+      tool.execute(
+        { agent: "ce-plan", task: "test" },
+        async () => "ok",
+      ),
+    ).rejects.toThrow("depth limit reached")
+
+    cleanup()
+  })
+
+  test("parallel_subagent tool blocks execution when depth exceeded", async () => {
+    process.env.PI_SUBAGENT_DEPTH = "2"
+    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
+
+    const tool = createParallelSubagentTool()
+    await expect(
+      tool.execute(
+        { tasks: [{ agent: "ce-plan", task: "test" }] },
+        async () => "ok",
+      ),
+    ).rejects.toThrow("depth limit reached")
+
+    cleanup()
+  })
+
+  test("subagent tool passes execOptions with depth env", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
+    const tool = createSubagentTool()
+
+    await tool.execute(
+      { agent: "ce-plan", task: "test" },
+      async (_prompt, options) => {
+        capturedOptions.push(options ?? {})
+        return "ok"
+      },
+    )
+
+    expect(capturedOptions.length).toBe(1)
+    expect(capturedOptions[0].extraEnv?.PI_SUBAGENT_DEPTH).toBe("1")
+    expect(capturedOptions[0].extraEnv?.PI_SUBAGENT_MAX_DEPTH).toBe(String(DEFAULT_MAX_SUBAGENT_DEPTH))
+
+    cleanup()
+  })
+
+  test("subagent with inheritSkills=false passes --no-skills", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
+    const tool = createSubagentTool()
+
+    await tool.execute(
+      { agent: "ce-plan", task: "test", inheritSkills: false },
+      async (_prompt, options) => {
+        capturedOptions.push(options ?? {})
+        return "ok"
+      },
+    )
+
+    expect(capturedOptions.length).toBe(1)
+    expect(capturedOptions[0].extraFlags).toContain("--no-skills")
+
+    cleanup()
+  })
+
+  test("subagent with inheritSkills=true does not pass --no-skills", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
+    const tool = createSubagentTool()
+
+    await tool.execute(
+      { agent: "ce-plan", task: "test", inheritSkills: true },
+      async (_prompt, options) => {
+        capturedOptions.push(options ?? {})
+        return "ok"
+      },
+    )
+
+    expect(capturedOptions.length).toBe(1)
+    expect(capturedOptions[0].extraFlags).toBeUndefined()
+
+    cleanup()
+  })
+
+  test("parallel_subagent defaults to inheritSkills=false (no skills)", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
+    const tool = createParallelSubagentTool()
+
+    await tool.execute(
+      { tasks: [{ agent: "ce-plan", task: "test" }] },
+      async (_prompt, options) => {
+        capturedOptions.push(options ?? {})
+        return "ok"
+      },
+    )
+
+    expect(capturedOptions.length).toBe(1)
+    expect(capturedOptions[0].extraFlags).toContain("--no-skills")
+
+    cleanup()
+  })
+
+  test("parallel_subagent with inheritSkills=true keeps skills", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
+    const tool = createParallelSubagentTool()
+
+    await tool.execute(
+      { tasks: [{ agent: "ce-plan", task: "test" }], inheritSkills: true },
+      async (_prompt, options) => {
+        capturedOptions.push(options ?? {})
+        return "ok"
+      },
+    )
+
+    expect(capturedOptions.length).toBe(1)
+    expect(capturedOptions[0].extraFlags).toBeUndefined()
+
+    cleanup()
   })
 })
 
@@ -1275,6 +1534,161 @@ describe("pattern_extractor", () => {
   })
 })
 
+describe("async_mutex", () => {
+  test("serializes concurrent access", async () => {
+    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
+    const mutex = new AsyncMutex()
+    const order: string[] = []
+
+    const task = async (label: string, delay: number) => {
+      const release = await mutex.acquire()
+      order.push(`${label}-start`)
+      await new Promise(r => setTimeout(r, delay))
+      order.push(`${label}-end`)
+      release()
+    }
+
+    await Promise.all([task("A", 20), task("B", 10), task("C", 5)])
+
+    // Each task must complete before the next starts
+    expect(order).toEqual([
+      "A-start", "A-end",
+      "B-start", "B-end",
+      "C-start", "C-end",
+    ])
+  })
+
+  test("releases on error", async () => {
+    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
+    const mutex = new AsyncMutex()
+
+    const failing = async () => {
+      const release = await mutex.acquire()
+      try {
+        throw new Error("boom")
+      } finally {
+        release()
+      }
+    }
+
+    await expect(failing()).rejects.toThrow("boom")
+
+    // Should still be able to acquire
+    const release = await mutex.acquire()
+    release()
+  })
+})
+
+describe("parallel_subagent env isolation", () => {
+  const originalDepth = process.env.PI_SUBAGENT_DEPTH
+  const originalMax = process.env.PI_SUBAGENT_MAX_DEPTH
+
+  const cleanup = () => {
+    if (originalDepth === undefined) {
+      delete process.env.PI_SUBAGENT_DEPTH
+    } else {
+      process.env.PI_SUBAGENT_DEPTH = originalDepth
+    }
+    if (originalMax === undefined) {
+      delete process.env.PI_SUBAGENT_MAX_DEPTH
+    } else {
+      process.env.PI_SUBAGENT_MAX_DEPTH = originalMax
+    }
+  }
+
+  test("env is clean after parallel execution", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    // Simulate the env-save/set/exec/restore pattern with a mutex
+    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
+    const mutex = new AsyncMutex()
+
+    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
+      const extraEnv = options?.extraEnv ?? {}
+      const release = await mutex.acquire()
+      const saved: Record<string, string | undefined> = {}
+      for (const [key, value] of Object.entries(extraEnv)) {
+        saved[key] = process.env[key]
+        process.env[key] = value
+      }
+      try {
+        await new Promise(r => setTimeout(r, Math.random() * 10))
+        return "ok"
+      } finally {
+        for (const [key, oldValue] of Object.entries(saved)) {
+          if (oldValue === undefined) {
+            delete process.env[key]
+          } else {
+            process.env[key] = oldValue
+          }
+        }
+        release()
+      }
+    }
+
+    const tool = createParallelSubagentTool()
+    await tool.execute(
+      { tasks: [
+        { agent: "a", task: "t1" },
+        { agent: "b", task: "t2" },
+        { agent: "c", task: "t3" },
+      ]},
+      simulateRunner,
+    )
+
+    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
+    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
+
+    cleanup()
+  })
+
+  test("env is clean after serial chain execution", async () => {
+    delete process.env.PI_SUBAGENT_DEPTH
+    delete process.env.PI_SUBAGENT_MAX_DEPTH
+
+    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
+    const mutex = new AsyncMutex()
+
+    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
+      const extraEnv = options?.extraEnv ?? {}
+      const release = await mutex.acquire()
+      const saved: Record<string, string | undefined> = {}
+      for (const [key, value] of Object.entries(extraEnv)) {
+        saved[key] = process.env[key]
+        process.env[key] = value
+      }
+      try {
+        await new Promise(r => setTimeout(r, 5))
+        return "ok"
+      } finally {
+        for (const [key, oldValue] of Object.entries(saved)) {
+          if (oldValue === undefined) {
+            delete process.env[key]
+          } else {
+            process.env[key] = oldValue
+          }
+        }
+        release()
+      }
+    }
+
+    const tool = createSubagentTool()
+    await tool.execute(
+      { chain: [
+        { agent: "a", task: "t1" },
+        { agent: "b", task: "t2" },
+      ]},
+      simulateRunner,
+    )
+
+    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
+    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
+
+    cleanup()
+  })
+})
+
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
@@ -1338,6 +1752,10 @@ describe("public exports", () => {
       "filterReadOutput",
       "COMPACTION_FOCUS_INSTRUCTIONS",
       "TURN_PREFIX_FOCUS_INSTRUCTIONS",
+      "checkSubagentDepth",
+      "getChildDepthEnv",
+      "DEFAULT_MAX_SUBAGENT_DEPTH",
+      "AsyncMutex",
     ]
 
     expect(exportNames.sort()).toEqual(expectedExports.sort())

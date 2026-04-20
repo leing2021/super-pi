@@ -16,6 +16,51 @@ import { createPatternExtractorTool } from "./tools/pattern-extractor"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
+import { AsyncMutex } from "./tools/async-mutex"
+import type { SubagentExecOptions, SubagentRunner } from "./tools/subagent"
+
+const _subagentEnvMutex = new AsyncMutex()
+
+/**
+ * Create a subagent runner that handles env injection with mutex protection
+ * for concurrency safety when multiple parallel subagents share the process.
+ */
+function createSubagentRunner(
+  pi: ExtensionAPI,
+  signal?: AbortSignal,
+): SubagentRunner {
+  return async (prompt: string, options?: SubagentExecOptions) => {
+    const args = ["--no-session", ...(options?.extraFlags ?? []), "-p", prompt]
+    const release = await _subagentEnvMutex.acquire()
+    const savedEnv: Record<string, string | undefined> = {}
+    const extraEnv = options?.extraEnv ?? {}
+    for (const [key, value] of Object.entries(extraEnv)) {
+      savedEnv[key] = process.env[key]
+      process.env[key] = value
+    }
+    try {
+      const execResult = await pi.exec("pi", args, {
+        signal,
+        timeout: 10 * 60 * 1000,
+      })
+
+      if (execResult.code !== 0) {
+        throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
+      }
+
+      return (execResult.stdout || "").trim()
+    } finally {
+      for (const [key, oldValue] of Object.entries(savedEnv)) {
+        if (oldValue === undefined) {
+          delete process.env[key]
+        } else {
+          process.env[key] = oldValue
+        }
+      }
+      release()
+    }
+  }
+}
 
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
@@ -48,6 +93,7 @@ const subagentParams = Type.Object({
   agent: Type.Optional(Type.String({ description: "Single subagent skill name" })),
   task: Type.Optional(Type.String({ description: "Single subagent task" })),
   chain: Type.Optional(Type.Array(subagentTaskSchema, { description: "Serial subagent chain with optional {previous} placeholder" })),
+  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether the subagent should inherit skills. Default: true" })),
 })
 
 const workflowStateParams = Type.Object({
@@ -79,6 +125,7 @@ const parallelSubagentTaskSchema = Type.Object({
 
 const parallelSubagentParams = Type.Object({
   tasks: Type.Array(parallelSubagentTaskSchema, { description: "Array of independent tasks to run concurrently" }),
+  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: false" })),
 })
 
 const sessionCheckpointParams = Type.Object({
@@ -263,19 +310,9 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           agent: params.agent,
           task: params.task,
           chain: params.chain,
+          inheritSkills: params.inheritSkills,
         },
-        async (prompt: string) => {
-          const execResult = await pi.exec("pi", ["--no-session", "-p", prompt], {
-            signal,
-            timeout: 10 * 60 * 1000,
-          })
-
-          if (execResult.code !== 0) {
-            throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
-          }
-
-          return (execResult.stdout || "").trim()
-        },
+        createSubagentRunner(pi, signal),
       )
 
       return {
@@ -363,19 +400,11 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     parameters: parallelSubagentParams,
     async execute(_toolCallId, params, signal) {
       const result = await parallelSubagent.execute(
-        { tasks: params.tasks },
-        async (prompt: string) => {
-          const execResult = await pi.exec("pi", ["--no-session", "-p", prompt], {
-            signal,
-            timeout: 10 * 60 * 1000,
-          })
-
-          if (execResult.code !== 0) {
-            throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
-          }
-
-          return (execResult.stdout || "").trim()
+        {
+          tasks: params.tasks,
+          inheritSkills: params.inheritSkills,
         },
+        createSubagentRunner(pi, signal),
       )
 
       return {
@@ -595,6 +624,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
 export { createSubagentTool } from "./tools/subagent"
+export { checkSubagentDepth, getChildDepthEnv, DEFAULT_MAX_SUBAGENT_DEPTH } from "./tools/subagent-depth-guard"
+export { AsyncMutex } from "./tools/async-mutex"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
