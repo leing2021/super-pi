@@ -99,14 +99,14 @@ Super Pi 的解法：
 | `08-status` | 扫描 artifact，报告进度 | `workflow_state`, `session_history` |
 | `09-help` | 使用指南 | — |
 
-### 13 个 Tools（底层能力）
+### 15 个 Tools（底层能力）
 
 | Tool | 干什么 |
 |------|--------|
 | `task_splitter` | Union-Find 算法分析文件依赖，自动分组并行安全的 unit |
 | `session_checkpoint` | JSON 持久化断点，支持 save/load/fail/retry 五种操作 |
 | `plan_diff` | 增量计划：compare 检测差异，patch 打补丁 |
-| `parallel_subagent` | `Promise.allSettled` 风格并行 subagent |
+| `parallel_subagent` | `Promise.allSettled` 风格并行 subagent，支持上下文裁剪 |
 | `review_router` | 根据 diff 元数据自动分配 reviewer 角色 |
 | `pattern_extractor` | 从 artifact 中提取和分类模式 |
 | `brainstorm_dialog` | 多轮对话状态机（start → refine × N → summarize） |
@@ -115,13 +115,15 @@ Super Pi 的解法：
 | `worktree_manager` | Git worktree 全生命周期管理 |
 | `artifact_helper` | Artifact 路径解析和目录创建 |
 | `ask_user_question` | 结构化用户提问（选项 / 自由输入） |
-| `subagent` | 串行 subagent 链 |
+| `subagent` | 串行 subagent 链，带深度守卫和上下文控制 |
+| `subagent-depth-guard` | 基于 env 的递归深度追踪（防止失控嵌套） |
+| `async-mutex` | 序列化 `process.env` 变更，保障并发安全 |
 
 ---
 
 ## 代码规模
 
-~2000 行 TypeScript 实现 13 个 tool，22 个 Markdown reference 文件驱动 9 个 skill 的行为策略，95 个测试覆盖全部 tool 逻辑。
+~2500 行 TypeScript 实现 15 个 tool，22 个 Markdown reference 文件驱动 9 个 skill 的行为策略，162 个测试覆盖全部 tool 逻辑。
 
 不是大而全的框架。每个 tool 职责单一，每个 skill 可独立使用，组合起来是完整工作流。
 
@@ -235,6 +237,22 @@ your-project/
 ---
 
 ## 更新日志
+
+### 0.17.0 — Subagent 安全
+- 递归深度守卫（`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`）防止失控嵌套
+- Async mutex 保障并行 subagent 执行时 `process.env` 的并发安全
+- 上下文裁剪：`inheritSkills` 参数，并行 worker 默认窄上下文（`--no-skills`）
+- 共享 `createSubagentRunner` 工厂函数（消除重复闭包）
+- 162 个测试全部通过
+
+### 0.16.0 — 上下文优化
+- Read 输出过滤器：大代码文件结构化压缩、lock 文件摘要、markdown 压缩
+- Compaction 优化器：session 压缩时的聚焦摘要指令
+- Bash 输出过滤器改进
+
+### 0.15.0 — 输出过滤
+- Bash 输出过滤器：按命令类型智能截断（install、test、build）
+- Read 输出过滤器：保留结构的同时降低冗余
 
 ### 0.14.0 — 结构化 solution 检索
 - YAML frontmatter 标签体系 + grep-first 两级搜索

@@ -99,14 +99,14 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
 | `09-help` | Usage guide | — |
 
-### 13 Tools (underlying capabilities)
+### 15 Tools (underlying capabilities)
 
 | Tool | What it does |
 |------|-------------|
 | `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
 | `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
 | `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `parallel_subagent` | `Promise.allSettled`-style parallel subagent execution |
+| `parallel_subagent` | `Promise.allSettled`-style parallel subagent execution with context slimming |
 | `review_router` | Auto-assign reviewer personas from diff metadata |
 | `pattern_extractor` | Extract and categorize patterns from artifacts |
 | `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
@@ -115,13 +115,15 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `worktree_manager` | Full git worktree lifecycle management |
 | `artifact_helper` | Artifact path resolution and directory creation |
 | `ask_user_question` | Structured user prompts (choices / free input) |
-| `subagent` | Serial subagent chain |
+| `subagent` | Serial subagent chain with depth guard and context control |
+| `subagent-depth-guard` | Env-based recursion depth tracking (prevents runaway nesting) |
+| `async-mutex` | Serializes `process.env` mutation for concurrency-safe child process spawning |
 
 ---
 
 ## Code Scale
 
-~2000 lines of TypeScript implementing 13 tools, 22 Markdown reference files driving 9 skills' behavioral strategies, 95 tests covering all tool logic.
+~2500 lines of TypeScript implementing 15 tools, 22 Markdown reference files driving 9 skills' behavioral strategies, 162 tests covering all tool logic.
 
 Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
 
@@ -235,6 +237,22 @@ Not a fork. Not a wrapper. The methodologies are extracted and rebuilt with Pi's
 ---
 
 ## Changelog
+
+### 0.17.0 — Subagent safety
+- Recursion depth guard (`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`) prevents runaway nesting
+- Async mutex for `process.env` concurrency safety during parallel subagent execution
+- Context slimming: `inheritSkills` parameter, parallel workers default to slim context (`--no-skills`)
+- Shared `createSubagentRunner` factory (deduped runner closures)
+- 162 tests passing
+
+### 0.16.0 — Context optimization
+- Read output filter: structural compression for large code files, lock files, markdown
+- Compaction optimizer: focused summary instructions for session compaction
+- Bash output filter improvements
+
+### 0.15.0 — Output filtering
+- Bash output filter: smart truncation by command type (install, test, build)
+- Read output filter: preserves structure while cutting verbosity
 
 ### 0.14.0 — Structured solution retrieval
 - YAML frontmatter tagging + grep-first two-level search
