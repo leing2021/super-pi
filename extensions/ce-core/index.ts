@@ -124,7 +124,10 @@ const parallelSubagentTaskSchema = Type.Object({
 })
 
 const parallelSubagentParams = Type.Object({
-  tasks: Type.Array(parallelSubagentTaskSchema, { description: "Array of independent tasks to run concurrently" }),
+  tasks: Type.Union([
+    Type.Array(parallelSubagentTaskSchema),
+    Type.String({ description: "JSON stringified array of tasks" }),
+  ], { description: "Array of independent tasks to run concurrently (can be a JSON string)" }),
   inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: false" })),
 })
 
@@ -396,12 +399,24 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: parallelSubagent.name,
     label: "Parallel Subagent",
-    description: "Run multiple skill-based subagent tasks concurrently.",
+    description: "Run multiple skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
     parameters: parallelSubagentParams,
     async execute(_toolCallId, params, signal) {
+      let tasks: any[]
+      if (typeof params.tasks === "string") {
+        try {
+          const cleaned = params.tasks.replace(/^```json\s*|```$/g, "").trim()
+          tasks = JSON.parse(cleaned)
+        } catch (e) {
+          throw new Error(`Failed to parse tasks string as JSON: ${e instanceof Error ? e.message : String(e)}`)
+        }
+      } else {
+        tasks = params.tasks
+      }
+
       const result = await parallelSubagent.execute(
         {
-          tasks: params.tasks,
+          tasks,
           inheritSkills: params.inheritSkills,
         },
         createSubagentRunner(pi, signal),
