@@ -1,11 +1,16 @@
 ---
 name: 10-rules
-description: "Progressively load project coding rules on demand. Auto-triggered by plan, work, and review skills."
+description: "Progressively load project coding rules on demand. Auto-triggered by plan, work, and review skills, or run manually with /skill:10-rules."
 ---
 
 # Rules
 
-Project rules live under `rules/` in the super-pi package root (resolved as the skill directory's `../../rules/`).
+Rules are loaded from two locations with clear priority:
+
+1. **Project-level** `{repo-root}/rules/` — if it exists, takes priority. Users maintain this themselves; survives `pi update`.
+2. **Package-level** `rules/` in the super-pi package — built-in defaults, used when no project-level override exists.
+
+Detection: check `{repo-root}/rules/` first. If a file exists at the project level for the topic being loaded, use it. Otherwise fall back to the package-level copy.
 
 ## Core rule
 

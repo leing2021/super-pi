@@ -267,7 +267,14 @@ No rules are loaded when you brainstorm, check status, or do non-code tasks. Zer
 
 #### Customizing rules for your project
 
-Rules are plain Markdown files in the `rules/` directory. Edit them freely:
+Two rule sources exist, with project-level taking priority:
+
+| Source | Location | Survives `pi update`? |
+|--------|----------|----------------------|
+| **Project-level** | `{your-project-root}/rules/` | ✅ Yes |
+| Package-level | Inside `node_modules/@leing2021/super-pi/rules/` | ❌ No |
+
+To customize, create a `rules/` directory in your project root. `10-rules` checks it first — if a file exists there, it overrides the package default for that topic.
 
 **Add a language** — create a new directory with the 5 standard topics:
 
