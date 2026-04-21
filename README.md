@@ -318,17 +318,14 @@ The `10-rules` skill will pick up any `.md` file in `rules/` — no configuratio
 
 The goal isn't making AI write code faster — it's making AI think before writing, review after writing, and compound learnings after reviewing. Speed comes from fewer rewrites, not from skipping steps.
 
-This project would not exist without the brilliant work that came before it. We stand on the shoulders of giants:
+The following projects directly inspired this work:
 
-- **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)** (162K★) — Thank you to the community for discovering and sharing the patterns that make AI coding agents genuinely useful: parallel subagent orchestration, checkpoint resume, and continuous learning loops.
+- **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)** (162K★) → Parallel subagent orchestration, checkpoint resume, continuous learning
+- **[superpowers](https://github.com/obra/superpowers)** (161K★) → Strict TDD gates, design checklists, review discipline
+- **[gstack](https://github.com/garrytan/gstack)** (78K★) → YC-style forcing questions, CEO Review frameworks, browser QA
+- **[compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)** (14K★) → Five-step loop, knowledge compounding backbone
 
-- **[superpowers](https://github.com/obra/superpowers)** (161K★, Jesse Vincent) — Thank you for showing that AI agents need hard gates, not gentle suggestions. Your strict TDD discipline, design checklists, and review rigor set the standard we follow.
-
-- **[gstack](https://github.com/garrytan/gstack)** (78K★, Garry Tan / Y Combinator) — Thank you for bringing YC's intellectual honesty into AI workflows. The forcing-question approach, CEO Review cognitive frameworks, and browser-based QA transformed how we validate ideas.
-
-- **[compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)** (14K★, Every Inc.) — Thank you for proving that AI-assisted development deserves a disciplined loop. The five-step think→plan→build→review→compound cycle and knowledge compounding backbone are directly inspired by your work.
-
-Not a fork. Not a wrapper. These projects gave us the ideas; we reimplemented them natively for Pi's tool + skill system. All credit for the original thinking belongs to the authors above.
+Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native tool + skill system.
 
 ---
 
