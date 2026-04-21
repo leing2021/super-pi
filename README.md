@@ -85,7 +85,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ## Technical Architecture
 
-### 9 Skills (workflow nodes)
+### 10 Skills (workflow nodes)
 
 | Skill | One-liner | Core Tool |
 |-------|-----------|-----------|
@@ -98,6 +98,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `07-worktree` | Git worktree isolated development | `worktree_manager` |
 | `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
 | `09-help` | Usage guide | — |
+| `10-rules` | Progressive rule loading for coding standards | — |
 
 ### 15 Tools (underlying capabilities)
 
@@ -121,9 +122,33 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ---
 
+## Token Cost
+
+New conversation overhead: **~2,500 tokens** (1.26% of Claude Sonnet 4's 200K context).
+
+| Component | Tokens | When loaded |
+|-----------|--------|-------------|
+| 10 skill registrations | ~615 | Every conversation (fixed) |
+| 13 tool registrations | ~1,914 | Every conversation (fixed) |
+| Hooks & filters | 0 | Runtime interception, zero prompt cost |
+| Single skill trigger | ~1,000–4,000 | On-demand via `read` |
+| Rules minimal (2 files) | ~900 | Before plan/work |
+| Rules + language (7 files) | ~2,600 | Before work with specific language |
+
+| vs bare Pi | vs global rules injection | vs super-pi |
+|-----------|----------------------|------------|
+| No rules | All rules loaded upfront | Progressive on-demand |
+| No output filtering | No output filtering | Auto-compress (bash ~65–98%, read ~30–60%) |
+| No TDD gate | No TDD gate | Hard gate prevents rework |
+| 0 tokens | ~5,000–36,000 tokens | **~2,500 tokens** |
+
+Single `npm install` output filtered once pays for the entire overhead. Full evaluation → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
+
+---
+
 ## Code Scale
 
-~2500 lines of TypeScript implementing 15 tools, 22 Markdown reference files driving 9 skills' behavioral strategies, 162 tests covering all tool logic.
+~2500 lines of TypeScript implementing 15 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 162 tests covering all tool logic.
 
 Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
 
@@ -204,6 +229,87 @@ your-project/
 
 **Recommendation: commit everything to git** — these files are the project's traceable memory.
 
+### `10-rules`: Progressive Rule Loading
+
+Built-in coding rules live under `rules/` in the package. The `10-rules` skill loads them **progressively** — never all at once, only what the current task needs.
+
+**How it works:**
+
+```
+system prompt (30 tokens: skill name + description)
+  → 10-rules SKILL.md (~200 tokens: loading decision tree)
+    → specific rule files via read tool (on-demand, 900–2600 tokens)
+```
+
+Three CE skills auto-trigger rule loading at their entry points:
+
+| Skill | Rules pre-loaded |
+|-------|-----------------|
+| `02-plan` | `common/development-workflow.md` + `common/testing.md` |
+| `03-work` | Language-specific rules matching the active codebase |
+| `04-review` | `common/code-review.md` + language rules for changed files |
+
+**Rule precedence** (when layers overlap on the same topic):
+
+```
+language-specific  >  web  >  common
+```
+
+No rules are loaded when you brainstorm, check status, or do non-code tasks. Zero waste.
+
+#### Included rule layers
+
+| Layer | Files | When loaded |
+|-------|-------|------------|
+| `common/` | 10 files | Always (baseline for all tasks) |
+| `typescript/`, `python/`, `cpp/`, `csharp/`, `dart/`, `golang/`, `java/`, `kotlin/`, `perl/`, `php/`, `rust/`, `swift/` | 5 files each | When the task touches that language |
+| `web/` | 7 files (includes `design-quality.md`, `performance.md`) | When frontend/browser is relevant |
+
+#### Customizing rules for your project
+
+Rules are plain Markdown files in the `rules/` directory. Edit them freely:
+
+**Add a language** — create a new directory with the 5 standard topics:
+
+```bash
+mkdir rules/elixir
+touch rules/elixir/{coding-style,testing,patterns,security,hooks}.md
+```
+
+Each file should start with:
+
+```markdown
+> This file extends [common/xxx.md](../common/xxx.md) with Elixir-specific content.
+```
+
+**Remove unused languages** — just delete the directory:
+
+```bash
+rm -rf rules/perl rules/cpp  # don't need these? remove them
+```
+
+**Tweak a rule** — edit the `.md` file directly:
+
+```bash
+# Override testing conventions for your team
+vim rules/common/testing.md
+
+# Override for a specific language
+vim rules/typescript/testing.md
+```
+
+**Add a new topic** — create a new `.md` in the appropriate layer:
+
+```bash
+# Common topic
+vim rules/common/api-design.md
+
+# Language-specific override
+vim rules/python/api-design.md
+```
+
+The `10-rules` skill will pick up any `.md` file in `rules/` — no configuration needed. If a language directory exists, it's available for loading. If it's gone, it's simply never loaded.
+
 ---
 
 ## Design Philosophy
@@ -237,6 +343,13 @@ Not a fork. Not a wrapper. The methodologies are extracted and rebuilt with Pi's
 ---
 
 ## Changelog
+
+### 0.18.0 — Progressive rules
+- Built-in `rules/` directory with 13 language layers + common + web (78 Markdown files)
+- New `10-rules` skill: progressive on-demand loading, zero waste
+- `02-plan`, `03-work`, `04-review` auto-trigger rule loading at entry points
+- Users can add/remove languages and edit rules freely — plain Markdown, no config
+- 10 skills, 15 tools, 162 tests passing
 
 ### 0.17.0 — Subagent safety
 - Recursion depth guard (`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`) prevents runaway nesting

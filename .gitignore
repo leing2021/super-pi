@@ -3,4 +3,9 @@ node_modules
 dist
 .pi/
 coverage/
-docs/
+.context/
+
+# docs/ is mostly runtime artifacts, but whitelist specific committed docs
+docs/*
+!docs/token-cost-evaluation.md
+!docs/reports

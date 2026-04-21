@@ -85,7 +85,7 @@ Super Pi 的解法：
 
 ## 技术架构
 
-### 9 个 Skills（工作流节点）
+### 10 个 Skills（工作流节点）
 
 | Skill | 一句话 | 核心 Tool |
 |-------|--------|----------|
@@ -98,6 +98,7 @@ Super Pi 的解法：
 | `07-worktree` | Git worktree 隔离开发 | `worktree_manager` |
 | `08-status` | 扫描 artifact，报告进度 | `workflow_state`, `session_history` |
 | `09-help` | 使用指南 | — |
+| `10-rules` | 渐进式编码规则按需加载 | — |
 
 ### 15 个 Tools（底层能力）
 
@@ -121,9 +122,33 @@ Super Pi 的解法：
 
 ---
 
+## Token 开销
+
+新开对话固定成本：**~2,500 tokens**（占 Claude Sonnet 4 的 200K context 的 1.26%）。
+
+| 组成部分 | Tokens | 加载时机 |
+|---------|--------|----------|
+| 10 个 Skill 注册 | ~615 | 每次对话（固定） |
+| 13 个 Tool 注册 | ~1,914 | 每次对话（固定） |
+| Hooks & Filter | 0 | 运行时拦截，零 prompt 开销 |
+| 单次 skill 触发 | ~1,000–4,000 | 按需 read |
+| Rules 最小必读（2 文件） | ~900 | plan/work 前 |
+| Rules + 语言层（7 文件） | ~2,600 | 涉及特定语言时 |
+
+| 裸 Pi | 全局规则注入 | super-pi |
+|-------|------------|---------|
+| 无规则 | 全量加载 | 渐进式按需 |
+| 无输出过滤 | 无输出过滤 | 自动压缩（bash ~65–98%，read ~30–60%） |
+| 无 TDD 门控 | 无 TDD 门控 | Hard gate 防止返工 |
+| 0 tokens | ~5,000–36,000 tokens | **~2,500 tokens** |
+
+一次 `npm install` 输出过滤即可回本。完整评估 → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
+
+---
+
 ## 代码规模
 
-~2500 行 TypeScript 实现 15 个 tool，22 个 Markdown reference 文件驱动 9 个 skill 的行为策略，162 个测试覆盖全部 tool 逻辑。
+~2500 行 TypeScript 实现 15 个 tool，22 个 Markdown reference 文件 + 78 个规则文件驱动 10 个 skill，162 个测试覆盖全部 tool 逻辑。
 
 不是大而全的框架。每个 tool 职责单一，每个 skill 可独立使用，组合起来是完整工作流。
 
@@ -204,6 +229,87 @@ your-project/
 
 **建议全部 commit 进 git** —— 这些文件就是项目的可追溯记忆。
 
+### `10-rules`：渐进式规则加载
+
+内置编码规则位于包的 `rules/` 目录下。`10-rules` skill 采用**渐进式加载**——绝不全量加载，只读当前任务需要的部分。
+
+**加载链路：**
+
+```
+system prompt（30 tokens：skill 名称 + 描述）
+  → 10-rules SKILL.md（~200 tokens：加载决策树）
+    → 具体规则文件通过 read 工具按需加载（900–2600 tokens）
+```
+
+三个 CE skill 在入口处自动触发规则加载：
+
+| Skill | 预加载的规则 |
+|-------|-------------|
+| `02-plan` | `common/development-workflow.md` + `common/testing.md` |
+| `03-work` | 匹配当前代码库的语言规则 |
+| `04-review` | `common/code-review.md` + 变更文件的语言规则 |
+
+**规则优先级**（同一主题多层重叠时）：
+
+```
+语言规则  >  web  >  common
+```
+
+做 brainstorm、查状态等非编码任务时，不加载任何规则。零浪费。
+
+#### 内置规则层
+
+| 层级 | 文件数 | 何时加载 |
+|------|--------|----------|
+| `common/` | 10 个文件 | 始终加载（所有任务的基线） |
+| `typescript/`、`python/`、`cpp/`、`csharp/`、`dart/`、`golang/`、`java/`、`kotlin/`、`perl/`、`php/`、`rust/`、`swift/` | 各 5 个文件 | 任务涉及该语言时 |
+| `web/` | 7 个文件（含 `design-quality.md`、`performance.md`） | 前端/浏览器相关时 |
+
+#### DIY：自定义规则
+
+规则就是 `rules/` 目录下的纯 Markdown 文件，随意编辑，无需配置。
+
+**添加语言**——创建新目录，放入 5 个标准主题文件：
+
+```bash
+mkdir rules/elixir
+touch rules/elixir/{coding-style,testing,patterns,security,hooks}.md
+```
+
+每个文件开头建议写明：
+
+```markdown
+> 本文件是 [common/xxx.md](../common/xxx.md) 的 Elixir 特定扩展。
+```
+
+**删除不需要的语言**——直接删目录：
+
+```bash
+rm -rf rules/perl rules/cpp  # 用不到？直接删
+```
+
+**调整规则**——直接编辑 `.md` 文件：
+
+```bash
+# 修改团队的测试规范
+vim rules/common/testing.md
+
+# 修改特定语言的测试规范
+vim rules/typescript/testing.md
+```
+
+**新增主题**——在对应层级创建新 `.md` 文件即可：
+
+```bash
+# 通用主题
+vim rules/common/api-design.md
+
+# 语言特定覆盖
+vim rules/python/api-design.md
+```
+
+`10-rules` skill 会自动发现 `rules/` 下的所有 `.md` 文件——不需要任何配置。语言目录存在就能加载，删了就不会被加载。
+
 ---
 
 ## 设计理念
@@ -237,6 +343,13 @@ your-project/
 ---
 
 ## 更新日志
+
+### 0.18.0 — 渐进式规则
+- 内置 `rules/` 目录，含 13 个语言层 + common + web（78 个 Markdown 文件）
+- 新增 `10-rules` skill：渐进式按需加载，零浪费
+- `02-plan`、`03-work`、`04-review` 在入口处自动触发规则加载
+- 用户可自由增减语言、编辑规则——纯 Markdown，零配置
+- 10 个 skills、15 个 tools、162 个测试全部通过
 
 ### 0.17.0 — Subagent 安全
 - 递归深度守卫（`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`）防止失控嵌套

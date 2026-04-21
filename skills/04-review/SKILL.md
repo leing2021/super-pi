@@ -9,6 +9,7 @@ Use this skill after implementation to review changes against the diff, the rele
 
 ## Core rules
 
+- Before reviewing, read the `10-rules` skill and load `rules/common/code-review.md` plus language-specific rules matching the changed files.
 - Determine the **diff scope** before selecting reviewers.
 - Use the **`review_router`** tool to automatically select reviewer personas based on diff metadata.
 - Read the relevant **plan** artifact when one exists.

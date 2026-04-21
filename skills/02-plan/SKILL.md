@@ -9,6 +9,7 @@ Use this skill when requirements are ready to become an execution-ready plan.
 
 ## Core rules
 
+- Before planning, read the `10-rules` skill and load `rules/common/development-workflow.md` and `rules/common/testing.md` for coding standards context.
 - Search `docs/brainstorms/` for a relevant requirements artifact first.
 - Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
 - Write the final plan to `docs/plans/`.

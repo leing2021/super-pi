@@ -9,6 +9,7 @@ Use this skill when there is a plan path or a tightly scoped bare prompt ready f
 
 ## Core rules
 
+- Before execution, read the `10-rules` skill and load language-specific rules matching the active codebase (e.g. `rules/typescript/` for TS work).
 - Distinguish between a **plan path** input and a **bare prompt** input before doing work.
 - Prefer deriving execution tasks from plan **implementation units**.
 - Use **serial subagents** for tasks with dependencies.
