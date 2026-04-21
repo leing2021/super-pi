@@ -21,6 +21,14 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - run: bun install
       - run: bun test
+      - name: Check if version already published
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @leing2021/super-pi@$VERSION version 2>/dev/null; then
+            echo "Version $VERSION already exists on npm, skipping publish."
+            echo "skip_publish=true" >> $GITHUB_ENV
+          fi
       - run: npm publish --access public
+        if: env.skip_publish != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
