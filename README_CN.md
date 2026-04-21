@@ -312,20 +312,23 @@ vim rules/python/api-design.md
 
 ---
 
-## 设计理念
+## 设计理念 & 致谢
 
 **80% 规划和审查，20% 执行。**
 
 不是让 AI 写得更快，是让 AI 想清楚再写、写完要审查、审完要沉淀。速度来自减少返工，不是来自跳步。
 
-**四个项目的精华，Pi 原生重实现：**
+这个项目站在巨人的肩膀上。没有以下项目的先行探索，就不会有 Super Pi：
 
-- **Compound Engineering**（Every Inc.）→ 五步循环 + 知识复合的骨架
-- **Superpowers**（Jesse Vincent）→ 严格 TDD 门控 + 设计检查清单 + 审查纪律
-- **Everything Claude Code**（140K+ star）→ 并行 subagent 编排 + 断点续传 + 持续学习
-- **gstack**（Garry Tan / YC）→ YC 式追问 + CEO Review 认知框架 + 浏览器 QA
+- **[Compound Engineering](https://github.com/everyinc/compound-engineering)**（Every Inc.）—— 感谢你们证明了 AI 辅助开发值得拥有一套严谨的循环流程。五步 think→plan→build→review→compound 循环和知识复合骨架，直接源于你们的实践。
 
-不是 fork，不是套壳。取的是方法论，用 Pi 原生的 tool + skill 体系重新实现。
+- **[Superpowers](https://github.com/jessevincent/superpowers)**（Jesse Vincent）—— 感谢你展示了 AI agent 需要的是硬性门控，而非温柔建议。你提出的严格 TDD 纪律、设计检查清单和审查标准，是我们遵循的标杆。
+
+- **[Claude Code Best Practices](https://github.com/grahamuk0/claude-code-best-practices)** —— 感谢社区发现并分享了让 AI 编程 agent 真正好用的模式：并行 subagent 编排、断点续传、持续学习循环。
+
+- **[gstack](https://github.com/garrytan/gstack)**（Garry Tan / Y Combinator）—— 感谢你将 YC 的智识诚实带入 AI 工作流。追问式提问、CEO Review 认知框架、浏览器 QA，彻底改变了我们验证想法的方式。
+
+不是 fork，不是套壳。这些项目给了我们灵感，我们用 Pi 原生的 tool + skill 体系重新实现。所有原创思想的荣誉属于上述作者。
 
 ---
 

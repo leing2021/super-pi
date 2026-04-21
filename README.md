@@ -312,20 +312,23 @@ The `10-rules` skill will pick up any `.md` file in `rules/` — no configuratio
 
 ---
 
-## Design Philosophy
+## Design Philosophy & Acknowledgements
 
 **80% planning and review, 20% execution.**
 
 The goal isn't making AI write code faster — it's making AI think before writing, review after writing, and compound learnings after reviewing. Speed comes from fewer rewrites, not from skipping steps.
 
-**The best ideas from four projects, reimplemented natively for Pi:**
+This project would not exist without the brilliant work that came before it. We stand on the shoulders of giants:
 
-- **Compound Engineering** (Every Inc.) → The five-step loop + knowledge compounding backbone
-- **Superpowers** (Jesse Vincent) → Strict TDD gates + design checklists + review discipline
-- **Everything Claude Code** (140K+ stars) → Parallel subagent orchestration + checkpoint resume + continuous learning
-- **gstack** (Garry Tan / YC) → YC-style forcing questions + CEO Review cognitive frameworks + browser QA
+- **[Compound Engineering](https://github.com/everyinc/compound-engineering)** (Every Inc.) — Thank you for proving that AI-assisted development deserves a disciplined loop. The five-step think→plan→build→review→compound cycle and knowledge compounding backbone are directly inspired by your work.
 
-Not a fork. Not a wrapper. The methodologies are extracted and rebuilt with Pi's native tool + skill system.
+- **[Superpowers](https://github.com/jessevincent/superpowers)** (Jesse Vincent) — Thank you for showing that AI agents need hard gates, not gentle suggestions. Your strict TDD discipline, design checklists, and review rigor set the standard we follow.
+
+- **[Claude Code Best Practices](https://github.com/grahamuk0/claude-code-best-practices)** — Thank you to the community for discovering and sharing the patterns that make AI coding agents genuinely useful: parallel subagent orchestration, checkpoint resume, and continuous learning loops.
+
+- **[gstack](https://github.com/garrytan/gstack)** (Garry Tan / Y Combinator) — Thank you for bringing YC's intellectual honesty into AI workflows. The forcing-question approach, CEO Review cognitive frameworks, and browser-based QA transformed how we validate ideas.
+
+Not a fork. Not a wrapper. These projects gave us the ideas; we reimplemented them natively for Pi's tool + skill system. All credit for the original thinking belongs to the authors above.
 
 ---
 
