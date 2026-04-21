@@ -320,13 +320,13 @@ The goal isn't making AI write code faster — it's making AI think before writi
 
 This project would not exist without the brilliant work that came before it. We stand on the shoulders of giants:
 
-- **[Compound Engineering](https://github.com/everyinc/compound-engineering)** (Every Inc.) — Thank you for proving that AI-assisted development deserves a disciplined loop. The five-step think→plan→build→review→compound cycle and knowledge compounding backbone are directly inspired by your work.
+- **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)** (162K★) — Thank you to the community for discovering and sharing the patterns that make AI coding agents genuinely useful: parallel subagent orchestration, checkpoint resume, and continuous learning loops.
 
-- **[Superpowers](https://github.com/jessevincent/superpowers)** (Jesse Vincent) — Thank you for showing that AI agents need hard gates, not gentle suggestions. Your strict TDD discipline, design checklists, and review rigor set the standard we follow.
+- **[superpowers](https://github.com/obra/superpowers)** (161K★, Jesse Vincent) — Thank you for showing that AI agents need hard gates, not gentle suggestions. Your strict TDD discipline, design checklists, and review rigor set the standard we follow.
 
-- **[Claude Code Best Practices](https://github.com/grahamuk0/claude-code-best-practices)** — Thank you to the community for discovering and sharing the patterns that make AI coding agents genuinely useful: parallel subagent orchestration, checkpoint resume, and continuous learning loops.
+- **[gstack](https://github.com/garrytan/gstack)** (78K★, Garry Tan / Y Combinator) — Thank you for bringing YC's intellectual honesty into AI workflows. The forcing-question approach, CEO Review cognitive frameworks, and browser-based QA transformed how we validate ideas.
 
-- **[gstack](https://github.com/garrytan/gstack)** (Garry Tan / Y Combinator) — Thank you for bringing YC's intellectual honesty into AI workflows. The forcing-question approach, CEO Review cognitive frameworks, and browser-based QA transformed how we validate ideas.
+- **[compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)** (14K★, Every Inc.) — Thank you for proving that AI-assisted development deserves a disciplined loop. The five-step think→plan→build→review→compound cycle and knowledge compounding backbone are directly inspired by your work.
 
 Not a fork. Not a wrapper. These projects gave us the ideas; we reimplemented them natively for Pi's tool + skill system. All credit for the original thinking belongs to the authors above.
 
