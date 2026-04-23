@@ -34,4 +34,4 @@ Use this skill when the user wants to know what to run next in the Compound Engi
 - `02-plan` — turn requirements into implementation units
 - `03-work` — execute the plan
 - `04-review` — review changes with structured findings
-- `05-compound` — capture learnings as solution artifacts
+- `05-learn` — capture learnings as solution artifacts

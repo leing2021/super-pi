@@ -29,7 +29,7 @@ Super Pi 的解法：
 ## 五步核心循环
 
 ```
-01-brainstorm → 02-plan → 03-work → 04-review → 05-compound
+01-brainstorm → 02-plan → 03-work → 04-review → 05-learn
   想清楚          计划好      写代码       审查         沉淀
 ```
 
@@ -73,7 +73,7 @@ Super Pi 的解法：
 
 **浏览器 QA（可选）**：用 `agent-browser` 打开你的应用，逐页点击测试，截图记录 bug，按严重程度排序修复，最多 3 轮自修复循环。还能自动写回归测试。相当于有个 QA 帮你做验收。
 
-### 05-compound：沉淀
+### 05-learn：沉淀
 
 `pattern_extractor` 扫描已有 artifact，提取模式、分类归纳。把「这次踩的坑」变成带 YAML 标签的解决方案卡片，存入 `docs/solutions/`。
 
@@ -93,7 +93,7 @@ Super Pi 的解法：
 | `02-plan` | 拆 unit、TDD 门控、增量更新 | `plan_diff` |
 | `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
 | `04-review` | 角色路由审查 + 浏览器真机测试 | `review_router` |
-| `05-compound` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
+| `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
 | `06-next` | 不知道该干嘛？问它 | `workflow_state`, `session_history` |
 | `07-worktree` | Git worktree 隔离开发 | `worktree_manager` |
 | `08-status` | 扫描 artifact，报告进度 | `workflow_state`, `session_history` |
@@ -174,7 +174,7 @@ Super Pi 的解法：
 
 → 03-work 并行执行，断点续传
 → 04-review 代码审查 + 可选浏览器 QA
-→ 05-compound 沉淀经验
+→ 05-learn 沉淀经验
 ```
 
 ### 给现有项目加功能
@@ -183,7 +183,7 @@ Super Pi 的解法：
 你: 给项目加一个用户认证功能
 
 → 01-brainstorm CE 模式，多轮对话澄清 OAuth2? JWT? MFA?
-→ 生成需求文档 → 02-plan 拆 unit → 03-work 执行 → 04-review → 05-compound
+→ 生成需求文档 → 02-plan 拆 unit → 03-work 执行 → 04-review → 05-learn
 ```
 
 ### 中断后恢复
@@ -219,7 +219,7 @@ your-project/
 ├── docs/
 │   ├── brainstorms/                  # 需求文档（01-brainstorm 生成）
 │   ├── plans/                        # 执行计划（02-plan 生成）
-│   └── solutions/                    # 经验卡片（05-compound 生成）
+│   └── solutions/                    # 经验卡片（05-learn 生成）
 └── .context/
     └── compound-engineering/
         ├── checkpoints/              # 断点文件（session_checkpoint 生成）

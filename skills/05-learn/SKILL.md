@@ -1,5 +1,5 @@
 ---
-name: 05-compound
+name: 05-learn
 description: Capture solved problems as reusable solution artifacts.
 ---
 

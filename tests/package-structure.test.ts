@@ -32,7 +32,7 @@ describe("package bootstrap structure", () => {
 
     expect(packageJson).toContain('"peerDependencies"')
     expect(packageJson).toContain('"@mariozechner/pi-coding-agent"')
-    expect(packageJson).toContain('"@sinclair/typebox"')
+    expect(packageJson).toContain('"typebox"')
   })
 
   test("README documents installation and the Phase 1 commands", () => {
@@ -43,7 +43,7 @@ describe("package bootstrap structure", () => {
     expect(readme).toContain("02-plan")
     expect(readme).toContain("03-work")
     expect(readme).toContain("04-review")
-    expect(readme).toContain("05-compound")
+    expect(readme).toContain("05-learn")
     expect(readme).toContain("09-help")
     expect(readme).toContain("08-status")
   })

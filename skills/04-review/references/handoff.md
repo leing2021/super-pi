@@ -6,7 +6,7 @@ When the review is complete:
 2. State whether fixes or re-review are needed.
 3. If findings are **autofixable**, apply the fixes and re-review the changes.
 4. After autofix, report what was changed and whether re-review confirms the fix.
-5. Recommend `05-compound` when the review surfaced a reusable learning or newly solved problem.
+5. Recommend `05-learn` when the review surfaced a reusable learning or newly solved problem.
 6. Mention any relevant plan or solution artifacts referenced during review.
 
 ## Autofix loop

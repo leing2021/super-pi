@@ -29,7 +29,7 @@ Super Pi's answers:
 ## The Five-Step Loop
 
 ```
-01-brainstorm → 02-plan → 03-work → 04-review → 05-compound
+01-brainstorm → 02-plan → 03-work → 04-review → 05-learn
     think          plan      build      review      compound
 ```
 
@@ -73,7 +73,7 @@ Breaks requirements into implementation units, each following strict **RED → G
 
 **Browser QA (optional)**: Uses `agent-browser` to open your app, click through pages, screenshot bugs, fix by severity, up to 3 auto-fix iterations. Can auto-generate regression tests. Like having a QA engineer run acceptance tests.
 
-### 05-compound: Compound Learnings
+### 05-learn: Compound Learnings
 
 `pattern_extractor` scans existing artifacts, extracts and categorizes patterns. Turns "the pitfall we hit this time" into a YAML-tagged solution card in `docs/solutions/`.
 
@@ -93,7 +93,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
 | `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
 | `04-review` | Persona-routed review + live browser testing | `review_router` |
-| `05-compound` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
+| `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
 | `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
 | `07-worktree` | Git worktree isolated development | `worktree_manager` |
 | `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
@@ -174,7 +174,7 @@ You: continue
 
 → 03-work parallel execution, checkpoint resume
 → 04-review code review + optional browser QA
-→ 05-compound knowledge compounding
+→ 05-learn knowledge compounding
 ```
 
 ### Adding a feature
@@ -183,7 +183,7 @@ You: continue
 You: I want to add user authentication to the project
 
 → 01-brainstorm CE mode, multi-round dialog: OAuth2? JWT? MFA?
-→ Requirements doc → 02-plan → 03-work → 04-review → 05-compound
+→ Requirements doc → 02-plan → 03-work → 04-review → 05-learn
 ```
 
 ### Resume after interruption
@@ -219,7 +219,7 @@ your-project/
 ├── docs/
 │   ├── brainstorms/                  # Requirements (01-brainstorm)
 │   ├── plans/                        # Execution plans (02-plan)
-│   └── solutions/                    # Knowledge cards (05-compound)
+│   └── solutions/                    # Knowledge cards (05-learn)
 └── .context/
     └── compound-engineering/
         ├── checkpoints/              # Breakpoint files (session_checkpoint)

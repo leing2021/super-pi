@@ -26,7 +26,7 @@ If `workflow_state` is not available, fall back to `bash` with `ls` and `find` t
 - If a recent brainstorm exists but there is no matching plan in `docs/plans/`, recommend `02-plan` next.
 - If a recent plan exists and implementation appears incomplete, recommend `03-work` next.
 - If code has changed after planning, recommend `04-review` next.
-- If a problem was just solved and there is no matching learning in `docs/solutions/`, recommend `05-compound` next.
+- If a problem was just solved and there is no matching learning in `docs/solutions/`, recommend `05-learn` next.
 - If multiple artifacts exist, summarize them briefly and name the single best next step.
 
 ## Output format

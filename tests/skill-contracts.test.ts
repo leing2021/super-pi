@@ -9,7 +9,7 @@ const skillNames = [
   "02-plan",
   "03-work",
   "04-review",
-  "05-compound",
+  "05-learn",
   "06-next",
   "07-worktree",
   "08-status",
@@ -57,7 +57,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("02-plan")
     expect(content).toContain("03-work")
     expect(content).toContain("04-review")
-    expect(content).toContain("05-compound")
+    expect(content).toContain("05-learn")
     expect(content).toContain("08-status")
   })
 
@@ -137,22 +137,22 @@ describe("skill package contracts", () => {
     expect(handoff).toContain("03-work")
   })
 
-  test("05-compound writes structured solution artifacts and checks overlap", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "05-compound", "SKILL.md"), "utf8")
+  test("05-learn writes structured solution artifacts and checks overlap", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
     const schema = readFileSync(
-      path.join(repoRoot, "skills", "05-compound", "references", "solution-schema.yaml"),
+      path.join(repoRoot, "skills", "05-learn", "references", "solution-schema.yaml"),
       "utf8",
     )
     const categoryMap = readFileSync(
-      path.join(repoRoot, "skills", "05-compound", "references", "category-map.md"),
+      path.join(repoRoot, "skills", "05-learn", "references", "category-map.md"),
       "utf8",
     )
     const overlapRules = readFileSync(
-      path.join(repoRoot, "skills", "05-compound", "references", "overlap-rules.md"),
+      path.join(repoRoot, "skills", "05-learn", "references", "overlap-rules.md"),
       "utf8",
     )
     const template = readFileSync(
-      path.join(repoRoot, "skills", "05-compound", "assets", "solution-template.md"),
+      path.join(repoRoot, "skills", "05-learn", "assets", "solution-template.md"),
       "utf8",
     )
 
@@ -243,7 +243,7 @@ describe("skill package contracts", () => {
     expect(reviewerSelection).toContain("review_router")
     expect(reviewerSelection).toContain("correctness-reviewer")
     expect(reviewerSelection).toContain("security-reviewer")
-    expect(handoff).toContain("05-compound")
+    expect(handoff).toContain("05-learn")
     expect(handoff).toContain("autofix")
   })
 
@@ -260,7 +260,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("02-plan")
     expect(content).toContain("03-work")
     expect(content).toContain("04-review")
-    expect(content).toContain("05-compound")
+    expect(content).toContain("05-learn")
     expect(recommendationLogic).toContain("brainstorm")
     expect(recommendationLogic).toContain("plan")
     expect(recommendationLogic).toContain("work")
@@ -278,9 +278,9 @@ describe("skill package contracts", () => {
     expect(content).toContain("03-work")
   })
 
-  test("05-compound solution-search-strategy defines grep-first retrieval steps", () => {
+  test("05-learn solution-search-strategy defines grep-first retrieval steps", () => {
     const strategy = readFileSync(
-      path.join(repoRoot, "skills", "05-compound", "references", "solution-search-strategy.md"),
+      path.join(repoRoot, "skills", "05-learn", "references", "solution-search-strategy.md"),
       "utf8",
     )
 

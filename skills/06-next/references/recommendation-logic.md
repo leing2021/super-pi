@@ -29,13 +29,13 @@ If code changes have been made (detected by git diff) and no recent review exist
 ## Rule 5: After review, compound
 
 If a review has been completed and `solutions.count` has not increased since the last workflow cycle:
-- Recommend `05-compound`
+- Recommend `05-learn`
 - Reason: A review was completed. Capture key learnings as a durable solution artifact.
 
 ## Rule 6: All artifacts exist
 
 If brainstorm, plan, and solution all exist:
-- Recommend `05-compound` if no recent solution was added
+- Recommend `05-learn` if no recent solution was added
 - Otherwise recommend `01-brainstorm` for a new cycle
 - Reason: A full loop may be complete. Either compound learnings or start a new cycle.
 

@@ -16,7 +16,7 @@ Use this skill after implementation to review changes against the diff, the rele
 - Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
 - Produce **structured findings** using `references/findings-schema.md`.
 - When findings are **autofixable**, apply fixes and re-review (max 3 iterations).
-- End with a handoff that can point toward fixes, re-review, or `05-compound`.
+- End with a handoff that can point toward fixes, re-review, or `05-learn`.
 
 ## Review discipline — technical evaluation
 
@@ -69,5 +69,5 @@ After QA:
 After review (and optional QA) is complete, hand off using `references/handoff.md`:
 1. Summarize all findings (code review + QA if run).
 2. Note fix commits if any were applied.
-3. Recommend `05-compound` if learnings are worth capturing.
+3. Recommend `05-learn` if learnings are worth capturing.
 4. Recommend `03-work` if fixes need further implementation.
