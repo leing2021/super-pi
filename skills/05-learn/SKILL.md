@@ -3,7 +3,7 @@ name: 05-learn
 description: Capture solved problems as reusable solution artifacts.
 ---
 
-# Compound
+# Learn
 
 Use this skill after solving a problem so the repository gains a reusable learning in `docs/solutions/`.
 

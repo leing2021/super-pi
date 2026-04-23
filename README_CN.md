@@ -351,6 +351,12 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
+### 0.19.0 — 0.69.0 对齐 + 沉淀重命名
+- TypeBox 迁移：`@sinclair/typebox` → `typebox`（零旧路径残留）
+- Peer/dev 依赖升级：pi-coding-agent `0.67.6` → `0.69.0`
+- 工具终结优化：6 个纯查询工具添加 `terminate: true`，减少多余 LLM 轮次
+- Skill 重命名：`05-compound` → `05-learn`，更易理解
+
 ### 0.18.0 — 渐进式规则
 - 内置 `rules/` 目录，含 13 个语言层 + common + web（78 个 Markdown 文件）
 - 新增 `10-rules` skill：渐进式按需加载，零浪费

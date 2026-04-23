@@ -265,7 +265,7 @@ describe("skill package contracts", () => {
     expect(recommendationLogic).toContain("plan")
     expect(recommendationLogic).toContain("work")
     expect(recommendationLogic).toContain("review")
-    expect(recommendationLogic).toContain("compound")
+    expect(recommendationLogic).toContain("learn")
   })
 
   test("07-worktree manages git worktree lifecycle using worktree_manager", () => {

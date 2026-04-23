@@ -26,7 +26,7 @@ If code changes have been made (detected by git diff) and no recent review exist
 - Recommend `04-review`
 - Reason: Implementation is done. Review the changes with structured findings.
 
-## Rule 5: After review, compound
+## Rule 5: After review, learn
 
 If a review has been completed and `solutions.count` has not increased since the last workflow cycle:
 - Recommend `05-learn`
@@ -37,7 +37,7 @@ If a review has been completed and `solutions.count` has not increased since the
 If brainstorm, plan, and solution all exist:
 - Recommend `05-learn` if no recent solution was added
 - Otherwise recommend `01-brainstorm` for a new cycle
-- Reason: A full loop may be complete. Either compound learnings or start a new cycle.
+- Reason: A full loop may be complete. Either learn learnings or start a new cycle.
 
 ## Fallback
 

@@ -30,7 +30,7 @@ Super Pi's answers:
 
 ```
 01-brainstorm → 02-plan → 03-work → 04-review → 05-learn
-    think          plan      build      review      compound
+    think          plan      build      review      learn
 ```
 
 Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
@@ -350,6 +350,12 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 ---
 
 ## Changelog
+
+### 0.19.0 — 0.69.0 alignment + learn rename
+- TypeBox migration: `@sinclair/typebox` → `typebox` (zero old-path imports)
+- Peer/dev dependency upgrade: pi-coding-agent `0.67.6` → `0.69.0`
+- Tool termination: 6 pure-query tools now return `terminate: true` to reduce unnecessary LLM rounds
+- Skill rename: `05-compound` → `05-learn` for clarity
 
 ### 0.18.0 — Progressive rules
 - Built-in `rules/` directory with 13 language layers + common + web (78 Markdown files)

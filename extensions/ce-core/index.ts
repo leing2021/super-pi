@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
-import { Type } from "@sinclair/typebox"
+import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
 import { createSubagentTool } from "./tools/subagent"
@@ -338,6 +338,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
@@ -392,6 +393,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
@@ -447,6 +449,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
@@ -486,6 +489,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
@@ -527,6 +531,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
@@ -548,6 +553,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
+        terminate: true,
       }
     },
   })
