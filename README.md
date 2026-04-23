@@ -383,6 +383,12 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
+### 0.19.1 — Pipeline config + typecheck baseline fix
+- Added shared pipeline config (`skills/references/pipeline-config.md`) for stage model routing via `.pi/settings.json`.
+- Added gated auto-continue rules (`pipeline.autoContinue`) so automation does not skip required approval/review-choice steps.
+- Added explicit README usage examples for `modelStrategy` and `pipeline.autoContinue`.
+- Fixed TypeScript baseline issues so `bunx tsc --noEmit` passes.
+
 ### 0.19.0 — 0.69.0 alignment + learn rename
 - TypeBox migration: `@sinclair/typebox` → `typebox` (zero old-path imports)
 - Peer/dev dependency upgrade: pi-coding-agent `0.67.6` → `0.69.0`

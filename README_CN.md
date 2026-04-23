@@ -383,6 +383,12 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
+### 0.19.1 — 流水线配置 + 类型检查基线修复
+- 新增共享流水线配置（`skills/references/pipeline-config.md`），支持通过 `.pi/settings.json` 做分阶段模型路由。
+- 新增带关卡保护的自动续跑规则（`pipeline.autoContinue`），避免跳过必须的人机确认步骤。
+- README 补充了 `modelStrategy` 与 `pipeline.autoContinue` 的完整使用示例。
+- 修复 TypeScript 基线问题，`bunx tsc --noEmit` 可通过。
+
 ### 0.19.0 — 0.69.0 对齐 + 沉淀重命名
 - TypeBox 迁移：`@sinclair/typebox` → `typebox`（零旧路径残留）
 - Peer/dev 依赖升级：pi-coding-agent `0.67.6` → `0.69.0`
