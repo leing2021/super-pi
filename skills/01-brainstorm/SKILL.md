@@ -7,6 +7,8 @@ description: "Brainstorm requirements with three modes: CE discovery, Startup Di
 
 Use this skill when the request is ambiguous, needs requirements discovery before planning, or the user describes a new idea/product.
 
+See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
+
 ## Core rules
 
 - Use **`brainstorm_dialog`** to manage multi-round conversations.
@@ -118,3 +120,5 @@ Before handing off to `02-plan`:
 ## Artifact contract
 
 Use `references/requirements-template.md` to structure the requirements document. Keep implementation details out unless the brainstorm is specifically about architecture or technical direction.
+
+Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

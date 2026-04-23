@@ -35,6 +35,11 @@ Super Pi 的解法：
 
 每一步都有专门的 skill + tool 配对，不是纯 prompt，是结构化的工具链。
 
+可选的流水线自动化：
+- 在 `.pi/settings.json` 里用 `modelStrategy` 配置分阶段模型路由
+- 用 `pipeline.autoContinue` 控制步骤间自动续跑
+- 自动续跑带关卡保护（不会跳过必须的审批/评审选择步骤）
+
 ---
 
 ## 每一步做了什么

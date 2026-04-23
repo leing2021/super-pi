@@ -7,6 +7,8 @@ description: Execute plan-driven work in a controlled Phase 1 workflow.
 
 Use this skill when there is a plan path or a tightly scoped bare prompt ready for execution.
 
+See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
+
 ## Core rules
 
 - Before execution, read the `10-rules` skill and load language-specific rules matching the active codebase (e.g. `rules/typescript/` for TS work).
@@ -64,3 +66,5 @@ When all units are done, provide:
 - **Commands run**: all verification commands executed
 - **Verification results**: pass/fail status for each
 - **Follow-up work**: any remaining risks or open questions
+
+Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

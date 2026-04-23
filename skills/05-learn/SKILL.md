@@ -7,6 +7,8 @@ description: Capture solved problems as reusable solution artifacts.
 
 Use this skill after solving a problem so the repository gains a reusable learning in `docs/solutions/`.
 
+See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
+
 ## Core rules
 
 - Every solution MUST include YAML frontmatter per `references/solution-schema.yaml` (title, category, severity, tags, applies_when).
@@ -30,3 +32,5 @@ Use this skill after solving a problem so the repository gains a reusable learni
 5. Choose the correct category using `references/category-map.md`.
 6. Write or update the solution artifact under `docs/solutions/<category>/`.
 7. Mention how future `02-plan` and `04-review` runs should benefit from the new learning.
+
+Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

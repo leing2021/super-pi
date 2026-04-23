@@ -35,6 +35,11 @@ Super Pi's answers:
 
 Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
 
+Optional pipeline automation:
+- Configure stage-level model routing in `.pi/settings.json` via `modelStrategy`
+- Configure step-to-step auto-continue via `pipeline.autoContinue`
+- Auto-continue is gate-aware (won't skip required approval/review choice steps)
+
 ---
 
 ## What Each Step Does

@@ -7,6 +7,8 @@ description: "Review code with structured findings. Optional browser QA and regr
 
 Use this skill after implementation to review changes against the diff, the relevant plan, and prior learnings.
 
+See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
+
 ## Core rules
 
 - Before reviewing, read the `10-rules` skill and load `rules/common/code-review.md` plus language-specific rules matching the changed files.
@@ -71,3 +73,5 @@ After review (and optional QA) is complete, hand off using `references/handoff.m
 2. Note fix commits if any were applied.
 3. Recommend `05-learn` if learnings are worth capturing.
 4. Recommend `03-work` if fixes need further implementation.
+
+Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

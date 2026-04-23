@@ -7,6 +7,8 @@ description: "Turn requirements into a plan. Optional CEO-style strategic review
 
 Use this skill when requirements are ready to become an execution-ready plan.
 
+See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
+
 ## Core rules
 
 - Before planning, read the `10-rules` skill and load `rules/common/development-workflow.md` and `rules/common/testing.md` for coding standards context.
@@ -76,3 +78,5 @@ Every unit must include:
   6. Run unit-level verification
 - **Verification commands**: exact commands to run
 - **Expected results**: what success looks like
+
+Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).
