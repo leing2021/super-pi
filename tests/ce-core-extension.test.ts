@@ -454,7 +454,7 @@ describe("worktree_manager", () => {
 
     await expect(
       tool.execute(
-        { operation: "unknown", repoRoot: "/tmp/my-repo" },
+        { operation: "unknown" as any, repoRoot: "/tmp/my-repo" },
         async () => "",
       ),
     ).rejects.toThrow("Unknown operation")
@@ -963,8 +963,8 @@ describe("session_checkpoint", () => {
       repoRoot,
     })
 
-    expect(result.checkpoints.length).toBe(2)
-    const paths = result.checkpoints.map((c: { planPath: string }) => c.planPath)
+    expect(result.checkpoints?.length).toBe(2)
+    const paths = (result.checkpoints ?? []).map((c: { planPath: string }) => c.planPath)
     expect(paths).toContain("docs/plans/plan-a.md")
     expect(paths).toContain("docs/plans/plan-b.md")
   })
@@ -974,7 +974,7 @@ describe("session_checkpoint", () => {
 
     await expect(
       tool.execute({
-        operation: "unknown",
+        operation: "unknown" as any,
         repoRoot: "/tmp/test",
         planPath: "docs/plans/test.md",
       }),
@@ -1250,7 +1250,7 @@ describe("brainstorm_dialog", () => {
 
     await expect(
       tool.execute({
-        operation: "unknown",
+        operation: "unknown" as any,
         repoRoot: "/tmp/test",
         artifactPath: "docs/test.md",
       }),
@@ -1278,6 +1278,7 @@ describe("plan_diff", () => {
       ],
     })
 
+    if (result.operation !== "compare") throw new Error("Expected compare result")
     expect(result.added.length).toBe(1)
     expect(result.added[0].name).toBe("Unit 4: docs")
     expect(result.removed.length).toBe(1)
@@ -1297,6 +1298,7 @@ describe("plan_diff", () => {
       newRequirements: existingUnits,
     })
 
+    if (result.operation !== "compare") throw new Error("Expected compare result")
     expect(result.added).toEqual([])
     expect(result.removed).toEqual([])
     expect(result.modified).toEqual([])
@@ -1316,6 +1318,7 @@ describe("plan_diff", () => {
       ],
     })
 
+    if (result.operation !== "patch") throw new Error("Expected patch result")
     expect(result.units.length).toBe(3)
     const names = result.units.map((u: { name: string }) => u.name)
     expect(names).toContain("Unit 1: auth")
@@ -1330,7 +1333,7 @@ describe("plan_diff", () => {
 
     expect(() =>
       tool.execute({
-        operation: "unknown",
+        operation: "unknown" as any,
         existingUnits: [],
         newRequirements: [],
       }),
@@ -1443,7 +1446,7 @@ describe("session_history", () => {
 
     await expect(
       tool.execute({
-        operation: "unknown",
+        operation: "unknown" as any,
         repoRoot: "/tmp/test",
         skill: "ce-work",
       }),
@@ -1465,6 +1468,7 @@ describe("pattern_extractor", () => {
       keywords: ["OAuth2", "token", "API"],
     })
 
+    if (result.operation !== "extract") throw new Error("Expected extract result")
     expect(result.patterns.length).toBeGreaterThanOrEqual(1)
     const oauthPattern = result.patterns.find((p: { keyword: string }) => p.keyword === "OAuth2")
     expect(oauthPattern).toBeTruthy()
@@ -1482,6 +1486,7 @@ describe("pattern_extractor", () => {
       ],
     })
 
+    if (result.operation !== "extract") throw new Error("Expected extract result")
     expect(result.patterns.length).toBeGreaterThan(0)
   })
 
@@ -1501,6 +1506,7 @@ describe("pattern_extractor", () => {
       },
     })
 
+    if (result.operation !== "categorize") throw new Error("Expected categorize result")
     expect(result.categories["auth"].length).toBe(2)
     expect(result.categories["infra"].length).toBe(1)
     expect(result.uncategorized.length).toBe(0)
@@ -1520,6 +1526,7 @@ describe("pattern_extractor", () => {
       },
     })
 
+    if (result.operation !== "categorize") throw new Error("Expected categorize result")
     expect(result.categories["auth"].length).toBe(1)
     expect(result.uncategorized.length).toBe(1)
     expect(result.uncategorized[0].keyword).toBe("unknown")
@@ -1529,7 +1536,7 @@ describe("pattern_extractor", () => {
     const tool = createPatternExtractorTool()
 
     expect(() =>
-      tool.execute({ operation: "unknown", artifacts: [] }),
+      tool.execute({ operation: "unknown" as any, artifacts: [] }),
     ).toThrow("Unknown operation")
   })
 })

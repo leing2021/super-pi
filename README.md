@@ -35,10 +35,37 @@ Super Pi's answers:
 
 Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
 
-Optional pipeline automation:
-- Configure stage-level model routing in `.pi/settings.json` via `modelStrategy`
-- Configure step-to-step auto-continue via `pipeline.autoContinue`
-- Auto-continue is gate-aware (won't skip required approval/review choice steps)
+### New: Stage model routing + optional auto-continue
+
+Configure once in `.pi/settings.json`:
+
+```json
+{
+  "modelStrategy": {
+    "01-brainstorm": "claude-sonnet-4-20250514",
+    "02-plan": "claude-opus-4-20250115",
+    "03-work": "claude-sonnet-4-20250514",
+    "04-review": "claude-sonnet-4-20250514",
+    "05-learn": "claude-haiku-4-20250414",
+    "default": "claude-sonnet-4-20250514"
+  },
+  "pipeline": {
+    "autoContinue": false
+  }
+}
+```
+
+How it works:
+- Each stage picks `modelStrategy[stage]`, or `modelStrategy.default` as fallback.
+- Every stage prints a `📊 Pipeline Status` block with `Current / Output / Next`.
+- If `pipeline.autoContinue=true`, super-pi can trigger the next stage automatically.
+- Auto-continue is gate-aware: it will NOT skip required approvals (brainstorm approval, plan/review A/B/C choices).
+
+Quick example:
+1. Run `/skill:01-brainstorm`
+2. Approve the design
+3. If `autoContinue=true`, it moves to `/skill:02-plan` automatically
+4. If `autoContinue=false`, it stops after status output and waits for your command
 
 ---
 

@@ -282,8 +282,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           allowCustom: params.allowCustom,
         },
         {
-          input: async (question) => ctx.ui.input(question),
-          select: async (question, options) => ctx.ui.select(question, options),
+          input: async (question) => (await ctx.ui.input(question)) ?? null,
+          select: async (question, options) => (await ctx.ui.select(question, options)) ?? null,
         },
       )
 
@@ -586,7 +586,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     return {
       content: [{ type: "text", text: result.output }],
       details: {
-        ...event.details,
+        ...(event.details && typeof event.details === "object" ? event.details : {}),
         bashFilter: {
           strategy: result.strategy,
           originalBytes: result.originalBytes,
@@ -623,7 +623,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     return {
       content: [{ type: "text", text: result.output }],
       details: {
-        ...event.details,
+        ...(event.details && typeof event.details === "object" ? event.details : {}),
         readFilter: {
           strategy: result.strategy,
           originalBytes: result.originalBytes,
@@ -633,10 +633,11 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     }
   })
 
-  // Compaction prompt optimizer — makes summaries more focused and useful
-  pi.on("session_before_compact", async (_event, _ctx) => {
+  // Tree summary prompt optimizer — keeps branch summaries focused
+  pi.on("session_before_tree", async (_event, _ctx) => {
     return {
       customInstructions: COMPACTION_FOCUS_INSTRUCTIONS,
+      replaceInstructions: false,
     }
   })
 }

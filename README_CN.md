@@ -35,10 +35,37 @@ Super Pi 的解法：
 
 每一步都有专门的 skill + tool 配对，不是纯 prompt，是结构化的工具链。
 
-可选的流水线自动化：
-- 在 `.pi/settings.json` 里用 `modelStrategy` 配置分阶段模型路由
-- 用 `pipeline.autoContinue` 控制步骤间自动续跑
-- 自动续跑带关卡保护（不会跳过必须的审批/评审选择步骤）
+### 新增：分阶段模型路由 + 可选自动续跑
+
+在 `.pi/settings.json` 一次配置：
+
+```json
+{
+  "modelStrategy": {
+    "01-brainstorm": "claude-sonnet-4-20250514",
+    "02-plan": "claude-opus-4-20250115",
+    "03-work": "claude-sonnet-4-20250514",
+    "04-review": "claude-sonnet-4-20250514",
+    "05-learn": "claude-haiku-4-20250414",
+    "default": "claude-sonnet-4-20250514"
+  },
+  "pipeline": {
+    "autoContinue": false
+  }
+}
+```
+
+行为说明：
+- 每个阶段优先用 `modelStrategy[阶段名]`，未配置则回退到 `default`。
+- 每一步都会输出 `📊 Pipeline Status`（`Current / Output / Next`）。
+- `pipeline.autoContinue=true` 时，可以自动触发下一阶段。
+- 自动续跑带关卡保护：不会跳过必须的人机确认（brainstorm 审批、plan/review 的 A/B/C 选择）。
+
+快速示例：
+1. 执行 `/skill:01-brainstorm`
+2. 你确认设计通过
+3. 若 `autoContinue=true`，自动进入 `/skill:02-plan`
+4. 若 `autoContinue=false`，只输出状态并等待你手动继续
 
 ---
 
