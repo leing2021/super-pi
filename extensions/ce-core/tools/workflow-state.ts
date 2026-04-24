@@ -1,4 +1,4 @@
-import { readdirSync, existsSync, readFileSync } from "node:fs"
+import { readdirSync, statSync, existsSync } from "node:fs"
 import path from "node:path"
 
 export interface WorkflowCategoryState {
@@ -10,22 +10,11 @@ export interface WorkflowStateInput {
   repoRoot: string
 }
 
-export interface WorkflowContextState {
-  currentStage: string | null
-  nextStage: string | null
-  contextHealth: "good" | "watch" | "heavy" | "critical"
-  latestHandoffPath: string | null
-  blocker: string | null
-  recommendNewSession: boolean
-  suggestedNextAction: string | null
-}
-
 export interface WorkflowStateResult {
   brainstorms: WorkflowCategoryState
   plans: WorkflowCategoryState
   solutions: WorkflowCategoryState
   runs: WorkflowCategoryState
-  context: WorkflowContextState
 }
 
 function emptyCategory(): WorkflowCategoryState {
@@ -74,60 +63,6 @@ function collectFiles(dirPath: string): string[] {
   return results
 }
 
-function defaultContextState(): WorkflowContextState {
-  return {
-    currentStage: null,
-    nextStage: null,
-    contextHealth: "watch",
-    latestHandoffPath: null,
-    blocker: null,
-    recommendNewSession: false,
-    suggestedNextAction: null,
-  }
-}
-
-function contextStatePath(repoRoot: string): string {
-  return path.join(repoRoot, ".context", "compound-engineering", "context-state.json")
-}
-
-function loadContextState(repoRoot: string): WorkflowContextState {
-  const filePath = contextStatePath(repoRoot)
-  if (!existsSync(filePath)) {
-    return defaultContextState()
-  }
-
-  try {
-    const raw = readFileSync(filePath, "utf8")
-    const parsed = JSON.parse(raw) as {
-      currentStage?: string
-      nextStage?: string
-      contextHealth?: "good" | "watch" | "heavy" | "critical"
-      latestHandoffPath?: string
-      blocker?: string
-      recommendNewSession?: boolean
-    }
-
-    const currentStage = parsed.currentStage ?? null
-    const nextStage = parsed.nextStage ?? null
-
-    return {
-      currentStage,
-      nextStage,
-      contextHealth: parsed.contextHealth ?? "watch",
-      latestHandoffPath: parsed.latestHandoffPath ?? null,
-      blocker: parsed.blocker ?? null,
-      recommendNewSession: parsed.recommendNewSession ?? false,
-      suggestedNextAction: parsed.recommendNewSession
-        ? "open-new-session-with-latest-handoff"
-        : nextStage
-          ? `continue-${nextStage}`
-          : null,
-    }
-  } catch {
-    return defaultContextState()
-  }
-}
-
 export function createWorkflowStateTool() {
   return {
     name: "workflow_state",
@@ -139,7 +74,6 @@ export function createWorkflowStateTool() {
         plans: scanDir(path.join(repoRoot, "docs", "plans")),
         solutions: scanDir(path.join(repoRoot, "docs", "solutions")),
         runs: scanDir(path.join(repoRoot, ".context", "compound-engineering")),
-        context: loadContextState(repoRoot),
       }
     },
   }

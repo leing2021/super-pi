@@ -21,7 +21,6 @@ import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainsto
 import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
 import { createSessionHistoryTool } from "../extensions/ce-core/tools/session-history"
 import { createPatternExtractorTool } from "../extensions/ce-core/tools/pattern-extractor"
-import { createContextHandoffTool } from "../extensions/ce-core/tools/context-handoff"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 import {
   checkSubagentDepth,
@@ -295,9 +294,6 @@ describe("workflow_state", () => {
     expect(result.plans.latest).toBeNull()
     expect(result.solutions.latest).toBeNull()
     expect(result.runs.latest).toBeNull()
-    expect(result.context.contextHealth).toBe("watch")
-    expect(result.context.recommendNewSession).toBe(false)
-    expect(result.context.latestHandoffPath).toBeNull()
   })
 
   test("reports brainstorm count and latest when artifacts exist", async () => {
@@ -339,29 +335,6 @@ describe("workflow_state", () => {
 
     expect(result.plans.count).toBe(2)
     expect(result.plans.latest).toBe("2026-04-17-new-plan.md")
-  })
-
-  test("reads runtime context-state when available", async () => {
-    const repoRoot = `/tmp/pi-ce-ws-context-${Date.now()}`
-    const ctxDir = path.join(repoRoot, ".context", "compound-engineering")
-    await mkdir(ctxDir, { recursive: true })
-    await writeFile(path.join(ctxDir, "context-state.json"), JSON.stringify({
-      currentStage: "02-plan",
-      nextStage: "03-work",
-      contextHealth: "heavy",
-      latestHandoffPath: ".context/compound-engineering/handoffs/latest.md",
-      blocker: "Need final verification",
-      recommendNewSession: true,
-    }))
-
-    const tool = createWorkflowStateTool()
-    const result = await tool.execute({ repoRoot })
-
-    expect(result.context.currentStage).toBe("02-plan")
-    expect(result.context.nextStage).toBe("03-work")
-    expect(result.context.contextHealth).toBe("heavy")
-    expect(result.context.recommendNewSession).toBe(true)
-    expect(result.context.suggestedNextAction).toContain("open-new-session")
   })
 })
 
@@ -915,16 +888,6 @@ describe("session_checkpoint", () => {
       repoRoot,
       planPath: "docs/plans/2026-04-18-ci-cd-plan.md",
       completedUnits: ["Unit 1: test.yml", "Unit 2: publish.yml"],
-      activeFiles: ["extensions/ce-core/tools/workflow-state.ts"],
-      currentUnit: "Unit 2",
-      blocker: "none",
-      verification: "bun test passed",
-      contextTiers: {
-        hot: ["extensions/ce-core/tools/workflow-state.ts"],
-        warm: ["docs/plans/2026-04-18-ci-cd-plan.md"],
-        cold: ["docs/brainstorms/2026-04-17-ci-cd-requirements.md"],
-      },
-      handoffPath: ".context/compound-engineering/handoffs/latest.md",
     })
 
     const result = await tool.execute({
@@ -936,10 +899,6 @@ describe("session_checkpoint", () => {
     expect(result.planPath).toBe("docs/plans/2026-04-18-ci-cd-plan.md")
     expect(result.completedUnits).toEqual(["Unit 1: test.yml", "Unit 2: publish.yml"])
     expect(result.updatedAt).toBeTruthy()
-    expect(result.activeFiles).toEqual(["extensions/ce-core/tools/workflow-state.ts"])
-    expect(result.currentUnit).toBe("Unit 2")
-    expect(result.contextTiers?.hot).toContain("extensions/ce-core/tools/workflow-state.ts")
-    expect(result.handoffPath).toBe(".context/compound-engineering/handoffs/latest.md")
   })
 
   test("load returns empty array when no checkpoint exists", async () => {
@@ -1768,7 +1727,6 @@ describe("ce-core extension runtime registration", () => {
       "plan_diff",
       "session_history",
       "pattern_extractor",
-      "context_handoff",
     ])
   })
 })
@@ -1792,7 +1750,6 @@ describe("public exports", () => {
       "createPlanDiffTool",
       "createSessionHistoryTool",
       "createPatternExtractorTool",
-      "createContextHandoffTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",

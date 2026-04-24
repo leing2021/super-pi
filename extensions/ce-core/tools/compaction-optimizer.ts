@@ -24,13 +24,8 @@ export const COMPACTION_FOCUS_INSTRUCTIONS = `Additional focus for this summary:
 3. Summarize file reads by their purpose (e.g., "read auth.ts to understand JWT middleware flow") rather than including code snippets
 4. Be concise on the agent's reasoning process; be verbose on concrete state changes and decisions
 5. Keep the "Critical Context" section detailed — this is what the agent needs to continue working
-6. If any tests were run, summarize results by: file, pass/fail count, duration, and specific failure messages
-7. Note any blocked items and their exact error state
-8. Include a compact context-tier snapshot when available:
-   - Hot: current unit + active files (1-5)
-   - Warm: latest plan/requirements/solution artifact paths
-   - Cold: background docs not needed for immediate execution
-9. Include latest handoff-lite path and whether a new session is recommended`
+6. If any tests were run, summarize results by: file, pass/fail count, and specific failure messages
+7. Note any blocked items and their exact error state`
 
 /**
  * Additional instructions for turn-prefix summaries (split turns).
@@ -40,5 +35,4 @@ export const TURN_PREFIX_FOCUS_INSTRUCTIONS = `Focus the turn-prefix summary on:
 - What the user originally asked for
 - Key decisions made in the prefix
 - Exact file paths and identifiers needed to understand the retained suffix
-- Latest Context Status fields (health, handoff path, active files, new-session recommendation)
 Skip reasoning details — only keep actionable context.`

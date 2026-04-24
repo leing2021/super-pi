@@ -2,13 +2,6 @@
 
 Apply these rules in order. Return the first match.
 
-## Context pre-check
-
-If `context.recommendNewSession === true`, keep normal stage recommendation but add guidance:
-- Continue in a **new session**
-- Use `context.latestHandoffPath` as the first runtime input
-- Keep output concise (lite mode)
-
 ## Rule 1: No brainstorm artifacts
 
 If `brainstorms.count === 0`:
@@ -51,9 +44,3 @@ If brainstorm, plan, and solution all exist:
 If no rule matches cleanly:
 - Recommend `08-status`
 - Reason: State is ambiguous. Get a detailed report before deciding.
-
-## Output constraints
-
-- Recommend exactly one skill.
-- Include a one-line context status: health + handoff path + new-session recommendation.
-- Keep response short (target <= 300 tokens).
