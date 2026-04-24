@@ -180,7 +180,7 @@ Super Pi 的解法：
 
 ## 代码规模
 
-~2500 行 TypeScript 实现 15 个 tool，22 个 Markdown reference 文件 + 78 个规则文件驱动 10 个 skill，162 个测试覆盖全部 tool 逻辑。
+~2800 行 TypeScript 实现 16 个 tool，22 个 Markdown reference 文件 + 78 个规则文件驱动 10 个 skill，170 个测试覆盖全部 tool 逻辑。
 
 不是大而全的框架。每个 tool 职责单一，每个 skill 可独立使用，组合起来是完整工作流。
 
@@ -382,6 +382,12 @@ vim rules/python/api-design.md
 ---
 
 ## 更新日志
+
+### 0.19.2 — evidence-first handoff-lite + docs 追踪规则
+- 新增 `context_handoff`，在未传 markdown 时自动生成 evidence-first 默认 handoff-lite。
+- 通过 `skills/references/pipeline-config.md` 把 01-05 阶段的共享 handoff-lite 模板统一起来。
+- 新增测试，保护默认 handoff 生成行为以及共享 handoff 文档契约。
+- 更新 docs 追踪规则：Git 只上传 `docs/token-cost-evaluation.md`，其余 `docs/` 工件保留本地。
 
 ### 0.19.1 — 流水线配置 + 类型检查基线修复
 - 新增共享流水线配置（`skills/references/pipeline-config.md`），支持通过 `.pi/settings.json` 做分阶段模型路由。

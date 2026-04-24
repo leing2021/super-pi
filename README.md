@@ -180,7 +180,7 @@ Single `npm install` output filtered once pays for the entire overhead. Full eva
 
 ## Code Scale
 
-~2500 lines of TypeScript implementing 15 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 162 tests covering all tool logic.
+~2800 lines of TypeScript implementing 16 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 170 tests covering all tool logic.
 
 Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
 
@@ -382,6 +382,12 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 ---
 
 ## Changelog
+
+### 0.19.2 — Evidence-first handoff-lite + docs tracking rule
+- Added `context_handoff` with evidence-first default handoff-lite generation when markdown is omitted.
+- Standardized the shared handoff-lite template across 01-05 workflow handoffs via `skills/references/pipeline-config.md`.
+- Added tests protecting default handoff generation and the shared handoff docs contract.
+- Updated docs tracking so Git only uploads `docs/token-cost-evaluation.md` while other `docs/` artifacts stay local.
 
 ### 0.19.1 — Pipeline config + typecheck baseline fix
 - Added shared pipeline config (`skills/references/pipeline-config.md`) for stage model routing via `.pi/settings.json`.
