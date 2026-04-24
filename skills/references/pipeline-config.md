@@ -4,21 +4,21 @@ Use these rules in all Phase 1 skills: `01-brainstorm` → `02-plan` → `03-wor
 
 ## Start of skill: model routing
 
-Run this checklist before normal skill workflow:
+Model routing is handled automatically by the ce-core extension's `input` hook.
+When a user types `/skill:01-brainstorm` through `/skill:05-learn`, the extension:
 
-1. Read `.pi/settings.json` from the project root.
-2. Parse `modelStrategy` (if missing, skip switching).
-3. Resolve current stage key:
-   - `01-brainstorm`
-   - `02-plan`
-   - `03-work`
-   - `04-review`
-   - `05-learn`
-4. Pick `targetModel = modelStrategy[stageKey] ?? modelStrategy.default`.
-5. If `targetModel` exists and differs from the current model, run `/model <targetModel>`.
-6. If switching fails, continue with current model and mention the failure once.
+1. Reads `.pi/settings.json` from the project root.
+2. Parses `modelStrategy[stageKey]` or falls back to `modelStrategy.default`.
+3. If the target model differs from the current model, calls `pi.setModel()`.
+4. If switching fails, notifies the user and continues with the current model.
 
-## End of skill: status + context + optional auto-continue
+No manual `/model` command is needed. The skill itself does not need to handle model switching.
+
+Supported `modelStrategy` formats in `.pi/settings.json`:
+- Full reference: `"02-plan": "anthropic/claude-opus-4-1"`
+- Bare model id (reuses current provider): `"02-plan": "claude-opus-4-1"`
+
+## End of skill: status + context
 
 Before final completion, always output these blocks (replace placeholders with real values, never output angle-bracket placeholders literally):
 
@@ -44,16 +44,6 @@ Next step mapping:
 - `03-work` → `/skill:04-review`
 - `04-review` → `/skill:05-learn`
 - `05-learn` → `Completed`
-
-Then read `.pi/settings.json` → `pipeline.autoContinue`:
-- If `false` or missing, stop after the status block and wait for user input.
-- If current stage is `05-learn`, stop after status block.
-- If `true` and current stage is not `05-learn`, auto-continue is allowed only after stage-specific gates are satisfied:
-  - `01-brainstorm`: user has explicitly approved the design handoff.
-  - `02-plan`: review choice is resolved (A/B/C flow completed) and user confirmed to proceed.
-  - `04-review`: optional QA choice is resolved (A/B/C flow completed) and user confirmed to proceed.
-  - Any unclear/ambiguous state: do not auto-continue; stop and ask.
-- When gates are satisfied, automatically trigger the mapped next skill command.
 
 ### Handoff-lite template
 

@@ -35,7 +35,7 @@ Super Pi's answers:
 
 Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
 
-### New: Stage model routing + optional auto-continue
+### New: Stage model routing
 
 Configure once in `.pi/settings.json`:
 
@@ -48,24 +48,22 @@ Configure once in `.pi/settings.json`:
     "04-review": "claude-sonnet-4-20250514",
     "05-learn": "claude-haiku-4-20250414",
     "default": "claude-sonnet-4-20250514"
-  },
-  "pipeline": {
-    "autoContinue": false
   }
 }
 ```
 
 How it works:
-- Each stage picks `modelStrategy[stage]`, or `modelStrategy.default` as fallback.
+- Model switching is handled automatically by the ce-core extension `input` hook — no manual `/model` needed.
+- When you type `/skill:01-brainstorm` through `/skill:05-learn`, the extension reads `modelStrategy[stage]` (or `modelStrategy.default`) and switches before the skill runs.
+- Supported formats: full reference (`"anthropic/claude-opus-4-1"`) or bare model id (`"claude-opus-4-1"`, reuses current provider).
 - Every stage prints a `📊 Pipeline Status` block with `Current / Output / Next`.
-- If `pipeline.autoContinue=true`, super-pi can trigger the next stage automatically.
-- Auto-continue is gate-aware: it will NOT skip required approvals (brainstorm approval, plan/review A/B/C choices).
+- A `Switched model for <stage>: <provider>/<model>` notification appears when the model changes.
 
 Quick example:
-1. Run `/skill:01-brainstorm`
+1. Run `/skill:01-brainstorm` — model auto-switches to the configured brainstorm model
 2. Approve the design
-3. If `autoContinue=true`, it moves to `/skill:02-plan` automatically
-4. If `autoContinue=false`, it stops after status output and waits for your command
+3. Run `/skill:02-plan` — model auto-switches to the configured plan model
+4. Continue through each stage — model switches automatically at each step
 
 ---
 
@@ -383,6 +381,13 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
+### 0.19.3 — Terminate fix + runtime model routing + autoContinue removal
+- Fixed 6 ce-core tools (`brainstorm_dialog`, `workflow_state`, `review_router`, `session_checkpoint`, `session_history`, `pattern_extractor`) incorrectly returning `terminate: true`, which caused agent turns to end prematurely (brainstorm questions not shown, "type continue to proceed" interruptions).
+- Implemented runtime stage model routing via ce-core extension `input` hook: reads `.pi/settings.json` `modelStrategy`, auto-switches model before skill execution. Supports full reference (`anthropic/claude-opus-4-1`) and bare model id (`claude-opus-4-1`).
+- Removed `pipeline.autoContinue` configuration (never had runtime implementation; Pi lacks `skill_end` event for auto-continue).
+- Updated `skills/references/pipeline-config.md`, `README.md`, `README_CN.md` to reflect runtime model routing behavior.
+- Added 4 new tests covering terminate regression, input hook model routing, and bare model id parsing.
+
 ### 0.19.2 — Evidence-first handoff-lite + docs tracking rule
 - Added `context_handoff` with evidence-first default handoff-lite generation when markdown is omitted.
 - Standardized the shared handoff-lite template across 01-05 workflow handoffs via `skills/references/pipeline-config.md`.
@@ -391,8 +396,7 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ### 0.19.1 — Pipeline config + typecheck baseline fix
 - Added shared pipeline config (`skills/references/pipeline-config.md`) for stage model routing via `.pi/settings.json`.
-- Added gated auto-continue rules (`pipeline.autoContinue`) so automation does not skip required approval/review-choice steps.
-- Added explicit README usage examples for `modelStrategy` and `pipeline.autoContinue`.
+- Added runtime stage model routing via ce-core extension `input` hook (reads `modelStrategy` from `.pi/settings.json`, auto-switches model before skill execution).
 - Fixed TypeScript baseline issues so `bunx tsc --noEmit` passes.
 
 ### 0.19.0 — 0.69.0 alignment + learn rename

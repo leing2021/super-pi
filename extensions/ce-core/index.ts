@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises"
+import path from "node:path"
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
@@ -20,6 +22,65 @@ import { AsyncMutex } from "./tools/async-mutex"
 import type { SubagentExecOptions, SubagentRunner } from "./tools/subagent"
 
 const _subagentEnvMutex = new AsyncMutex()
+const PIPELINE_STAGE_KEYS = new Set([
+  "01-brainstorm",
+  "02-plan",
+  "03-work",
+  "04-review",
+  "05-learn",
+])
+
+interface ModelStrategySettings {
+  modelStrategy?: Record<string, string>
+}
+
+async function readProjectSettings(cwd: string): Promise<ModelStrategySettings | null> {
+  const settingsPath = path.join(cwd, ".pi", "settings.json")
+  try {
+    const content = await readFile(settingsPath, "utf8")
+    return JSON.parse(content) as ModelStrategySettings
+  } catch {
+    return null
+  }
+}
+
+function parseStageSkillName(text: string): string | null {
+  const trimmed = text.trim()
+  const match = trimmed.match(/^\/skill:([^\s]+)/)
+  if (!match) {
+    return null
+  }
+
+  const skillName = match[1]
+  return PIPELINE_STAGE_KEYS.has(skillName) ? skillName : null
+}
+
+function parseModelRef(
+  modelRef: string,
+  currentProvider?: string,
+): { provider: string, id: string } | null {
+  const trimmed = modelRef.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const slashIndex = trimmed.indexOf("/")
+  if (slashIndex > 0 && slashIndex < trimmed.length - 1) {
+    return {
+      provider: trimmed.slice(0, slashIndex),
+      id: trimmed.slice(slashIndex + 1),
+    }
+  }
+
+  if (!currentProvider) {
+    return null
+  }
+
+  return {
+    provider: currentProvider,
+    id: trimmed,
+  }
+}
 
 /**
  * Create a subagent runner that handles env injection with mutex protection
@@ -223,6 +284,62 @@ const patternExtractorParams = Type.Object({
 })
 
 export default function ceCoreExtension(pi: ExtensionAPI) {
+  pi.on("input", async (event, ctx) => {
+    if (event.source === "extension") {
+      return { action: "continue" as const }
+    }
+
+    const stageKey = parseStageSkillName(event.text)
+    if (!stageKey) {
+      return { action: "continue" as const }
+    }
+
+    const settings = await readProjectSettings(ctx.cwd)
+    const modelStrategy = settings?.modelStrategy
+    if (!modelStrategy) {
+      return { action: "continue" as const }
+    }
+
+    const targetModelRef = modelStrategy[stageKey] ?? modelStrategy.default
+    if (!targetModelRef) {
+      return { action: "continue" as const }
+    }
+
+    const parsed = parseModelRef(targetModelRef, ctx.model?.provider)
+    if (!parsed) {
+      if (ctx.hasUI) {
+        ctx.ui.notify(`Invalid modelStrategy entry for ${stageKey}: ${targetModelRef}`, "warning")
+      }
+      return { action: "continue" as const }
+    }
+
+    if (ctx.model?.provider === parsed.provider && ctx.model?.id === parsed.id) {
+      return { action: "continue" as const }
+    }
+
+    const model = ctx.modelRegistry.find(parsed.provider, parsed.id)
+    if (!model) {
+      if (ctx.hasUI) {
+        ctx.ui.notify(`Configured model not found for ${stageKey}: ${targetModelRef}`, "warning")
+      }
+      return { action: "continue" as const }
+    }
+
+    const switched = await pi.setModel(model)
+    if (switched) {
+      if (ctx.hasUI) {
+        ctx.ui.notify(`Switched model for ${stageKey}: ${model.provider}/${model.id}`, "info")
+      }
+      return { action: "continue" as const }
+    }
+
+    if (ctx.hasUI) {
+      ctx.ui.notify(`No API key available for configured model: ${model.provider}/${model.id}`, "warning")
+    }
+
+    return { action: "continue" as const }
+  })
+
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
   const subagent = createSubagentTool()
@@ -338,7 +455,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })
@@ -393,7 +509,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })
@@ -449,7 +564,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })
@@ -489,7 +603,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })
@@ -531,7 +644,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })
@@ -553,7 +665,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
-        terminate: true,
       }
     },
   })

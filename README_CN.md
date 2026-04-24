@@ -35,7 +35,7 @@ Super Pi 的解法：
 
 每一步都有专门的 skill + tool 配对，不是纯 prompt，是结构化的工具链。
 
-### 新增：分阶段模型路由 + 可选自动续跑
+### 新增：分阶段模型路由
 
 在 `.pi/settings.json` 一次配置：
 
@@ -48,24 +48,22 @@ Super Pi 的解法：
     "04-review": "claude-sonnet-4-20250514",
     "05-learn": "claude-haiku-4-20250414",
     "default": "claude-sonnet-4-20250514"
-  },
-  "pipeline": {
-    "autoContinue": false
   }
 }
 ```
 
 行为说明：
-- 每个阶段优先用 `modelStrategy[阶段名]`，未配置则回退到 `default`。
+- 模型切换由 ce-core 扩展的 `input` hook 自动处理，无需手动 `/model`。
+- 当你输入 `/skill:01-brainstorm` 到 `/skill:05-learn` 时，扩展自动读取 `modelStrategy[阶段名]`（或 `modelStrategy.default`）并在 skill 执行前切换。
+- 支持完整格式（`"anthropic/claude-opus-4-1"`）和简写格式（`"claude-opus-4-1"`，复用当前 provider）。
 - 每一步都会输出 `📊 Pipeline Status`（`Current / Output / Next`）。
-- `pipeline.autoContinue=true` 时，可以自动触发下一阶段。
-- 自动续跑带关卡保护：不会跳过必须的人机确认（brainstorm 审批、plan/review 的 A/B/C 选择）。
+- 模型切换成功时会显示 `Switched model for <阶段>: <provider>/<model>` 通知。
 
 快速示例：
-1. 执行 `/skill:01-brainstorm`
+1. 执行 `/skill:01-brainstorm` — 模型自动切换到配置的 brainstorm 模型
 2. 你确认设计通过
-3. 若 `autoContinue=true`，自动进入 `/skill:02-plan`
-4. 若 `autoContinue=false`，只输出状态并等待你手动继续
+3. 执行 `/skill:02-plan` — 模型自动切换到配置的 plan 模型
+4. 继续执行每个阶段，模型会自动切换
 
 ---
 
@@ -383,6 +381,13 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
+### 0.19.3 — terminate 修复 + 运行时模型路由 + autoContinue 移除
+- 修复 6 个 ce-core 工具（`brainstorm_dialog`、`workflow_state`、`review_router`、`session_checkpoint`、`session_history`、`pattern_extractor`）错误返回 `terminate: true`，导致 agent turn 提前结束（brainstorm 问题不显示、"输入继续才能继续"中断）。
+- 实现运行时分阶段模型路由：通过 ce-core 扩展 `input` hook，读取 `.pi/settings.json` 的 `modelStrategy`，在 skill 执行前自动切换模型。支持完整格式（`anthropic/claude-opus-4-1`）和简写格式（`claude-opus-4-1`）。
+- 移除 `pipeline.autoContinue` 配置（从未有运行时实现；Pi 缺少 `skill_end` 事件，无法自动续跑）。
+- 更新 `skills/references/pipeline-config.md`、`README.md`、`README_CN.md` 以反映运行时模型路由行为。
+- 新增 4 个测试，覆盖 terminate 回归、input hook 模型路由和裸模型 id 解析。
+
 ### 0.19.2 — evidence-first handoff-lite + docs 追踪规则
 - 新增 `context_handoff`，在未传 markdown 时自动生成 evidence-first 默认 handoff-lite。
 - 通过 `skills/references/pipeline-config.md` 把 01-05 阶段的共享 handoff-lite 模板统一起来。
@@ -391,8 +396,7 @@ vim rules/python/api-design.md
 
 ### 0.19.1 — 流水线配置 + 类型检查基线修复
 - 新增共享流水线配置（`skills/references/pipeline-config.md`），支持通过 `.pi/settings.json` 做分阶段模型路由。
-- 新增带关卡保护的自动续跑规则（`pipeline.autoContinue`），避免跳过必须的人机确认步骤。
-- README 补充了 `modelStrategy` 与 `pipeline.autoContinue` 的完整使用示例。
+- 新增运行时分阶段模型路由（通过 ce-core 扩展的 `input` hook 实现，读取 `.pi/settings.json` 的 `modelStrategy`，在 skill 执行前自动切换模型）。
 - 修复 TypeScript 基线问题，`bunx tsc --noEmit` 可通过。
 
 ### 0.19.0 — 0.69.0 对齐 + 沉淀重命名

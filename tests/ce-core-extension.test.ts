@@ -1699,12 +1699,15 @@ describe("parallel_subagent env isolation", () => {
 describe("ce-core extension runtime registration", () => {
   test("registers artifact_helper, ask_user_question, and subagent tools", () => {
     const registeredNames: string[] = []
+    const eventHandlers = new Map<string, any[]>()
     const pi = {
       registerTool(definition: { name: string }) {
         registeredNames.push(definition.name)
       },
-      on(_event: string, _handler: any) {
-        // no-op for tests
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
       },
       registerCommand(_name: string, _def: any) {
         // no-op for tests
@@ -1728,6 +1731,221 @@ describe("ce-core extension runtime registration", () => {
       "session_history",
       "pattern_extractor",
     ])
+  })
+
+  test("brainstorm_dialog does not terminate the agent turn", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {
+        // no-op for tests
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op for tests
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const brainstormDialog = definitions.get("brainstorm_dialog")
+    const result = await brainstormDialog.execute("tool-call-id", {
+      operation: "start",
+      repoRoot: `/tmp/pi-ce-bd-runtime-${Date.now()}`,
+      artifactPath: "docs/brainstorms/2026-04-24-runtime-requirements.md",
+      analysis: "Initial analysis",
+      questions: ["What exactly is broken?"],
+    })
+
+    expect(result.terminate).not.toBe(true)
+    expect(result.details.openQuestions).toEqual(["What exactly is broken?"])
+  })
+
+  test("conversation-state tools do not terminate the agent turn", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {
+        // no-op for tests
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op for tests
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const workflowState = definitions.get("workflow_state")
+    const reviewRouter = definitions.get("review_router")
+    const sessionCheckpoint = definitions.get("session_checkpoint")
+    const sessionHistory = definitions.get("session_history")
+    const patternExtractor = definitions.get("pattern_extractor")
+
+    const workflowStateResult = await workflowState.execute("tool-call-id", {
+      repoRoot: `/tmp/pi-ce-ws-runtime-${Date.now()}`,
+    })
+    expect(workflowStateResult.terminate).not.toBe(true)
+
+    const reviewRouterResult = await reviewRouter.execute("tool-call-id", {
+      filesChanged: ["src/auth.ts"],
+      insertions: 10,
+      deletions: 2,
+    })
+    expect(reviewRouterResult.terminate).not.toBe(true)
+
+    const checkpointRepoRoot = `/tmp/pi-ce-checkpoint-runtime-${Date.now()}`
+    const checkpointResult = await sessionCheckpoint.execute("tool-call-id", {
+      operation: "load",
+      repoRoot: checkpointRepoRoot,
+      planPath: "docs/plans/demo-plan.md",
+    })
+    expect(checkpointResult.terminate).not.toBe(true)
+
+    const historyRepoRoot = `/tmp/pi-ce-history-runtime-${Date.now()}`
+    const historyResult = await sessionHistory.execute("tool-call-id", {
+      operation: "query",
+      repoRoot: historyRepoRoot,
+    })
+    expect(historyResult.terminate).not.toBe(true)
+
+    const patternResult = await patternExtractor.execute("tool-call-id", {
+      operation: "extract",
+      artifacts: [{ path: "docs/a.md", content: "oauth token refresh oauth" }],
+      keywords: ["oauth"],
+    })
+    expect(patternResult.terminate).not.toBe(true)
+  })
+
+  test("input hook switches model for stage skill commands using .pi/settings.json", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const notifications: Array<{ message: string, level?: string }> = []
+    const repoRoot = `/tmp/pi-ce-model-routing-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        modelStrategy: {
+          "02-plan": "anthropic/claude-opus-4-1",
+          "03-work": "anthropic/claude-sonnet-4-20250514",
+          default: "anthropic/claude-haiku-4-20250414",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      async setModel(model: { provider: string, id: string }) {
+        setModelCalls.push(`${model.provider}/${model.id}`)
+        return true
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const inputHandlers = eventHandlers.get("input") ?? []
+    expect(inputHandlers.length).toBeGreaterThan(0)
+
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo-plan.md", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: {
+          find(provider: string, id: string) {
+            return { provider, id }
+          },
+        },
+        ui: {
+          notify(message: string, level?: string) {
+            notifications.push({ message, level })
+          },
+        },
+      },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(setModelCalls).toEqual(["anthropic/claude-opus-4-1"])
+    expect(notifications).toEqual([
+      {
+        message: "Switched model for 02-plan: anthropic/claude-opus-4-1",
+        level: "info",
+      },
+    ])
+  })
+
+  test("input hook supports bare model ids by reusing the current provider", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-model-routing-bare-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        modelStrategy: {
+          "03-work": "claude-opus-4-1",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      async setModel(model: { provider: string, id: string }) {
+        setModelCalls.push(`${model.provider}/${model.id}`)
+        return true
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const inputHandlers = eventHandlers.get("input") ?? []
+    const result = await inputHandlers[0](
+      { text: "/skill:03-work docs/plans/demo-plan.md", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: false,
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: {
+          find(provider: string, id: string) {
+            return { provider, id }
+          },
+        },
+        ui: {
+          notify() {
+            // no-op
+          },
+        },
+      },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(setModelCalls).toEqual(["anthropic/claude-opus-4-1"])
   })
 })
 
