@@ -5,28 +5,28 @@ description: Inspect workflow state and recommend the single best next Compound 
 
 # Next
 
-Use this skill only as a **compatibility shortcut** when the user asks what to do next.
+Use this skill when the user wants to know what to run next in the Compound Engineering workflow.
 
-## Core rule
+## Core rules
 
-- The primary status + next-step entry is now **`08-status`**.
-- Do not present `06-next` as a separate main workflow skill.
-- If the user invokes `06-next`, answer with the same behavior as `08-status`'s next-step recommendation path: inspect workflow state, recommend exactly one next skill, and keep the output lite.
+- Use the `workflow_state` tool to scan repo artifacts before making a recommendation.
+- Use the `session_history` tool to check recent executions and avoid recommending already-completed steps.
+- Recommend exactly **one** next skill with a clear reason.
+- Do not execute the recommended skill — only suggest it.
+- If the workflow state suggests multiple valid paths, pick the one closest to completing a full loop.
 
 ## Workflow
 
 1. Call `workflow_state` with the repo root.
-2. Use `session_history` to avoid recommending already-completed steps.
-3. Apply the same recommendation logic used by `08-status`.
-4. Recommend exactly one next skill with a clear reason.
-5. Briefly note that `08-status` is the default entry for status + next step.
+2. Read the structured state: brainstorm count, plan count, solution count, run count, and latest artifact per category.
+3. Apply the recommendation logic from `references/recommendation-logic.md`.
+4. Return the recommended skill and why.
 
 ## Output format
 
 - Recommended skill name
 - Why this is the next step
 - Brief summary of current workflow state
-- Short note: `08-status` is the default status/next-step entry
 
 ## Available skills
 

@@ -5,13 +5,7 @@ description: Explain when to use each Compound Engineering Phase 1 skill and how
 
 # Help
 
-Use this skill only as a **documentation-style helper** when the user explicitly asks for workflow explanation or usage guidance.
-
-## Positioning
-
-- `09-help` is an auxiliary documentation entry, not a primary workflow skill.
-- Prefer explaining the smallest useful next step.
-- If the user mainly wants to know current state or what to do next, prefer `08-status`.
+Use this skill when the user asks how to use the package, which workflow step comes next, or which Compound Engineering skill fits the current task.
 
 ## Phase 1 skill guide
 
@@ -41,4 +35,3 @@ Use this skill only as a **documentation-style helper** when the user explicitly
 ## Output
 
 When responding, explain the smallest useful next step instead of forcing the full sequence.
-Do not present `09-help` as a default starting point for the workflow.

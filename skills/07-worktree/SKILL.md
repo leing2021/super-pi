@@ -5,13 +5,7 @@ description: Create and manage git worktrees for isolated feature development.
 
 # 03-worktree
 
-Use this skill only when isolated git worktree development is explicitly needed for larger or higher-risk work.
-
-## Positioning
-
-- `07-worktree` is an **advanced / optional** workflow helper.
-- It is not part of the default Compound Engineering path.
-- Most users should stay on the main flow unless they specifically need branch/worktree isolation.
+Use this skill when you need to create an isolated git worktree for feature work, merge changes back, or clean up after completion.
 
 ## Core rules
 
