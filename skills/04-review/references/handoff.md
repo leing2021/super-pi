@@ -8,6 +8,8 @@ When the review is complete:
 4. After autofix, report what was changed and whether re-review confirms the fix.
 5. Recommend `05-learn` when the review surfaced a reusable learning or newly solved problem.
 6. Mention any relevant plan or solution artifacts referenced during review.
+7. Provide `🧠 Context Status` (health, handoff path, active files, new-session recommendation).
+8. Save/mention handoff-lite path under `.context/compound-engineering/handoffs/` using the shared `Handoff-lite template` in `skills/references/pipeline-config.md`.
 
 ## Autofix loop
 

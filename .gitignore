@@ -5,6 +5,7 @@ dist
 coverage/
 .context/
 
-# docs/ is mostly runtime artifacts, but whitelist specific committed docs
-docs/*
-!docs/token-cost-evaluation.md
+# docs/ is local/runtime-heavy by default; only keep the public evaluation doc tracked
+/docs/**
+!/docs/
+!/docs/token-cost-evaluation.md

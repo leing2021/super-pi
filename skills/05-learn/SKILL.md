@@ -32,5 +32,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 5. Choose the correct category using `references/category-map.md`.
 6. Write or update the solution artifact under `docs/solutions/<category>/`.
 7. Mention how future `02-plan` and `04-review` runs should benefit from the new learning.
+8. Include `🧠 Context Status` (health, handoff path, active files, new-session recommendation) for workflow closure.
+9. Save/mention handoff-lite path under `.context/compound-engineering/handoffs/` using the shared `Handoff-lite template` in `skills/references/pipeline-config.md`.
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).
