@@ -214,6 +214,25 @@ describe("bash-output-filter: test output", () => {
     expect(result.output).toContain("FAILURES")
     expect(result.output).toContain("1 failed, 200 passed")
   })
+
+  test("collapses verbose all-pass vitest output to compact summary", () => {
+    const lines = [
+      ...Array(600).fill("✓ src/foo.test.ts > should pass"),
+      "",
+      "Test Files  12 passed (12)",
+      "Tests  600 passed (600)",
+      "Duration 4.23s",
+    ]
+    const output = makeOutput(lines)
+    const result = filterBashOutput({ command: "bun test", output, isError: false })
+
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("Test Files")
+    expect(result.output).toContain("Tests")
+    expect(result.output).toContain("Duration")
+    expect(result.output).not.toContain("✓ src/foo.test.ts")
+    expect(result.filteredBytes).toBeLessThan(1500)
+  })
 })
 
 // ============================================================================

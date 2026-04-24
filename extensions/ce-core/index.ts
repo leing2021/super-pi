@@ -13,6 +13,7 @@ import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
 import { createPatternExtractorTool } from "./tools/pattern-extractor"
+import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
@@ -144,6 +145,16 @@ const sessionCheckpointParams = Type.Object({
   completedUnits: Type.Optional(Type.Array(Type.String(), { description: "List of completed implementation unit names" })),
   failedUnit: Type.Optional(Type.String({ description: "Name of the unit that failed" })),
   error: Type.Optional(Type.String({ description: "Error message from the failure" })),
+  activeFiles: Type.Optional(Type.Array(Type.String(), { description: "Active files for the current execution slice" })),
+  currentUnit: Type.Optional(Type.String({ description: "Current implementation unit" })),
+  blocker: Type.Optional(Type.String({ description: "Current blocker summary" })),
+  verification: Type.Optional(Type.String({ description: "Latest verification summary" })),
+  contextTiers: Type.Optional(Type.Object({
+    hot: Type.Array(Type.String()),
+    warm: Type.Array(Type.String()),
+    cold: Type.Array(Type.String()),
+  }, { description: "Context tiered file/path references" })),
+  handoffPath: Type.Optional(Type.String({ description: "Latest handoff-lite path" })),
 })
 
 const splitterUnitSchema = Type.Object({
@@ -222,6 +233,30 @@ const patternExtractorParams = Type.Object({
   categories: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()), { description: "Category name to keyword mapping" })),
 })
 
+const contextHandoffParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("save"),
+    Type.Literal("load"),
+    Type.Literal("latest"),
+    Type.Literal("status"),
+  ], { description: "Context handoff operation" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  currentStage: Type.Optional(Type.String({ description: "Current CE phase" })),
+  nextStage: Type.Optional(Type.String({ description: "Next CE phase" })),
+  contextHealth: Type.Optional(Type.Union([
+    Type.Literal("good"),
+    Type.Literal("watch"),
+    Type.Literal("heavy"),
+    Type.Literal("critical"),
+  ], { description: "Context health classification" })),
+  activeFiles: Type.Optional(Type.Array(Type.String(), { description: "Active files" })),
+  blocker: Type.Optional(Type.String({ description: "Current blocker" })),
+  verification: Type.Optional(Type.String({ description: "Verification summary" })),
+  artifacts: Type.Optional(Type.Record(Type.String(), Type.Optional(Type.String()), { description: "Artifact path map" })),
+  handoffMarkdown: Type.Optional(Type.String({ description: "Handoff-lite markdown content" })),
+  handoffPath: Type.Optional(Type.String({ description: "Specific handoff path to load" })),
+})
+
 export default function ceCoreExtension(pi: ExtensionAPI) {
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
@@ -236,6 +271,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const planDiff = createPlanDiffTool()
   const sessionHistory = createSessionHistoryTool()
   const patternExtractor = createPatternExtractorTool()
+  const contextHandoff = createContextHandoffTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -444,6 +480,12 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         completedUnits: params.completedUnits,
         failedUnit: params.failedUnit,
         error: params.error,
+        activeFiles: params.activeFiles,
+        currentUnit: params.currentUnit,
+        blocker: params.blocker,
+        verification: params.verification,
+        contextTiers: params.contextTiers,
+        handoffPath: params.handoffPath,
       })
 
       return {
@@ -558,6 +600,34 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     },
   })
 
+  pi.registerTool({
+    name: contextHandoff.name,
+    label: "Context Handoff",
+    description: "Persist and query phase handoff-lite plus context health state.",
+    parameters: contextHandoffParams,
+    async execute(_toolCallId, params) {
+      const result = await contextHandoff.execute({
+        operation: params.operation,
+        repoRoot: params.repoRoot,
+        currentStage: params.currentStage,
+        nextStage: params.nextStage,
+        contextHealth: params.contextHealth,
+        activeFiles: params.activeFiles,
+        blocker: params.blocker,
+        verification: params.verification,
+        artifacts: params.artifacts,
+        handoffMarkdown: params.handoffMarkdown,
+        handoffPath: params.handoffPath,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+        terminate: true,
+      }
+    },
+  })
+
   // Bash output smart filter — reduces context waste from verbose command output
   pi.on("tool_result", async (event, _ctx) => {
     if (event.toolName !== "bash") return undefined
@@ -658,6 +728,7 @@ export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export { createPlanDiffTool } from "./tools/plan-diff"
 export { createSessionHistoryTool } from "./tools/session-history"
 export { createPatternExtractorTool } from "./tools/pattern-extractor"
+export { createContextHandoffTool } from "./tools/context-handoff"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

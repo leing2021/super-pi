@@ -9,6 +9,16 @@ export interface SessionCheckpointInput {
   completedUnits?: string[]
   failedUnit?: string
   error?: string
+  activeFiles?: string[]
+  currentUnit?: string
+  blocker?: string
+  verification?: string
+  contextTiers?: {
+    hot: string[]
+    warm: string[]
+    cold: string[]
+  }
+  handoffPath?: string
 }
 
 export interface CheckpointEntry {
@@ -18,6 +28,16 @@ export interface CheckpointEntry {
   status?: "active" | "failed"
   failedUnit?: string
   error?: string
+  activeFiles?: string[]
+  currentUnit?: string
+  blocker?: string
+  verification?: string
+  contextTiers?: {
+    hot: string[]
+    warm: string[]
+    cold: string[]
+  }
+  handoffPath?: string
 }
 
 export interface SessionCheckpointResult {
@@ -31,6 +51,16 @@ export interface SessionCheckpointResult {
   strategy?: string
   retryFrom?: string
   checkpoints?: CheckpointEntry[]
+  activeFiles?: string[]
+  currentUnit?: string
+  blocker?: string
+  verification?: string
+  contextTiers?: {
+    hot: string[]
+    warm: string[]
+    cold: string[]
+  }
+  handoffPath?: string
 }
 
 function checkpointDir(repoRoot: string): string {
@@ -89,6 +119,12 @@ async function saveCheckpoint(input: SessionCheckpointInput): Promise<SessionChe
     completedUnits,
     updatedAt: new Date().toISOString(),
     status: "active",
+    activeFiles: input.activeFiles,
+    currentUnit: input.currentUnit,
+    blocker: input.blocker,
+    verification: input.verification,
+    contextTiers: input.contextTiers,
+    handoffPath: input.handoffPath,
   }
 
   await writeEntry(input.repoRoot, entry)
@@ -98,6 +134,12 @@ async function saveCheckpoint(input: SessionCheckpointInput): Promise<SessionChe
     planPath,
     completedUnits,
     updatedAt: entry.updatedAt,
+    activeFiles: entry.activeFiles,
+    currentUnit: entry.currentUnit,
+    blocker: entry.blocker,
+    verification: entry.verification,
+    contextTiers: entry.contextTiers,
+    handoffPath: entry.handoffPath,
   }
 }
 
@@ -114,6 +156,12 @@ async function loadCheckpoint(input: SessionCheckpointInput): Promise<SessionChe
     planPath: entry.planPath,
     completedUnits: entry.completedUnits,
     updatedAt: entry.updatedAt,
+    activeFiles: entry.activeFiles,
+    currentUnit: entry.currentUnit,
+    blocker: entry.blocker,
+    verification: entry.verification,
+    contextTiers: entry.contextTiers,
+    handoffPath: entry.handoffPath,
   }
 }
 
@@ -164,6 +212,12 @@ async function failCheckpoint(input: SessionCheckpointInput): Promise<SessionChe
     error: entry.error,
     completedUnits: entry.completedUnits,
     updatedAt: entry.updatedAt,
+    activeFiles: entry.activeFiles,
+    currentUnit: entry.currentUnit,
+    blocker: entry.blocker,
+    verification: entry.verification,
+    contextTiers: entry.contextTiers,
+    handoffPath: entry.handoffPath,
   }
 }
 
@@ -201,6 +255,12 @@ async function retryCheckpoint(input: SessionCheckpointInput): Promise<SessionCh
     completedUnits: entry.completedUnits,
     strategy,
     updatedAt: entry.updatedAt,
+    activeFiles: entry.activeFiles,
+    currentUnit: entry.currentUnit,
+    blocker: entry.blocker,
+    verification: entry.verification,
+    contextTiers: entry.contextTiers,
+    handoffPath: entry.handoffPath,
   }
 }
 
