@@ -9,7 +9,7 @@
 // 1. Lock / generated files → extreme compression (summary only)
 // 2. package.json → keep scripts + dep summary, drop full version lists
 // 3. Large code files → keep signatures/structure, collapse bodies
-// 4. Large markdown → keep headings + first paragraph per section
+// 4. Large markdown → keep headings + code blocks + lists + expanded paragraphs per section
 // 5. Generic → head/tail truncation for very large files
 
 // ============================================================================
@@ -92,6 +92,9 @@ function classifyFile(path: string): FileCategory {
 
 /** Minimum output size (bytes) to trigger any filtering */
 const MIN_FILTER_THRESHOLD = 2048 // 2KB
+
+/** Minimum output size (bytes) to trigger markdown filtering */
+const MARKDOWN_FILTER_THRESHOLD = 8192 // 8KB — markdown docs are dense, don't filter small ones
 
 /** Maximum size for structural code compression trigger */
 const CODE_COMPRESS_THRESHOLD = 8192 // 8KB
@@ -308,6 +311,9 @@ function filterMarkdown(output: string): string {
   let inParagraph = false
   let paragraphLineCount = 0
   let inCodeBlock = false
+  let omitMarkerPlaced = false
+
+  const MAX_PARAGRAPH_LINES = 3 // Keep first N lines of each paragraph (vs 1 before)
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -322,6 +328,7 @@ function filterMarkdown(output: string): string {
     // Keep all lines inside code blocks
     if (inCodeBlock) {
       kept.push(line)
+      omitMarkerPlaced = false
       continue
     }
 
@@ -330,27 +337,43 @@ function filterMarkdown(output: string): string {
       kept.push(line)
       inParagraph = false
       paragraphLineCount = 0
+      omitMarkerPlaced = false
       continue
     }
 
-    // Empty lines
+    // Empty lines — reset paragraph state
     if (trimmed === "") {
       kept.push(line)
       inParagraph = false
       paragraphLineCount = 0
+      omitMarkerPlaced = false
       continue
     }
 
-    // Keep first paragraph line after heading, skip the rest
+    // Always keep list items (-, *, numbered) — they often contain key definitions
+    if (/^[-*+]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed)) {
+      kept.push(line)
+      omitMarkerPlaced = false
+      // List items don't count as paragraph continuation
+      continue
+    }
+
+    // Keep first N lines of each paragraph
     if (!inParagraph) {
       kept.push(line)
       inParagraph = true
       paragraphLineCount = 1
+      omitMarkerPlaced = false
     } else {
       paragraphLineCount++
-      // Skip subsequent paragraph lines
-      if (paragraphLineCount === 2) {
-        kept.push(`  [... additional paragraph content omitted]`)
+      if (paragraphLineCount <= MAX_PARAGRAPH_LINES) {
+        kept.push(line)
+      } else {
+        // Place omit marker once per paragraph
+        if (!omitMarkerPlaced) {
+          kept.push(`  [... additional paragraph content omitted]`)
+          omitMarkerPlaced = true
+        }
       }
     }
   }
@@ -400,9 +423,11 @@ function appendFilterNotice(
   originalBytes: number,
   filteredBytes: number,
   strategy: string,
+  path?: string,
 ): string {
   const saved = formatBytes(originalBytes - filteredBytes)
-  return `${output}\n\n[Read output filtered: ${formatBytes(originalBytes)} → ${formatBytes(filteredBytes)} (${saved} saved, strategy: ${strategy})]`
+  const pathHint = path ? `: bash cat ${path}` : ": bash cat <path>"
+  return `${output}\n\n[Read output filtered: ${formatBytes(originalBytes)} → ${formatBytes(filteredBytes)} (${saved} saved, strategy: ${strategy}). If you need the full content, use${pathHint}]`
 }
 
 // ============================================================================
@@ -464,8 +489,12 @@ export function filterReadOutput(input: ReadOutputFilterInput): ReadOutputFilter
       break
 
     case "markdown":
-      filtered = filterMarkdown(output)
-      strategyName = "markdown (headings + first paragraph)"
+      if (originalBytes >= MARKDOWN_FILTER_THRESHOLD) {
+        filtered = filterMarkdown(output)
+        strategyName = "markdown (headings + code + lists + expanded paragraphs)"
+      } else {
+        return { output, filtered: false, originalBytes, filteredBytes: originalBytes, strategy: "none (markdown below 8KB threshold)" }
+      }
       break
 
     case "config":
@@ -497,7 +526,7 @@ export function filterReadOutput(input: ReadOutputFilterInput): ReadOutputFilter
   }
 
   return {
-    output: appendFilterNotice(filtered, originalBytes, filteredBytes, strategyName),
+    output: appendFilterNotice(filtered, originalBytes, filteredBytes, strategyName, path),
     filtered: true,
     originalBytes,
     filteredBytes,

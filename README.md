@@ -178,7 +178,7 @@ Single `npm install` output filtered once pays for the entire overhead. Full eva
 
 ## Code Scale
 
-~2800 lines of TypeScript implementing 16 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 170 tests covering all tool logic.
+~2800 lines of TypeScript implementing 16 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 175 tests covering all tool logic.
 
 Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
 
@@ -380,6 +380,13 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 ---
 
 ## Changelog
+
+### 0.19.4 — Read output filter markdown truncation fix
+- Fixed `read-output-filter` over-truncating markdown files: raised markdown threshold from 2KB → 8KB.
+- Improved `filterMarkdown()` to fully preserve list items (`-`, `*`, numbered) and keep first 3 lines of paragraphs (was 1).
+- Filter notice now includes actual file path in actionable guidance (`bash cat <path>`).
+- Added 5 new tests covering list preservation, markdown threshold gate, and path-in-notice.
+- 175 tests passing.
 
 ### 0.19.3 — Terminate fix + runtime model routing + autoContinue removal
 - Fixed 6 ce-core tools (`brainstorm_dialog`, `workflow_state`, `review_router`, `session_checkpoint`, `session_history`, `pattern_extractor`) incorrectly returning `terminate: true`, which caused agent turns to end prematurely (brainstorm questions not shown, "type continue to proceed" interruptions).

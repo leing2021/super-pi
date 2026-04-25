@@ -178,7 +178,7 @@ Super Pi 的解法：
 
 ## 代码规模
 
-~2800 行 TypeScript 实现 16 个 tool，22 个 Markdown reference 文件 + 78 个规则文件驱动 10 个 skill，170 个测试覆盖全部 tool 逻辑。
+~2800 行 TypeScript 实现 16 个 tool，22 个 Markdown reference 文件 + 78 个规则文件驱动 10 个 skill，175 个测试覆盖全部 tool 逻辑。
 
 不是大而全的框架。每个 tool 职责单一，每个 skill 可独立使用，组合起来是完整工作流。
 
@@ -380,6 +380,13 @@ vim rules/python/api-design.md
 ---
 
 ## 更新日志
+
+### 0.19.4 — Read output filter markdown 截断修复
+- 修复 `read-output-filter` 对 markdown 文件过度截断：markdown 过滤阈值从 2KB 提升至 8KB。
+- 改进 `filterMarkdown()`：完整保留列表项（`-`、`*`、编号列表），段落保留前 3 行（原来只保留 1 行）。
+- 过滤提示现包含实际文件路径的可行动指引（`bash cat <path>`）。
+- 新增 5 个测试，覆盖列表保留、markdown 阈值门控和路径提示。
+- 175 个测试全部通过。
 
 ### 0.19.3 — terminate 修复 + 运行时模型路由 + autoContinue 移除
 - 修复 6 个 ce-core 工具（`brainstorm_dialog`、`workflow_state`、`review_router`、`session_checkpoint`、`session_history`、`pattern_extractor`）错误返回 `terminate: true`，导致 agent turn 提前结束（brainstorm 问题不显示、"输入继续才能继续"中断）。

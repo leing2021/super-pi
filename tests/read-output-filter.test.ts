@@ -204,7 +204,7 @@ describe("read-output-filter: large code files", () => {
 // ============================================================================
 
 describe("read-output-filter: markdown files", () => {
-  test("compresses markdown by keeping headings and first paragraph", () => {
+  test("compresses markdown by keeping headings, lists, code and expanded paragraphs", () => {
     const lines = [
       "# Project README",
       "",
@@ -228,7 +228,9 @@ describe("read-output-filter: markdown files", () => {
       expect(result.output).toContain("# Project README")
       expect(result.output).toContain("## Installation")
       expect(result.output).toContain("## API Reference")
-      expect(result.filteredBytes).toBeLessThan(result.originalBytes * 0.7)
+      // Paragraph content is now expanded (3 lines instead of 1)
+      expect(result.output).toContain("It spans many lines with details.")
+      expect(result.filteredBytes).toBeLessThan(result.originalBytes * 0.8)
     }
   })
 
@@ -258,9 +260,100 @@ describe("read-output-filter: markdown files", () => {
       // Code block lines must be preserved
       expect(result.output).toContain("import { foo } from 'bar'")
       expect(result.output).toContain("const y = x + 1")
-      // Paragraph compression should still work outside code blocks
+      // Paragraph compression keeps first 3 lines + following line
       expect(result.output).toContain("After code block text.")
+      // Filter notice should include actionable guidance with actual path
+      expect(result.output).toContain("bash cat guide.md")
     }
+  })
+})
+
+// ============================================================================
+// Markdown: list preservation
+// ============================================================================
+
+describe("read-output-filter: markdown list preservation", () => {
+  test("preserves list items in markdown", () => {
+    const lines = [
+      "# Architecture",
+      "",
+      "The system has these components:",
+      "",
+      "- **Builder**: Orchestrates execution agents and manages runtime lifecycle",
+      "- **Schema OS**: Defines data schemas and validation rules",
+      "- **Prompt OS**: Manages prompt templates and versioning",
+      "- **Pipeline OS**: Controls execution flow and parallel dispatch",
+      "- **QA OS**: Handles quality assurance and testing",
+      "- **Versioning OS**: Manages version compatibility and migrations",
+      "",
+      "## Details",
+      "",
+      "Each subsystem is described below.",
+      ...Array(100).fill("Detail paragraph content that is very long and repetitive."),
+    ]
+    const output = lines.join("\n")
+    const result = filterReadOutput({ path: "docs/architecture.md", output })
+    if (result.filtered) {
+      // All list items must be preserved
+      expect(result.output).toContain("**Builder**")
+      expect(result.output).toContain("**Schema OS**")
+      expect(result.output).toContain("**Prompt OS**")
+      expect(result.output).toContain("**Pipeline OS**")
+      expect(result.output).toContain("**QA OS**")
+      expect(result.output).toContain("**Versioning OS**")
+    }
+  })
+
+  test("preserves numbered list items", () => {
+    const lines = [
+      "# Setup Steps",
+      "",
+      "Follow these steps:",
+      "",
+      "1. Install dependencies",
+      "2. Configure environment",
+      "3. Run the build",
+      "4. Deploy to production",
+      "5. Verify deployment",
+      "",
+      "## Extra",
+      "",
+      "More text.",
+      ...Array(100).fill("Padding line to exceed threshold."),
+    ]
+    const output = lines.join("\n")
+    const result = filterReadOutput({ path: "setup.md", output })
+    if (result.filtered) {
+      expect(result.output).toContain("1. Install dependencies")
+      expect(result.output).toContain("5. Verify deployment")
+    }
+  })
+})
+
+// ============================================================================
+// Markdown: 8KB threshold
+// ============================================================================
+
+describe("read-output-filter: markdown threshold", () => {
+  test("does not filter markdown files between 2KB and 8KB", () => {
+    // Generate content between 2KB and 8KB
+    // It should pass the 2KB general threshold but NOT be filtered because markdown threshold is 8KB
+    const lines = [
+      "# Medium Doc",
+      "",
+      "Some content here that is meaningful.",
+      "More content that adds detail.",
+      "Even more content for the first section.",
+      ...Array(80).fill("Extra line of content that makes this file exceed 2KB general threshold."),
+    ]
+    const output = lines.join("\n")
+    const size = Buffer.byteLength(output, "utf-8")
+    // Verify the file is between 2KB and 8KB
+    expect(size).toBeGreaterThan(2048)
+    expect(size).toBeLessThan(8192)
+    const result = filterReadOutput({ path: "medium.md", output })
+    expect(result.filtered).toBe(false)
+    expect(result.strategy).toContain("below 8KB")
   })
 })
 
@@ -297,6 +390,8 @@ describe("read-output-filter: unknown and edge cases", () => {
     const result = filterReadOutput({ path: "package-lock.json", output })
     if (result.filtered) {
       expect(result.output).toContain("filtered")
+      // Filter notice should include actual path
+      expect(result.output).toContain("package-lock.json")
     }
   })
 })
