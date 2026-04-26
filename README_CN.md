@@ -275,7 +275,7 @@ system prompt（30 tokens：skill 名称 + 描述）
 
 | Skill | 预加载的规则 |
 |-------|-------------|
-| `02-plan` | `common/development-workflow.md` + `common/testing.md` |
+| `02-plan` | `common/` 规则 + 语言检测 + 匹配的语言规则（如 `rules/typescript/`） |
 | `03-work` | 匹配当前代码库的语言规则 |
 | `04-review` | `common/code-review.md` + 变更文件的语言规则 |
 
@@ -380,6 +380,12 @@ vim rules/python/api-design.md
 ---
 
 ## 更新日志
+
+### 0.19.5 — Plan 阶段缺失语言级规则修复
+- 修复 `02-plan` 在计划阶段不加载语言特定规则（如 `rules/typescript/`）的问题——仅加载了 `common/` 规则。
+- 更新 `10-rules` SKILL.md Pre-flight，要求计划阶段也进行语言检测。
+- 更新 `02-plan` SKILL.md Core rules 为 4 步渐进式加载策略（common → 语言检测 → 语言规则 → web 规则）。
+- 同步 `README.md` 和 `README_CN.md` 的 skill 表格描述。
 
 ### 0.19.4 — Read output filter markdown 截断修复
 - 修复 `read-output-filter` 对 markdown 文件过度截断：markdown 过滤阈值从 2KB 提升至 8KB。

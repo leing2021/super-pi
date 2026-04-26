@@ -23,6 +23,8 @@ Do not load the entire rules tree by default. Read only the files needed for the
 Read at minimum:
 - `rules/common/development-workflow.md`
 - `rules/common/testing.md`
+- **Detect the active language** from the project: check for `tsconfig.json` → typescript, `package.json` (without tsconfig) → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin. Load all files in the matching language directory (e.g. `rules/typescript/`).
+- `rules/web/` files if the task involves frontend/browser concerns
 
 ### Before implementation (03-work)
 

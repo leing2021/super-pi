@@ -11,7 +11,11 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-- Before planning, read the `10-rules` skill and load `rules/common/development-workflow.md` and `rules/common/testing.md` for coding standards context.
+- Before planning, read the `10-rules` skill and load:
+  1. `rules/common/development-workflow.md` and `rules/common/testing.md`
+  2. **Detect the project's primary language** (check for `tsconfig.json` → typescript, `package.json` without tsconfig → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin)
+  3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
+  4. If the task involves frontend/browser concerns, also load `rules/web/` files
 - Search `docs/brainstorms/` for a relevant requirements artifact first.
 - Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
 - Write the final plan to `docs/plans/`.
