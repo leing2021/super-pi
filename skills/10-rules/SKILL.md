@@ -29,14 +29,15 @@ Read at minimum:
 ### Before implementation (03-work)
 
 Read the common minimum above, plus:
-- The language directory matching the active codebase (e.g. `rules/typescript/` for TS work)
+- **Detect the active language** from the project: check for `tsconfig.json` → typescript, `package.json` (without tsconfig) → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin. Load all files in the matching language directory.
 - `rules/web/` files if the task involves frontend/browser concerns
 
 ### Before review (04-review)
 
 Read at minimum:
 - `rules/common/code-review.md`
-- The language directory matching the changed files
+- **Detect the active language** from the changed files: use the same language detection as above. Load all files in the matching language directory.
+- `rules/web/` files if the review involves frontend/browser changes
 
 ## Progressive loading order
 

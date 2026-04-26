@@ -276,8 +276,8 @@ Three CE skills auto-trigger rule loading at their entry points:
 | Skill | Rules pre-loaded |
 |-------|-----------------|
 | `02-plan` | `common/` rules + language detection + matching language rules (e.g. `rules/typescript/`) |
-| `03-work` | Language-specific rules matching the active codebase |
-| `04-review` | `common/code-review.md` + language rules for changed files |
+| `03-work` | `common/` rules + language detection + matching language rules + `web/` if frontend |
+| `04-review` | `common/code-review.md` + language detection + matching language rules + `web/` if frontend |
 
 **Rule precedence** (when layers overlap on the same topic):
 
@@ -381,11 +381,13 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
-### 0.19.5 — Plan skill missing language rules fix
+### 0.19.5 — Plan/Work/Review skill rules loading alignment
 - Fixed `02-plan` not loading language-specific rules (e.g. `rules/typescript/`) during the planning phase — only `common/` rules were loaded.
-- Updated `10-rules` SKILL.md Pre-flight to require language detection in the planning phase.
-- Updated `02-plan` SKILL.md Core rules to a 4-step progressive loading strategy (common → language detection → language rules → web rules).
-- Synced `README.md` and `README_CN.md` skill table to reflect the change.
+- Fixed `03-work` Core rules missing explicit `common/` loading and `web/` conditional loading (10-rules defined them but the skill's own instructions didn't).
+- Fixed `04-review` Core rules missing explicit language detection method and `web/` conditional loading.
+- Updated all three skills to use a consistent 4-step progressive loading strategy (common → language detect → language rules → web rules).
+- Updated `10-rules` SKILL.md Pre-flight to include complete language detection mapping for all three phases.
+- Synced `README.md` and `README_CN.md` skill tables to reflect the unified loading strategy.
 
 ### 0.19.4 — Read output filter markdown truncation fix
 - Fixed `read-output-filter` over-truncating markdown files: raised markdown threshold from 2KB → 8KB.

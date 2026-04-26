@@ -11,7 +11,11 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-- Before execution, read the `10-rules` skill and load language-specific rules matching the active codebase (e.g. `rules/typescript/` for TS work).
+- Before execution, read the `10-rules` skill and load:
+  1. `rules/common/development-workflow.md` and `rules/common/testing.md`
+  2. **Detect the project's primary language** (check for `tsconfig.json` → typescript, `package.json` without tsconfig → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin)
+  3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
+  4. If the task involves frontend/browser concerns, also load `rules/web/` files
 - Distinguish between a **plan path** input and a **bare prompt** input before doing work.
 - Prefer deriving execution tasks from plan **implementation units**.
 - Use **serial subagents** for tasks with dependencies.
