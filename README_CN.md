@@ -421,7 +421,7 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
-### 0.19.6 — pi-subagents 集成扩展
+### 0.19.7 — pi-subagents 集成扩展
 - 新增 `super-pi-extension`：预配置 CE Agents（ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle）和 CE Chains（ce-standard, ce-review-only, ce-parallel-review）。
 - 新增 `thinkingStrategy` 设置：按阶段同步思考级别（`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`）。
 - 移除 CE Agent frontmatter 中硬编码的 `model` 和 `thinking`，完全由设置驱动。

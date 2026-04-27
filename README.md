@@ -421,7 +421,7 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
-### 0.19.6 — pi-subagents integration extension
+### 0.19.7 — pi-subagents integration extension
 - New `super-pi-extension`: pre-configured CE Agents (ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle) and CE Chains (ce-standard, ce-review-only, ce-parallel-review).
 - New `thinkingStrategy` setting: per-stage thinking level sync (`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`).
 - Removed hardcoded `model` and `thinking` from CE Agent frontmatter — now fully driven by settings.
