@@ -15,7 +15,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import { execSync } from "node:child_process";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // CE Stage to Agent mapping
 const STAGE_AGENT_MAP: Record<string, string[]> = {
@@ -162,11 +162,8 @@ function formatInstallInstructions(): string {
 `;
 }
 
-export default {
-  name: "super-pi-extension",
-  description: "Compound Engineering integration for pi-subagents",
-
-  async load(ctx: ExtensionContext): Promise<void> {
+export default function (pi: ExtensionAPI) {
+  pi.on("session_start", async (_event, ctx) => {
     const cwd = ctx.cwd || process.cwd();
     
     // Auto-sync modelStrategy + thinkingStrategy to agentOverrides
@@ -176,16 +173,10 @@ export default {
     if (!isPiSubagentsInstalled()) {
       console.warn("[super-pi-extension] pi-subagents not found. CE Agents/Chains require it.");
       console.warn("[super-pi-extension] Run: pi install npm:pi-subagents");
-      
-      // Optionally auto-install (uncomment to enable)
-      // const installed = tryAutoInstallPiSubagents();
-      // if (installed) {
-      //   console.log("[super-pi-extension] pi-subagents installed successfully!");
-      // }
     } else {
       console.log("[super-pi-extension] pi-subagents detected. Full CE workflow enabled.");
     }
     
     console.log("[super-pi-extension] Loaded. CE agents and chains available.");
-  },
-};
+  });
+}
