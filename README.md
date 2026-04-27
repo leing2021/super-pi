@@ -421,7 +421,13 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
-### 0.19.7 — pi-subagents integration extension
+### 0.20.0 — Extension API migration + v0.19.7 rework
+- Migrated `super-pi-extension` from legacy `export default { load() }` object format to Pi-native factory function `(pi: ExtensionAPI) => void`.
+- Replaced hardcoded `ExtensionContext` import with `ExtensionAPI`-only — context now provided via event handler.
+- Removed dead auto-install comment block and unused `ExtensionContext` type import.
+- Restored v0.19.6 changelog entry that was accidentally overwritten by the v0.19.7 release commit.
+
+### 0.19.6 — pi-subagents integration extension
 - New `super-pi-extension`: pre-configured CE Agents (ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle) and CE Chains (ce-standard, ce-review-only, ce-parallel-review).
 - New `thinkingStrategy` setting: per-stage thinking level sync (`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`).
 - Removed hardcoded `model` and `thinking` from CE Agent frontmatter — now fully driven by settings.
@@ -430,6 +436,10 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 - Updated README with Optional: pi-subagents Integration section.
 
 ### 0.19.5 — Plan/Work/Review skill rules loading alignment
+
+---
+
+> **Note:** v0.19.7 was a broken release — version bump with no code change, changelog entry for v0.19.6 overwritten. v0.20.0 supersedes it.
 - Fixed `02-plan` not loading language-specific rules (e.g. `rules/typescript/`) during the planning phase — only `common/` rules were loaded.
 - Fixed `03-work` Core rules missing explicit `common/` loading and `web/` conditional loading (10-rules defined them but the skill's own instructions didn't).
 - Fixed `04-review` Core rules missing explicit language detection method and `web/` conditional loading.

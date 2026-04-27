@@ -421,7 +421,13 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
-### 0.19.7 — pi-subagents 集成扩展
+### 0.20.0 — Extension API 迁移 + v0.19.7 修复
+- 将 `super-pi-extension` 从旧版 `export default { load() }` 对象格式迁移为 Pi 原生工厂函数 `(pi: ExtensionAPI) => void`。
+- 替换硬编码的 `ExtensionContext` 导入为仅用 `ExtensionAPI`——上下文现通过事件处理器传入。
+- 移除废弃的自动安装注释块和未使用的 `ExtensionContext` 类型导入。
+- 恢复 v0.19.6 更新日志条目（此前被 v0.19.7 发布 commit 意外覆盖）。
+
+### 0.19.6 — pi-subagents 集成扩展
 - 新增 `super-pi-extension`：预配置 CE Agents（ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle）和 CE Chains（ce-standard, ce-review-only, ce-parallel-review）。
 - 新增 `thinkingStrategy` 设置：按阶段同步思考级别（`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`）。
 - 移除 CE Agent frontmatter 中硬编码的 `model` 和 `thinking`，完全由设置驱动。
@@ -430,6 +436,10 @@ vim rules/python/api-design.md
 - 更新 README 中文/英文版本，添加 pi-subagents 集成说明。
 
 ### 0.19.5 — Plan/Work/Review 规则加载一致性修复
+
+---
+
+> **注意：** v0.19.7 为问题版本——仅版本号变更无代码改动，且覆盖了 v0.19.6 的更新日志条目。v0.20.0 已取代它。
 - 修复 `02-plan` 在计划阶段不加载语言特定规则（如 `rules/typescript/`）的问题——仅加载了 `common/` 规则。
 - 修复 `03-work` Core rules 缺少显式 `common/` 加载和 `web/` 条件加载（10-rules 定义了但 skill 自身指令未包含）。
 - 修复 `04-review` Core rules 缺少显式语言检测方法和 `web/` 条件加载。
