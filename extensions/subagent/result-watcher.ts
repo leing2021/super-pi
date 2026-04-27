@@ -1,5 +1,6 @@
-// Based on pi-subagents by Nico Bailon (https://github.com/nicobailon/pi-subagents)
-// MIT License
+// SPDX-FileCopyrightText: 2025 Nico Bailon
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/nicobailon/pi-subagents
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";

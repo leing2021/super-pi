@@ -1,5 +1,6 @@
-// Based on pi-subagents by Nico Bailon (https://github.com/nicobailon/pi-subagents)
-// MIT License
+// SPDX-FileCopyrightText: 2025 Nico Bailon
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/nicobailon/pi-subagents
 export type SubagentExecutionContext = "fresh" | "fork";
 
 interface ForkableSessionManagerStatic {

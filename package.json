@@ -25,6 +25,8 @@
     "skills",
     "extensions",
     "rules",
+    "THIRD-PARTY-NOTICES.md",
+    "LICENSE",
     "README.md",
     "package.json"
   ],

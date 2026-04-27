@@ -1,5 +1,6 @@
-// Based on pi-subagents by Nico Bailon (https://github.com/nicobailon/pi-subagents)
-// MIT License
+// SPDX-FileCopyrightText: 2025 Nico Bailon
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/nicobailon/pi-subagents
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import type { SubagentParamsLike } from "./subagent-executor.js";

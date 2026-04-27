@@ -400,7 +400,7 @@ The goal isn't making AI write code faster — it's making AI think before writi
 
 The following projects directly inspired this work:
 
-- **[pi-subagents](https://github.com/nicobailon/pi-subagents)** (by Nico Bailon) → Full subagent runtime integrated as built-in extension (serial, parallel, chain, async, TUI, agent CRUD)
+- **[pi-subagents](https://github.com/nicobailon/pi-subagents)** (by Nico Bailon, MIT License) → Full subagent runtime integrated as built-in extension (serial, parallel, chain, async, TUI, agent CRUD)
 - **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)** (162K★) → Parallel subagent orchestration, checkpoint resume, continuous learning
 - **[superpowers](https://github.com/obra/superpowers)** (161K★) → Strict TDD gates, design checklists, review discipline
 - **[gstack](https://github.com/garrytan/gstack)** (78K★) → YC-style forcing questions, CEO Review frameworks, browser QA

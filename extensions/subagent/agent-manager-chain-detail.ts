@@ -1,5 +1,6 @@
-// Based on pi-subagents by Nico Bailon (https://github.com/nicobailon/pi-subagents)
-// MIT License
+// SPDX-FileCopyrightText: 2025 Nico Bailon
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/nicobailon/pi-subagents
 import type { Theme } from "@mariozechner/pi-coding-agent";
 import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
 import type { ChainConfig, ChainStepConfig } from "./agents.ts";

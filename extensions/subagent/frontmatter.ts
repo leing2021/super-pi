@@ -1,5 +1,6 @@
-// Based on pi-subagents by Nico Bailon (https://github.com/nicobailon/pi-subagents)
-// MIT License
+// SPDX-FileCopyrightText: 2025 Nico Bailon
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/nicobailon/pi-subagents
 export function parseFrontmatter(content: string): { frontmatter: Record<string, string>; body: string } {
 	const frontmatter: Record<string, string> = {};
 	const normalized = content.replace(/\r\n/g, "\n");

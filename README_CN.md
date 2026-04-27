@@ -392,7 +392,7 @@ vim rules/python/api-design.md
 
 以下项目的思想对本项目有直接启发：
 
-- **[pi-subagents](https://github.com/nicobailon/pi-subagents)**（by Nico Bailon）→ 完整 subagent 运行时，已集成为内置扩展（串行、并行、链式、异步、TUI、agent CRUD）
+- **[pi-subagents](https://github.com/nicobailon/pi-subagents)**（by Nico Bailon，MIT 许可证）→ 完整 subagent 运行时，已集成为内置扩展（串行、并行、链式、异步、TUI、agent CRUD）
 - **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)**（162K★）→ 并行 subagent 编排、断点续传、持续学习循环
 - **[superpowers](https://github.com/obra/superpowers)**（161K★）→ 严格 TDD 门控、设计检查清单、审查纪律
 - **[gstack](https://github.com/garrytan/gstack)**（78K★）→ YC 式追问、CEO Review 认知框架、浏览器 QA
