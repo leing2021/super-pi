@@ -91,7 +91,7 @@ Super Pi 的解法：
 
 ### 03-work：写代码
 
-**并行执行**：`task_splitter` 用 Union-Find 算法分析文件依赖，把不冲突的 unit 扔给 `parallel_subagent` 并行跑。
+**并行执行**：`task_splitter` 用 Union-Find 算法分析文件依赖，把不冲突的 unit 扔给 `subagent`（parallel mode，via pi-subagents）并行跑。
 
 **断点续传**：每个 unit 完成后自动存 checkpoint。中断了？下次启动自动加载，跳过已完成的，从断点继续。失败了？`fail` 记录错误 → `retry` 给出恢复策略（超时？加长超时。权限问题？先查权限。代码错误？先修再试）。
 
@@ -161,7 +161,7 @@ pi install npm:pi-subagents
 |-------|--------|----------|
 | `01-brainstorm` | 三种模式的深度需求挖掘 | `brainstorm_dialog` |
 | `02-plan` | 拆 unit、TDD 门控、增量更新 | `plan_diff` |
-| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
+| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `subagent` (pi-subagents) |
 | `04-review` | 角色路由审查 + 浏览器真机测试 | `review_router` |
 | `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
 | `06-next` | 不知道该干嘛？问它 | `workflow_state`, `session_history` |
@@ -177,7 +177,7 @@ pi install npm:pi-subagents
 | `task_splitter` | Union-Find 算法分析文件依赖，自动分组并行安全的 unit |
 | `session_checkpoint` | JSON 持久化断点，支持 save/load/fail/retry 五种操作 |
 | `plan_diff` | 增量计划：compare 检测差异，patch 打补丁 |
-| `parallel_subagent` | `Promise.allSettled` 风格并行 subagent，支持上下文裁剪 |
+| `subagent` | 通过 pi-subagents 提供并行/串行 subagent 执行（async、TUI、agent CRUD） |
 | `review_router` | 根据 diff 元数据自动分配 reviewer 角色 |
 | `pattern_extractor` | 从 artifact 中提取和分类模式 |
 | `brainstorm_dialog` | 多轮对话状态机（start → refine × N → summarize） |
@@ -421,6 +421,14 @@ vim rules/python/api-design.md
 
 ## 更新日志
 
+### 0.21.0 — 将 subagent 工具委托给 pi-subagents
+- 从 `ce-core` 扩展中移除 `subagent` 和 `parallel_subagent` 工具注册。
+- Subagent 能力（串行、并行、链式、异步、TUI、agent CRUD）现由 `pi-subagents` 包提供。
+- 移除 `AsyncMutex`、`subagent-depth-guard` 导出——本包不再需要。
+- 在 `package.json` 中新增 `pi-subagents` 作为 peer 依赖。
+- 更新 `03-work` skill、`ce-worker` agent 及所有 README 引用，将 `parallel_subagent` 改为 `subagent`（pi-subagents）。
+- 修复 read-output-filter 中 `path` 变量名遮蔽问题，重命名为 `filePath`。
+
 ### 0.20.0 — Extension API 迁移 + v0.19.7 修复
 - 将 `super-pi-extension` 从旧版 `export default { load() }` 对象格式迁移为 Pi 原生工厂函数 `(pi: ExtensionAPI) => void`。
 - 替换硬编码的 `ExtensionContext` 导入为仅用 `ExtensionAPI`——上下文现通过事件处理器传入。
@@ -530,7 +538,7 @@ vim rules/python/api-design.md
 - 新增 session_checkpoint tool
 
 ### 0.5.0 — 并行执行
-- 新增 parallel_subagent tool
+- 新增 parallel_subagent tool（现已委托给 pi-subagents）
 
 ### 0.4.0 — 智能审查
 - 新增 review_router tool

@@ -43,7 +43,7 @@ defaultProgress: true
 - 不写任何生产代码直到有 RED 测试失败证据
 - 不跳过验证步骤
 - 每次完成都要有命令输出证据
-- 优先使用 `parallel_subagent` 执行独立单元
+- 优先使用 `subagent` (parallel mode, via pi-subagents) 执行独立单元
 
 ### 进度记录格式
 

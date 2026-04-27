@@ -4,11 +4,9 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
-import { createSubagentTool } from "./tools/subagent"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
-import { createParallelSubagentTool } from "./tools/parallel-subagent"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
@@ -18,10 +16,11 @@ import { createPatternExtractorTool } from "./tools/pattern-extractor"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
-import { AsyncMutex } from "./tools/async-mutex"
-import type { SubagentExecOptions, SubagentRunner } from "./tools/subagent"
 
-const _subagentEnvMutex = new AsyncMutex()
+// NOTE: subagent and parallel_subagent tool registration removed.
+// Subagent capabilities are provided by the pi-subagents package.
+// super-pi focuses on CE-specific tools only.
+
 const PIPELINE_STAGE_KEYS = new Set([
   "01-brainstorm",
   "02-plan",
@@ -82,47 +81,6 @@ function parseModelRef(
   }
 }
 
-/**
- * Create a subagent runner that handles env injection with mutex protection
- * for concurrency safety when multiple parallel subagents share the process.
- */
-function createSubagentRunner(
-  pi: ExtensionAPI,
-  signal?: AbortSignal,
-): SubagentRunner {
-  return async (prompt: string, options?: SubagentExecOptions) => {
-    const args = ["--no-session", ...(options?.extraFlags ?? []), "-p", prompt]
-    const release = await _subagentEnvMutex.acquire()
-    const savedEnv: Record<string, string | undefined> = {}
-    const extraEnv = options?.extraEnv ?? {}
-    for (const [key, value] of Object.entries(extraEnv)) {
-      savedEnv[key] = process.env[key]
-      process.env[key] = value
-    }
-    try {
-      const execResult = await pi.exec("pi", args, {
-        signal,
-        timeout: 10 * 60 * 1000,
-      })
-
-      if (execResult.code !== 0) {
-        throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
-      }
-
-      return (execResult.stdout || "").trim()
-    } finally {
-      for (const [key, oldValue] of Object.entries(savedEnv)) {
-        if (oldValue === undefined) {
-          delete process.env[key]
-        } else {
-          process.env[key] = oldValue
-        }
-      }
-      release()
-    }
-  }
-}
-
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
   artifactType: Type.Union([
@@ -145,18 +103,6 @@ const askUserQuestionParams = Type.Object({
   allowCustom: Type.Optional(Type.Boolean({ description: "Allow a custom answer when options are present" })),
 })
 
-const subagentTaskSchema = Type.Object({
-  agent: Type.String({ description: "Skill name to invoke via /skill:<name>" }),
-  task: Type.String({ description: "Task text passed to the subagent" }),
-})
-
-const subagentParams = Type.Object({
-  agent: Type.Optional(Type.String({ description: "Single subagent skill name" })),
-  task: Type.Optional(Type.String({ description: "Single subagent task" })),
-  chain: Type.Optional(Type.Array(subagentTaskSchema, { description: "Serial subagent chain with optional {previous} placeholder" })),
-  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether the subagent should inherit skills. Default: true" })),
-})
-
 const workflowStateParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root to scan for workflow artifacts" }),
 })
@@ -177,19 +123,6 @@ const reviewRouterParams = Type.Object({
   filesChanged: Type.Array(Type.String(), { description: "List of file paths changed in the diff" }),
   insertions: Type.Number({ description: "Number of lines added" }),
   deletions: Type.Number({ description: "Number of lines removed" }),
-})
-
-const parallelSubagentTaskSchema = Type.Object({
-  agent: Type.String({ description: "Skill name to invoke via /skill:<name>" }),
-  task: Type.String({ description: "Task text passed to the subagent" }),
-})
-
-const parallelSubagentParams = Type.Object({
-  tasks: Type.Union([
-    Type.Array(parallelSubagentTaskSchema),
-    Type.String({ description: "JSON stringified array of tasks" }),
-  ], { description: "Array of independent tasks to run concurrently (can be a JSON string)" }),
-  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: false" })),
 })
 
 const sessionCheckpointParams = Type.Object({
@@ -342,11 +275,9 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
-  const subagent = createSubagentTool()
   const workflowState = createWorkflowStateTool()
   const worktreeManager = createWorktreeManagerTool()
   const reviewRouter = createReviewRouterTool()
-  const parallelSubagent = createParallelSubagentTool()
   const sessionCheckpoint = createSessionCheckpointTool()
   const taskSplitter = createTaskSplitterTool()
   const brainstormDialog = createBrainstormDialogTool()
@@ -420,29 +351,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   })
 
   pi.registerTool({
-    name: subagent.name,
-    label: "Subagent",
-    description: "Run a single skill-based subagent or a serial chain in an isolated Pi process.",
-    parameters: subagentParams,
-    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const result = await subagent.execute(
-        {
-          agent: params.agent,
-          task: params.task,
-          chain: params.chain,
-          inheritSkills: params.inheritSkills,
-        },
-        createSubagentRunner(pi, signal),
-      )
-
-      return {
-        content: [{ type: "text", text: result.outputs[result.outputs.length - 1] ?? "" }],
-        details: result,
-      }
-    },
-  })
-
-  pi.registerTool({
     name: workflowState.name,
     label: "Workflow State",
     description: "Scan repo-local Compound Engineering artifacts and return structured workflow state.",
@@ -505,39 +413,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         insertions: params.insertions,
         deletions: params.deletions,
       })
-
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        details: result,
-      }
-    },
-  })
-
-  pi.registerTool({
-    name: parallelSubagent.name,
-    label: "Parallel Subagent",
-    description: "Run multiple skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
-    parameters: parallelSubagentParams,
-    async execute(_toolCallId, params, signal) {
-      let tasks: any[]
-      if (typeof params.tasks === "string") {
-        try {
-          const cleaned = params.tasks.replace(/^```json\s*|```$/g, "").trim()
-          tasks = JSON.parse(cleaned)
-        } catch (e) {
-          throw new Error(`Failed to parse tasks string as JSON: ${e instanceof Error ? e.message : String(e)}`)
-        }
-      } else {
-        tasks = params.tasks
-      }
-
-      const result = await parallelSubagent.execute(
-        {
-          tasks,
-          inheritSkills: params.inheritSkills,
-        },
-        createSubagentRunner(pi, signal),
-      )
 
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -712,8 +587,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     if (event.toolName !== "read") return undefined
 
     // Extract path from input
-    const path = (event.input as any)?.path ?? ""
-    if (!path) return undefined
+    const filePath = (event.input as any)?.path ?? ""
+    if (!filePath) return undefined
 
     // Extract text content from tool result
     const textBlocks = (event.content as Array<any>)?.filter((b: any) => b.type === "text") ?? []
@@ -723,7 +598,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     const isImage = (event.content as Array<any>)?.some((b: any) => b.type === "image") ?? false
 
     const result = filterReadOutput({
-      path,
+      path: filePath,
       output,
       isError: event.isError ?? false,
       isImage,
@@ -756,13 +631,9 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
-export { createSubagentTool } from "./tools/subagent"
-export { checkSubagentDepth, getChildDepthEnv, DEFAULT_MAX_SUBAGENT_DEPTH } from "./tools/subagent-depth-guard"
-export { AsyncMutex } from "./tools/async-mutex"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
-export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"

@@ -18,11 +18,11 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
   4. If the task involves frontend/browser concerns, also load `rules/web/` files
 - Distinguish between a **plan path** input and a **bare prompt** input before doing work.
 - Prefer deriving execution tasks from plan **implementation units**.
-- Use **serial subagents** for tasks with dependencies.
-- Use **`parallel_subagent`** for independent tasks that can run concurrently.
+- Use **serial subagents** (via `subagent` tool from pi-subagents) for tasks with dependencies.
+- Use **`subagent` tool in parallel mode** (via pi-subagents) for independent tasks that can run concurrently.
 - Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
 - On execution failure, use `session_checkpoint` `fail` to record the error, then `retry` to get a retry strategy. Follow the suggested strategy to recover.
-- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `parallel_subagent` and dependent units serially.
+- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via parallel subagents and dependent units serially.
 - If inside a **worktree** (created via `07-worktree`), execute within it. Otherwise, consider recommending `07-worktree` for isolation.
 - End by recommending `04-review`.
 

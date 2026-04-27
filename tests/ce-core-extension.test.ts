@@ -189,98 +189,6 @@ describe("ask_user_question", () => {
   })
 })
 
-describe("subagent", () => {
-  test("runs a single subagent task", async () => {
-    const calls: string[] = []
-    const tool = createSubagentTool()
-
-    const result = await tool.execute(
-      {
-        agent: "ce-plan",
-        task: "Design the package",
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return "ok"
-      },
-    )
-
-    expect(calls).toEqual(["/skill:ce-plan Design the package"])
-    expect(result.mode).toBe("single")
-    expect(result.outputs).toEqual(["ok"])
-  })
-
-  test("runs a serial chain and substitutes the previous result", async () => {
-    const calls: string[] = []
-    const tool = createSubagentTool()
-
-    const result = await tool.execute(
-      {
-        chain: [
-          { agent: "ce-brainstorm", task: "Scope the feature" },
-          { agent: "ce-plan", task: "Plan using {previous}" },
-        ],
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return prompt.includes("ce-brainstorm") ? "requirements-path" : "plan-path"
-      },
-    )
-
-    expect(calls).toEqual([
-      "/skill:ce-brainstorm Scope the feature",
-      "/skill:ce-plan Plan using requirements-path",
-    ])
-    expect(result.mode).toBe("chain")
-    expect(result.outputs).toEqual(["requirements-path", "plan-path"])
-  })
-
-  test("rejects mixed execution modes", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        {
-          agent: "ce-plan",
-          task: "Design the package",
-          chain: [{ agent: "ce-brainstorm", task: "Scope the feature" }],
-        },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("Provide exactly one mode")
-  })
-
-  test("rejects empty agent in single mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { agent: "", task: "Design the package" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow()
-  })
-
-  test("rejects empty task in single mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { agent: "ce-plan", task: "" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow()
-  })
-
-  test("rejects empty chain array", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute({ chain: [] }, async () => "ok"),
-    ).rejects.toThrow("Provide exactly one mode")
-  })
-})
-
 describe("workflow_state", () => {
   test("reports empty state when no artifacts exist", async () => {
     const tool = createWorkflowStateTool()
@@ -537,90 +445,6 @@ describe("review_router", () => {
       expect(reviewer.reason).toBeTruthy()
       expect(typeof reviewer.reason).toBe("string")
     }
-  })
-})
-
-describe("parallel_subagent", () => {
-  test("runs multiple tasks concurrently and returns all outputs", async () => {
-    const calls: string[] = []
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-brainstorm", task: "Scope feature A" },
-          { agent: "ce-brainstorm", task: "Scope feature B" },
-          { agent: "ce-plan", task: "Plan feature C" },
-        ],
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return `result-${calls.length}`
-      },
-    )
-
-    expect(result.outputs.length).toBe(3)
-    expect(result.outputs.map(o => o.status)).toEqual(["fulfilled", "fulfilled", "fulfilled"])
-    expect(result.outputs[0].value).toBe("result-1")
-    expect(result.outputs[1].value).toBe("result-2")
-    expect(result.outputs[2].value).toBe("result-3")
-  })
-
-  test("handles individual task failures gracefully", async () => {
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-brainstorm", task: "Good task" },
-          { agent: "ce-plan", task: "Fail task" },
-          { agent: "ce-work", task: "Another good task" },
-        ],
-      },
-      async (prompt: string) => {
-        if (prompt.includes("Fail")) throw new Error("Task failed")
-        return "ok"
-      },
-    )
-
-    expect(result.outputs.length).toBe(3)
-    expect(result.outputs[0].status).toBe("fulfilled")
-    expect(result.outputs[0].value).toBe("ok")
-    expect(result.outputs[1].status).toBe("rejected")
-    expect(result.outputs[1].reason).toContain("Task failed")
-    expect(result.outputs[2].status).toBe("fulfilled")
-    expect(result.outputs[2].value).toBe("ok")
-  })
-
-  test("rejects empty task array", async () => {
-    const tool = createParallelSubagentTool()
-
-    await expect(
-      tool.execute({ tasks: [] }, async () => ""),
-    ).rejects.toThrow("at least one task")
-  })
-
-  test("returns results in the same order as input tasks", async () => {
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-work", task: "Slow task" },
-          { agent: "ce-plan", task: "Fast task" },
-        ],
-      },
-      async (prompt: string) => {
-        if (prompt.includes("Slow")) {
-          await new Promise(r => setTimeout(r, 50))
-          return "slow-done"
-        }
-        return "fast-done"
-      },
-    )
-
-    expect(result.outputs[0].value).toBe("slow-done")
-    expect(result.outputs[1].value).toBe("fast-done")
   })
 })
 
@@ -1541,163 +1365,8 @@ describe("pattern_extractor", () => {
   })
 })
 
-describe("async_mutex", () => {
-  test("serializes concurrent access", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-    const order: string[] = []
-
-    const task = async (label: string, delay: number) => {
-      const release = await mutex.acquire()
-      order.push(`${label}-start`)
-      await new Promise(r => setTimeout(r, delay))
-      order.push(`${label}-end`)
-      release()
-    }
-
-    await Promise.all([task("A", 20), task("B", 10), task("C", 5)])
-
-    // Each task must complete before the next starts
-    expect(order).toEqual([
-      "A-start", "A-end",
-      "B-start", "B-end",
-      "C-start", "C-end",
-    ])
-  })
-
-  test("releases on error", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const failing = async () => {
-      const release = await mutex.acquire()
-      try {
-        throw new Error("boom")
-      } finally {
-        release()
-      }
-    }
-
-    await expect(failing()).rejects.toThrow("boom")
-
-    // Should still be able to acquire
-    const release = await mutex.acquire()
-    release()
-  })
-})
-
-describe("parallel_subagent env isolation", () => {
-  const originalDepth = process.env.PI_SUBAGENT_DEPTH
-  const originalMax = process.env.PI_SUBAGENT_MAX_DEPTH
-
-  const cleanup = () => {
-    if (originalDepth === undefined) {
-      delete process.env.PI_SUBAGENT_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_DEPTH = originalDepth
-    }
-    if (originalMax === undefined) {
-      delete process.env.PI_SUBAGENT_MAX_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_MAX_DEPTH = originalMax
-    }
-  }
-
-  test("env is clean after parallel execution", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    // Simulate the env-save/set/exec/restore pattern with a mutex
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
-      const extraEnv = options?.extraEnv ?? {}
-      const release = await mutex.acquire()
-      const saved: Record<string, string | undefined> = {}
-      for (const [key, value] of Object.entries(extraEnv)) {
-        saved[key] = process.env[key]
-        process.env[key] = value
-      }
-      try {
-        await new Promise(r => setTimeout(r, Math.random() * 10))
-        return "ok"
-      } finally {
-        for (const [key, oldValue] of Object.entries(saved)) {
-          if (oldValue === undefined) {
-            delete process.env[key]
-          } else {
-            process.env[key] = oldValue
-          }
-        }
-        release()
-      }
-    }
-
-    const tool = createParallelSubagentTool()
-    await tool.execute(
-      { tasks: [
-        { agent: "a", task: "t1" },
-        { agent: "b", task: "t2" },
-        { agent: "c", task: "t3" },
-      ]},
-      simulateRunner,
-    )
-
-    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
-    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
-
-    cleanup()
-  })
-
-  test("env is clean after serial chain execution", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
-      const extraEnv = options?.extraEnv ?? {}
-      const release = await mutex.acquire()
-      const saved: Record<string, string | undefined> = {}
-      for (const [key, value] of Object.entries(extraEnv)) {
-        saved[key] = process.env[key]
-        process.env[key] = value
-      }
-      try {
-        await new Promise(r => setTimeout(r, 5))
-        return "ok"
-      } finally {
-        for (const [key, oldValue] of Object.entries(saved)) {
-          if (oldValue === undefined) {
-            delete process.env[key]
-          } else {
-            process.env[key] = oldValue
-          }
-        }
-        release()
-      }
-    }
-
-    const tool = createSubagentTool()
-    await tool.execute(
-      { chain: [
-        { agent: "a", task: "t1" },
-        { agent: "b", task: "t2" },
-      ]},
-      simulateRunner,
-    )
-
-    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
-    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
-
-    cleanup()
-  })
-})
-
 describe("ce-core extension runtime registration", () => {
-  test("registers artifact_helper, ask_user_question, and subagent tools", () => {
+  test("registers CE tools (subagent delegated to pi-subagents)", () => {
     const registeredNames: string[] = []
     const eventHandlers = new Map<string, any[]>()
     const pi = {
@@ -1719,11 +1388,9 @@ describe("ce-core extension runtime registration", () => {
     expect(registeredNames).toEqual([
       "artifact_helper",
       "ask_user_question",
-      "subagent",
       "workflow_state",
       "worktree_manager",
       "review_router",
-      "parallel_subagent",
       "session_checkpoint",
       "task_splitter",
       "brainstorm_dialog",
@@ -1957,11 +1624,9 @@ describe("public exports", () => {
     const expectedExports = [
       "createArtifactHelperTool",
       "createAskUserQuestionTool",
-      "createSubagentTool",
       "createWorkflowStateTool",
       "createWorktreeManagerTool",
       "createReviewRouterTool",
-      "createParallelSubagentTool",
       "createSessionCheckpointTool",
       "createTaskSplitterTool",
       "createBrainstormDialogTool",
@@ -1977,10 +1642,6 @@ describe("public exports", () => {
       "filterReadOutput",
       "COMPACTION_FOCUS_INSTRUCTIONS",
       "TURN_PREFIX_FOCUS_INSTRUCTIONS",
-      "checkSubagentDepth",
-      "getChildDepthEnv",
-      "DEFAULT_MAX_SUBAGENT_DEPTH",
-      "AsyncMutex",
     ]
 
     expect(exportNames.sort()).toEqual(expectedExports.sort())

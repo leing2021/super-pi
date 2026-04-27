@@ -91,7 +91,7 @@ Breaks requirements into implementation units, each following strict **RED → G
 
 ### 03-work: Build Right
 
-**Parallel execution**: `task_splitter` uses a Union-Find algorithm to analyze file dependencies, feeds conflict-free units to `parallel_subagent` for concurrent execution.
+**Parallel execution**: `task_splitter` uses a Union-Find algorithm to analyze file dependencies, feeds conflict-free units to `subagent` (parallel mode, via pi-subagents) for concurrent execution.
 
 **Checkpoint resume**: After each unit, a checkpoint is saved. Interrupted? Next startup auto-loads, skips completed work, continues from the breakpoint. Failed? `fail` records the error → `retry` suggests a recovery strategy (timeout? extend timeout. Permission issue? check permissions first. Code error? fix then retry).
 
@@ -161,7 +161,7 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 |-------|-----------|-----------|
 | `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
 | `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
-| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
+| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` (pi-subagents) |
 | `04-review` | Persona-routed review + live browser testing | `review_router` |
 | `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
 | `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
@@ -177,7 +177,7 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 | `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
 | `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
 | `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `parallel_subagent` | `Promise.allSettled`-style parallel subagent execution with context slimming |
+| `subagent` | Parallel & serial subagent execution via pi-subagents (async, TUI, agent CRUD) |
 | `review_router` | Auto-assign reviewer personas from diff metadata |
 | `pattern_extractor` | Extract and categorize patterns from artifacts |
 | `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
@@ -421,6 +421,14 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
+### 0.21.0 — Delegate subagent tools to pi-subagents
+- Removed `subagent` and `parallel_subagent` tool registrations from `ce-core` extension.
+- Subagent capabilities (serial, parallel, chain, async, TUI, agent CRUD) now provided by the `pi-subagents` package.
+- Removed `AsyncMutex`, `subagent-depth-guard` exports — no longer needed in this package.
+- Added `pi-subagents` as a peer dependency in `package.json`.
+- Updated `03-work` skill, `ce-worker` agent, and all README references from `parallel_subagent` to `subagent` (pi-subagents).
+- Renamed internal `path` variable to `filePath` in read-output-filter to avoid shadowing.
+
 ### 0.20.0 — Extension API migration + v0.19.7 rework
 - Migrated `super-pi-extension` from legacy `export default { load() }` object format to Pi-native factory function `(pi: ExtensionAPI) => void`.
 - Replaced hardcoded `ExtensionContext` import with `ExtensionAPI`-only — context now provided via event handler.
@@ -530,7 +538,7 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 - New session_checkpoint tool
 
 ### 0.5.0 — Parallel execution
-- New parallel_subagent tool
+- New parallel_subagent tool (now delegated to pi-subagents)
 
 ### 0.4.0 — Smart review
 - New review_router tool
