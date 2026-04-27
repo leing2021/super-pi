@@ -1,6 +1,6 @@
 {
   "name": "@leing2021/super-pi",
-  "version": "0.19.5",
+  "version": "0.19.6",
   "private": false,
   "type": "module",
   "description": "Pi-native Compound Engineering package for iterative development workflows",
@@ -47,7 +47,14 @@
       "./skills"
     ],
     "extensions": [
-      "./extensions"
+      "./extensions",
+      "./extensions/super-pi-extension"
+    ],
+    "agents": [
+      "./extensions/super-pi-extension/agents"
+    ],
+    "chains": [
+      "./extensions/super-pi-extension/chains"
     ]
   }
 }

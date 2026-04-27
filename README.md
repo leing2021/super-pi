@@ -113,6 +113,46 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ---
 
+## Optional: pi-subagents Integration
+
+For enhanced workflow capabilities, install pi-subagents:
+
+```bash
+pi install npm:pi-subagents
+```
+
+This enables:
+
+| Feature | Command | Description |
+|---------|---------|-------------|
+| **CE Agents** | `/run ce-worker "execute plan"` | Pre-configured agents aligned with stages |
+| **CE Chains** | `/run-chain ce-standard -- implement feature` | Scout → Planner → Worker → Reviewer |
+| **Parallel Review** | `/run-chain ce-parallel-review --` | 3-way review: correctness + tests + complexity |
+| **Stage Model Sync** | Automatic | `modelStrategy` + `thinkingStrategy` synced to agent configs |
+
+Without it, super-pi works normally but CE Agent/Chain features are unavailable.
+
+### How Model/Thinking Sync Works
+
+The extension reads `modelStrategy` and `thinkingStrategy` from `.pi/settings.json` and automatically syncs them to pi-subagents agent overrides:
+
+```json
+{
+  "modelStrategy": {
+    "02-plan": "gpt-5.5",
+    "03-work": "glm-5.1"
+  },
+  "thinkingStrategy": {
+    "02-plan": "high",
+    "03-work": "medium"
+  }
+}
+```
+
+This ensures your stage-specific models and thinking levels are used when CE Agents execute.
+
+---
+
 ## Technical Architecture
 
 ### 10 Skills (workflow nodes)
@@ -380,6 +420,14 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 ---
 
 ## Changelog
+
+### 0.19.6 — pi-subagents integration extension
+- New `super-pi-extension`: pre-configured CE Agents (ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle) and CE Chains (ce-standard, ce-review-only, ce-parallel-review).
+- New `thinkingStrategy` setting: per-stage thinking level sync (`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`).
+- Removed hardcoded `model` and `thinking` from CE Agent frontmatter — now fully driven by settings.
+- Added graceful pi-subagents dependency detection with install instructions on extension load.
+- Updated `03-work`, `04-review`, `06-next` skills with pi-subagents integration docs.
+- Updated README with Optional: pi-subagents Integration section.
 
 ### 0.19.5 — Plan/Work/Review skill rules loading alignment
 - Fixed `02-plan` not loading language-specific rules (e.g. `rules/typescript/`) during the planning phase — only `common/` rules were loaded.

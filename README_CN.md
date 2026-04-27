@@ -113,6 +113,46 @@ Super Pi 的解法：
 
 ---
 
+## 可选：pi-subagents 集成
+
+安装 pi-subagents 以获得增强工作流能力：
+
+```bash
+pi install npm:pi-subagents
+```
+
+启用功能：
+
+| 功能 | 命令 | 描述 |
+|------|------|------|
+| **CE Agents** | `/run ce-worker "执行计划"` | 与阶段对齐的预配置代理 |
+| **CE Chains** | `/run-chain ce-standard -- 实现功能` | Scout → Planner → Worker → Reviewer |
+| **并行审查** | `/run-chain ce-parallel-review --` | 三路并行：正确性 + 测试 + 复杂度 |
+| **模型/Thinking 同步** | 自动 | `modelStrategy` + `thinkingStrategy` 同步到代理配置 |
+
+未安装时，super-pi 正常工作，但 CE Agent/Chain 功能不可用。
+
+### 模型/Thinking 同步原理
+
+扩展读取 `.pi/settings.json` 中的 `modelStrategy` 和 `thinkingStrategy`，自动同步到 pi-subagents 的代理覆盖配置：
+
+```json
+{
+  "modelStrategy": {
+    "02-plan": "gpt-5.5",
+    "03-work": "glm-5.1"
+  },
+  "thinkingStrategy": {
+    "02-plan": "high",
+    "03-work": "medium"
+  }
+}
+```
+
+确保 CE Agents 执行时使用与阶段匹配的模型和思考级别。
+
+---
+
 ## 技术架构
 
 ### 10 个 Skills（工作流节点）
@@ -380,6 +420,14 @@ vim rules/python/api-design.md
 ---
 
 ## 更新日志
+
+### 0.19.6 — pi-subagents 集成扩展
+- 新增 `super-pi-extension`：预配置 CE Agents（ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle）和 CE Chains（ce-standard, ce-review-only, ce-parallel-review）。
+- 新增 `thinkingStrategy` 设置：按阶段同步思考级别（`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`）。
+- 移除 CE Agent frontmatter 中硬编码的 `model` 和 `thinking`，完全由设置驱动。
+- 添加优雅的 pi-subagents 依赖检测，扩展加载时显示安装指引。
+- 更新 `03-work`、`04-review`、`06-next` 技能的 pi-subagents 集成文档。
+- 更新 README 中文/英文版本，添加 pi-subagents 集成说明。
 
 ### 0.19.5 — Plan/Work/Review 规则加载一致性修复
 - 修复 `02-plan` 在计划阶段不加载语言特定规则（如 `rules/typescript/`）的问题——仅加载了 `common/` 规则。
