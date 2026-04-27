@@ -113,24 +113,19 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ---
 
-## Optional: pi-subagents Integration
+## Built-in Subagent Capabilities
 
-For enhanced workflow capabilities, install pi-subagents:
+Super Pi includes pi-subagents (by Nico Bailon) as a built-in extension — no separate install needed. The following capabilities are available out of the box:
 
-```bash
-pi install npm:pi-subagents
-```
-
-This enables:
-
-| Feature | Command | Description |
-|---------|---------|-------------|
-| **CE Agents** | `/run ce-worker "execute plan"` | Pre-configured agents aligned with stages |
-| **CE Chains** | `/run-chain ce-standard -- implement feature` | Scout → Planner → Worker → Reviewer |
-| **Parallel Review** | `/run-chain ce-parallel-review --` | 3-way review: correctness + tests + complexity |
+| Feature | How to Access | Description |
+|---------|--------------|-------------|
+| **Agent Manager TUI** | `/agents` or `Ctrl+Shift+A` | Visual agent browser, configure and launch agents/chains/parallel tasks |
+| **CE Agents** | Via subagent tool | Pre-configured agents aligned with CE stages (ce-scout, ce-planner, etc.) |
+| **CE Chains** | Via subagent tool | Scout → Planner → Worker → Reviewer |
+| **Parallel Review** | Via subagent tool | 3-way review: correctness + tests + complexity |
 | **Stage Model Sync** | Automatic | `modelStrategy` + `thinkingStrategy` synced to agent configs |
-
-Without it, super-pi works normally but CE Agent/Chain features are unavailable.
+| **Subagent Status** | `/subagents-status` | Show active and recent async subagent runs |
+| **Diagnostics** | `/subagents-doctor` | Show subagent diagnostics |
 
 ### How Model/Thinking Sync Works
 
@@ -155,6 +150,14 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 
 ## Technical Architecture
 
+### Extensions
+
+| Extension | Description |
+|-----------|------------|
+| `ce-core` | 15 CE tools (task_splitter, session_checkpoint, brainstorm_dialog, etc.) + hooks + filters |
+| `super-pi-extension` | CE Agents/Chains + model strategy sync |
+| `subagent` | Full subagent runtime (serial, parallel, chain, async, TUI, agent CRUD) — based on [pi-subagents](https://github.com/nicobailon/pi-subagents) |
+
 ### 10 Skills (workflow nodes)
 
 | Skill | One-liner | Core Tool |
@@ -177,7 +180,7 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 | `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
 | `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
 | `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `subagent` | Parallel & serial subagent execution via pi-subagents (async, TUI, agent CRUD) |
+| `subagent` | Parallel & serial subagent execution (built-in, based on pi-subagents) |
 | `review_router` | Auto-assign reviewer personas from diff metadata |
 | `pattern_extractor` | Extract and categorize patterns from artifacts |
 | `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
@@ -397,6 +400,7 @@ The goal isn't making AI write code faster — it's making AI think before writi
 
 The following projects directly inspired this work:
 
+- **[pi-subagents](https://github.com/nicobailon/pi-subagents)** (by Nico Bailon) → Full subagent runtime integrated as built-in extension (serial, parallel, chain, async, TUI, agent CRUD)
 - **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)** (162K★) → Parallel subagent orchestration, checkpoint resume, continuous learning
 - **[superpowers](https://github.com/obra/superpowers)** (161K★) → Strict TDD gates, design checklists, review discipline
 - **[gstack](https://github.com/garrytan/gstack)** (78K★) → YC-style forcing questions, CEO Review frameworks, browser QA
@@ -420,6 +424,15 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 ---
 
 ## Changelog
+
+### 0.22.0 — Source-integrated pi-subagents
+- Integrated pi-subagents v0.20.1 source code into `extensions/subagent/` — single package install (`pi install npm:@leing2021/super-pi`).
+- Moved `typebox` from peerDependencies to dependencies.
+- Removed `pi-subagents` peer dependency — no longer needed.
+- Simplified `super-pi-extension/index.ts`: removed faulty installation detection and auto-install logic.
+- Pruned slash commands: removed `/run`, `/chain`, `/run-chain`, `/parallel`; kept `/agents` (TUI), `/subagents-status`, `/subagents-doctor`, and `Ctrl+Shift+A` shortcut.
+- Added 8 new tests covering subagent extension structure, agent counts, and integration integrity.
+- 169 tests passing.
 
 ### 0.21.0 — Delegate subagent tools to pi-subagents
 - Removed `subagent` and `parallel_subagent` tool registrations from `ce-core` extension.

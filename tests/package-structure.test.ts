@@ -32,7 +32,28 @@ describe("package bootstrap structure", () => {
 
     expect(packageJson).toContain('"peerDependencies"')
     expect(packageJson).toContain('"@mariozechner/pi-coding-agent"')
-    expect(packageJson).toContain('"typebox"')
+  })
+
+  test("typebox is a direct dependency, not a peer dependency", () => {
+    const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"))
+
+    expect(packageJson.dependencies).toBeDefined()
+    expect(packageJson.dependencies.typebox).toBeDefined()
+    expect(packageJson.peerDependencies.typebox).toBeUndefined()
+  })
+
+  test("pi-subagents is not a peer dependency (source-integrated)", () => {
+    const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"))
+
+    expect(packageJson.peerDependencies["pi-subagents"]).toBeUndefined()
+  })
+
+  test("declares subagent extension and agents in Pi manifest", () => {
+    const packageJson = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"))
+
+    expect(packageJson.pi.extensions).toContain("./extensions/subagent")
+    expect(packageJson.pi.agents).toContain("./extensions/subagent/agents")
+    expect(packageJson.pi.prompts).toContain("./extensions/subagent/prompts")
   })
 
   test("README documents installation and the Phase 1 commands", () => {

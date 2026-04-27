@@ -113,24 +113,19 @@ Super Pi 的解法：
 
 ---
 
-## 可选：pi-subagents 集成
+## 内置 Subagent 能力
 
-安装 pi-subagents 以获得增强工作流能力：
+Super Pi 已将 pi-subagents（by Nico Bailon）集成为内置扩展——无需单独安装。以下能力开箱即用：
 
-```bash
-pi install npm:pi-subagents
-```
-
-启用功能：
-
-| 功能 | 命令 | 描述 |
-|------|------|------|
-| **CE Agents** | `/run ce-worker "执行计划"` | 与阶段对齐的预配置代理 |
-| **CE Chains** | `/run-chain ce-standard -- 实现功能` | Scout → Planner → Worker → Reviewer |
-| **并行审查** | `/run-chain ce-parallel-review --` | 三路并行：正确性 + 测试 + 复杂度 |
+| 功能 | 访问方式 | 描述 |
+|------|---------|------|
+| **Agent Manager TUI** | `/agents` 或 `Ctrl+Shift+A` | 可视化 agent 浏览器，配置并启动 agent/chain/并行任务 |
+| **CE Agents** | 通过 subagent 工具 | 与 CE 阶段对齐的预配置代理（ce-scout、ce-planner 等） |
+| **CE Chains** | 通过 subagent 工具 | Scout → Planner → Worker → Reviewer |
+| **并行审查** | 通过 subagent 工具 | 三路并行：正确性 + 测试 + 复杂度 |
 | **模型/Thinking 同步** | 自动 | `modelStrategy` + `thinkingStrategy` 同步到代理配置 |
-
-未安装时，super-pi 正常工作，但 CE Agent/Chain 功能不可用。
+| **Subagent 状态** | `/subagents-status` | 显示活跃和最近的异步 subagent 运行 |
+| **诊断** | `/subagents-doctor` | 显示 subagent 诊断信息 |
 
 ### 模型/Thinking 同步原理
 
@@ -161,7 +156,7 @@ pi install npm:pi-subagents
 |-------|--------|----------|
 | `01-brainstorm` | 三种模式的深度需求挖掘 | `brainstorm_dialog` |
 | `02-plan` | 拆 unit、TDD 门控、增量更新 | `plan_diff` |
-| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `subagent` (pi-subagents) |
+| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `subagent` (内置 pi-subagents) |
 | `04-review` | 角色路由审查 + 浏览器真机测试 | `review_router` |
 | `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
 | `06-next` | 不知道该干嘛？问它 | `workflow_state`, `session_history` |
@@ -177,7 +172,7 @@ pi install npm:pi-subagents
 | `task_splitter` | Union-Find 算法分析文件依赖，自动分组并行安全的 unit |
 | `session_checkpoint` | JSON 持久化断点，支持 save/load/fail/retry 五种操作 |
 | `plan_diff` | 增量计划：compare 检测差异，patch 打补丁 |
-| `subagent` | 通过 pi-subagents 提供并行/串行 subagent 执行（async、TUI、agent CRUD） |
+| `subagent` | 并行/串行 subagent 执行（内置，基于 pi-subagents） |
 | `review_router` | 根据 diff 元数据自动分配 reviewer 角色 |
 | `pattern_extractor` | 从 artifact 中提取和分类模式 |
 | `brainstorm_dialog` | 多轮对话状态机（start → refine × N → summarize） |
@@ -397,6 +392,7 @@ vim rules/python/api-design.md
 
 以下项目的思想对本项目有直接启发：
 
+- **[pi-subagents](https://github.com/nicobailon/pi-subagents)**（by Nico Bailon）→ 完整 subagent 运行时，已集成为内置扩展（串行、并行、链式、异步、TUI、agent CRUD）
 - **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)**（162K★）→ 并行 subagent 编排、断点续传、持续学习循环
 - **[superpowers](https://github.com/obra/superpowers)**（161K★）→ 严格 TDD 门控、设计检查清单、审查纪律
 - **[gstack](https://github.com/garrytan/gstack)**（78K★）→ YC 式追问、CEO Review 认知框架、浏览器 QA
@@ -420,6 +416,15 @@ vim rules/python/api-design.md
 ---
 
 ## 更新日志
+
+### 0.22.0 — 源码融合 pi-subagents
+- 将 pi-subagents v0.20.1 源码完整融入 `extensions/subagent/`——单包安装（`pi install npm:@leing2021/super-pi`）。
+- 将 `typebox` 从 peerDependencies 移至 dependencies。
+- 移除 `pi-subagents` peer 依赖——不再需要。
+- 精简 `super-pi-extension/index.ts`：移除错误的安装检测和自动安装逻辑。
+- 裁剪 slash commands：移除 `/run`、`/chain`、`/run-chain`、`/parallel`；保留 `/agents`（TUI）、`/subagents-status`、`/subagents-doctor` 及 `Ctrl+Shift+A` 快捷键。
+- 新增 8 个测试覆盖 subagent 扩展结构、agent 数量和集成完整性。
+- 169 个测试通过。
 
 ### 0.21.0 — 将 subagent 工具委托给 pi-subagents
 - 从 `ce-core` 扩展中移除 `subagent` 和 `parallel_subagent` 工具注册。

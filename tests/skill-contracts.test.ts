@@ -50,6 +50,41 @@ describe("skill package contracts", () => {
     expect(existsSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"))).toBe(true)
   })
 
+  test("exposes the subagent extension entrypoint with agents and prompts", () => {
+    expect(existsSync(path.join(repoRoot, "extensions", "subagent", "index.ts"))).toBe(true)
+    expect(existsSync(path.join(repoRoot, "extensions", "subagent", "agents"))).toBe(true)
+    expect(existsSync(path.join(repoRoot, "extensions", "subagent", "prompts"))).toBe(true)
+  })
+
+  test("subagent agents directory has 8 agent definitions", () => {
+    const agentsDir = path.join(repoRoot, "extensions", "subagent", "agents")
+    const files = require("node:fs").readdirSync(agentsDir).filter((f: string) => f.endsWith(".md"))
+    expect(files.length).toBe(8)
+    expect(files).toContain("scout.md")
+    expect(files).toContain("worker.md")
+    expect(files).toContain("planner.md")
+    expect(files).toContain("reviewer.md")
+  })
+
+  test("subagent prompts directory has 4 prompt templates", () => {
+    const promptsDir = path.join(repoRoot, "extensions", "subagent", "prompts")
+    const files = require("node:fs").readdirSync(promptsDir).filter((f: string) => f.endsWith(".md"))
+    expect(files.length).toBe(4)
+  })
+
+  test("pi-subagents skill is available", () => {
+    expect(existsSync(path.join(repoRoot, "skills", "pi-subagents", "SKILL.md"))).toBe(true)
+  })
+
+  test("super-pi-extension does not reference pi-subagents installation checks", () => {
+    const content = readFileSync(path.join(repoRoot, "extensions", "super-pi-extension", "index.ts"), "utf8")
+
+    expect(content).not.toContain("isPiSubagentsInstalled")
+    expect(content).not.toContain("tryAutoInstallPiSubagents")
+    expect(content).not.toContain("formatInstallInstructions")
+    expect(content).not.toContain("execSync")
+  })
+
   test("09-help explains when to use each Phase 1 skill", () => {
     const content = readFileSync(path.join(repoRoot, "skills", "09-help", "SKILL.md"), "utf8")
 

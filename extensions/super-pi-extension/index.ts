@@ -1,20 +1,18 @@
 /**
  * super-pi-extension
  * 
- * Compound Engineering + pi-subagents integration extension
+ * Compound Engineering extension
  * 
  * Features:
  * - Pre-configured CE Agents (ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle)
  * - Pre-configured CE Chains (ce-standard, ce-review-only, ce-parallel-review)
  * - Model strategy sync: modelStrategy[stage] → subagents.agentOverrides[agent].model
  * - Thinking strategy sync: thinkingStrategy[stage] → subagents.agentOverrides[agent].thinking
- * - Graceful dependency detection for pi-subagents
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { execSync } from "node:child_process";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // CE Stage to Agent mapping
@@ -119,49 +117,6 @@ function autoSyncSettings(projectRoot?: string): void {
   }
 }
 
-/**
- * Check if pi-subagents extension is installed
- */
-function isPiSubagentsInstalled(): boolean {
-  const extensionsDir = path.join(os.homedir(), ".pi", "agent", "extensions", "subagent");
-  return fs.existsSync(extensionsDir) && fs.existsSync(path.join(extensionsDir, "index.ts"));
-}
-
-/**
- * Try to install pi-subagents automatically
- */
-function tryAutoInstallPiSubagents(): boolean {
-  try {
-    console.log("[super-pi-extension] Attempting to install pi-subagents...");
-    execSync("pi install npm:pi-subagents", { stdio: "inherit" });
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
- * Format installation instructions
- */
-function formatInstallInstructions(): string {
-  return `
-╔══════════════════════════════════════════════════════════════════╗
-║                    super-pi Extension Loaded                      ║
-╠══════════════════════════════════════════════════════════════════╣
-║  ⚡ For enhanced CE workflow capabilities, install pi-subagents:  ║
-║                                                                  ║
-║    pi install npm:pi-subagents                                   ║
-║                                                                  ║
-║  This enables:                                                   ║
-║    • /run ce-worker "execute plan"                               ║
-║    • /run-chain ce-standard -- implement feature                 ║
-║    • Parallel review with /run-chain ce-parallel-review --      ║
-║                                                                  ║
-║  Without it, CE Agents/Chains won't execute.                     ║
-╚══════════════════════════════════════════════════════════════════╝
-`;
-}
-
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     const cwd = ctx.cwd || process.cwd();
@@ -169,14 +124,6 @@ export default function (pi: ExtensionAPI) {
     // Auto-sync modelStrategy + thinkingStrategy to agentOverrides
     autoSyncSettings(cwd);
     
-    // Check for pi-subagents dependency
-    if (!isPiSubagentsInstalled()) {
-      console.warn("[super-pi-extension] pi-subagents not found. CE Agents/Chains require it.");
-      console.warn("[super-pi-extension] Run: pi install npm:pi-subagents");
-    } else {
-      console.log("[super-pi-extension] pi-subagents detected. Full CE workflow enabled.");
-    }
-    
-    console.log("[super-pi-extension] Loaded. CE agents and chains available.");
+    console.log("[super-pi-extension] Loaded. CE agents, chains, and subagent tools available.");
   });
 }

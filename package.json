@@ -1,6 +1,6 @@
 {
   "name": "@leing2021/super-pi",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "private": false,
   "type": "module",
   "description": "Pi-native Compound Engineering package for iterative development workflows",
@@ -35,9 +35,10 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*",
-    "pi-subagents": "*",
-    "typebox": "*"
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "dependencies": {
+    "typebox": "^1.1.24"
   },
   "devDependencies": {
     "@mariozechner/pi-coding-agent": "0.69.0",
@@ -49,10 +50,15 @@
     ],
     "extensions": [
       "./extensions",
-      "./extensions/super-pi-extension"
+      "./extensions/super-pi-extension",
+      "./extensions/subagent"
     ],
     "agents": [
-      "./extensions/super-pi-extension/agents"
+      "./extensions/super-pi-extension/agents",
+      "./extensions/subagent/agents"
+    ],
+    "prompts": [
+      "./extensions/subagent/prompts"
     ],
     "chains": [
       "./extensions/super-pi-extension/chains"
