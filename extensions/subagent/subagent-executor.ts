@@ -35,6 +35,7 @@ import { applyIntercomBridgeToAgent, INTERCOM_BRIDGE_MARKER, resolveIntercomBrid
 import { formatControlIntercomMessage, formatControlNoticeMessage, resolveControlConfig, shouldNotifyControlEvent } from "./subagent-control.ts";
 import { finalizeSingleOutput, injectSingleOutputInstruction, resolveSingleOutputPath } from "./single-output.ts";
 import { compactForegroundDetails, getSingleResultOutput, mapConcurrent, readStatus, resolveChildCwd } from "./utils.ts";
+import { createThrottle, resolveThrottleInterval } from "./throttle.ts";
 import {
 	buildSubagentResultIntercomPayload,
 	deliverSubagentResultIntercomEvent,
@@ -967,7 +968,17 @@ function findDuplicateParallelOutputPath(input: {
 }
 
 async function runForegroundParallelTasks(input: ForegroundParallelRunInput): Promise<SingleResult[]> {
-	return mapConcurrent(input.tasks, input.concurrencyLimit, async (task, index) => {
+	// Throttle onUpdate to prevent render storms during high parallelism
+	const throttleMs = resolveThrottleInterval(input.tasks.length);
+	const rawOnUpdate = input.onUpdate;
+	let throttledOnUpdate: ((typeof rawOnUpdate) & { flush(): void; dispose(): void }) | undefined;
+	if (rawOnUpdate && throttleMs > 0) {
+		throttledOnUpdate = createThrottle(rawOnUpdate, throttleMs);
+		input = { ...input, onUpdate: throttledOnUpdate };
+	}
+
+	try {
+	return await mapConcurrent(input.tasks, input.concurrencyLimit, async (task, index) => {
 		const behavior = input.behaviors[index];
 		const effectiveSkills = behavior?.skills;
 		const taskCwd = resolveParallelTaskCwd(task, input.paramsCwd, input.worktreeSetup, index);
@@ -1057,6 +1068,10 @@ async function runForegroundParallelTasks(input: ForegroundParallelRunInput): Pr
 			}
 		});
 	});
+	} finally {
+		throttledOnUpdate?.flush();
+		throttledOnUpdate?.dispose();
+	}
 }
 
 async function runParallelPath(data: ExecutionContextData, deps: ExecutorDeps): Promise<AgentToolResult<Details>> {

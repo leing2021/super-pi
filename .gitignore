@@ -9,3 +9,5 @@ coverage/
 /docs/**
 !/docs/
 !/docs/token-cost-evaluation.md
+
+graphify-out/

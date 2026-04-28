@@ -407,6 +407,7 @@ async function runSingleAttempt(
 		};
 
 		if (controlConfig.enabled) {
+			const activityIntervalMs = resolveActivityTimerInterval();
 			activityTimer = setInterval(() => {
 				if (processClosed || settled || detached) return;
 				const now = Date.now();
@@ -414,7 +415,7 @@ async function runSingleAttempt(
 					progress.durationMs = now - startTime;
 					fireUpdate();
 				}
-			}, 1000);
+			}, activityIntervalMs);
 			activityTimer.unref?.();
 		}
 
@@ -576,6 +577,14 @@ async function runSingleAttempt(
 /**
  * Run a subagent synchronously (blocking until complete)
  */
+/**
+ * Resolve activity timer interval based on concurrency level.
+ * Higher concurrency → longer interval to reduce render pressure.
+ */
+export function resolveActivityTimerInterval(concurrentCount = 1): number {
+	return concurrentCount <= 1 ? 2000 : 3000;
+}
+
 export async function runSync(
 	runtimeCwd: string,
 	agents: AgentConfig[],

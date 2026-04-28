@@ -239,6 +239,15 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 ## Changelog
 
+### 0.22.1 — Fix terminal freeze during parallel subagent execution
+- Fixed terminal freeze and scroll lock when running 8+ parallel subagents.
+- Added adaptive widget animation intervals: 250ms–1000ms based on running job count.
+- Added `createThrottle()` for foreground parallel `onUpdate` with flush/dispose lifecycle.
+- Added render dedup via content hash to skip unchanged `requestRender()` calls.
+- Reduced activity timer and async poller frequencies with adaptive scaling.
+- Extracted `stopAnimationTimer()` to prevent state loss during dynamic interval switching.
+- 197 tests passing (28 new for render optimization).
+
 ### 0.22.0 — Source-integrated pi-subagents
 - Integrated pi-subagents v0.20.1 source code into `extensions/subagent/` — single package install (`pi install npm:@leing2021/super-pi`).
 - Moved `typebox` from peerDependencies to dependencies.

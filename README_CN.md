@@ -239,6 +239,15 @@ your-project/
 
 ## 更新日志
 
+### 0.22.1 — 修复并行 subagent 运行时终端卡死问题
+- 修复运行 8+ 个并行 subagent 时终端卡死、无法滚动的问题。
+- 新增自适应 widget 动画间隔：250ms–1000ms，根据运行中的 job 数量动态调整。
+- 新增 `createThrottle()` 用于前台并行 `onUpdate` 节流，支持 flush/dispose 生命周期。
+- 新增渲染去重：基于内容 hash 跳过无变化的 `requestRender()` 调用。
+- 降低 activity timer 和异步轮询频率，支持自适应缩放。
+- 提取 `stopAnimationTimer()` 避免动态间隔切换时丢失状态。
+- 197 个测试通过（新增 28 个渲染优化测试）。
+
 ### 0.22.0 — 源码融合 pi-subagents
 - 将 pi-subagents v0.20.1 源码完整融入 `extensions/subagent/`——单包安装（`pi install npm:@leing2021/super-pi`）。
 - 将 `typebox` 从 peerDependencies 移至 dependencies。

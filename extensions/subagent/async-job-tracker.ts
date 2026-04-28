@@ -16,6 +16,16 @@ import {
 } from "./types.ts";
 import { readStatus } from "./utils.ts";
 
+/**
+ * Resolve poll interval based on number of running jobs.
+ * Higher parallelism → longer interval to reduce I/O and render pressure.
+ */
+export function resolvePollInterval(runningCount: number): number {
+	if (runningCount <= 2) return 1000;
+	if (runningCount <= 4) return 1500;
+	return 2000;
+}
+
 interface AsyncJobTrackerOptions {
 	completionRetentionMs?: number;
 	pollIntervalMs?: number;
@@ -103,7 +113,7 @@ export function createAsyncJobTracker(pi: Pick<ExtensionAPI, "events">, state: S
 
 	const ensurePoller = () => {
 		if (state.poller) return;
-		state.poller = setInterval(() => {
+		const pollOnce = () => {
 			if (state.asyncJobs.size === 0) {
 				if (state.lastUiContext?.hasUI) rerenderWidget(state.lastUiContext, []);
 				if (state.poller) {
@@ -151,7 +161,20 @@ export function createAsyncJobTracker(pi: Pick<ExtensionAPI, "events">, state: S
 			}
 
 			if (state.lastUiContext?.hasUI) rerenderWidget(state.lastUiContext);
-		}, pollIntervalMs);
+
+			// Dynamically adjust poll interval based on running count
+			const runningCount = Array.from(state.asyncJobs.values()).filter((j) => j.status === "running").length;
+			const adaptiveInterval = resolvePollInterval(runningCount);
+			if (state.poller) {
+				clearInterval(state.poller);
+				state.poller = setInterval(pollOnce, adaptiveInterval);
+				state.poller.unref?.();
+			}
+		};
+
+		const runningCount = Array.from(state.asyncJobs.values()).filter((j) => j.status === "running").length;
+		const initialInterval = resolvePollInterval(runningCount);
+		state.poller = setInterval(pollOnce, initialInterval);
 		state.poller.unref?.();
 	};
 

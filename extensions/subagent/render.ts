@@ -83,11 +83,24 @@ function truncLine(text: string, maxWidth: number): string {
 }
 
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const WIDGET_ANIMATION_MS = 80;
+const WIDGET_ANIMATION_BASE_MS = 250;
+
+/**
+ * Resolve widget animation interval based on running job count.
+ * Higher parallelism → lower refresh rate to prevent render storms.
+ */
+export function resolveWidgetInterval(runningCount: number): number {
+	if (runningCount <= 2) return 250;
+	if (runningCount <= 4) return 400;
+	if (runningCount <= 6) return 600;
+	return 1000;
+}
 
 let widgetTimer: ReturnType<typeof setInterval> | undefined;
 let latestWidgetCtx: ExtensionContext | undefined;
 let latestWidgetJobs: AsyncJobState[] = [];
+let lastWidgetRenderMs = 0;
+let lastWidgetContentHash = "";
 
 const resultAnimationTimers = new Map<ReturnType<typeof setInterval>, ResultAnimationContext["state"]>();
 const outputActivityCache = new Map<string, { checkedAt: number; text: string }>();
@@ -98,7 +111,7 @@ export interface ResultAnimationContext {
 }
 
 function spinnerFrame(): string {
-	return SPINNER[Math.floor(Date.now() / WIDGET_ANIMATION_MS) % SPINNER.length]!;
+	return SPINNER[Math.floor(Date.now() / WIDGET_ANIMATION_BASE_MS) % SPINNER.length]!;
 }
 
 function resultIsRunning(result: AgentToolResult<Details>): boolean {
@@ -121,7 +134,7 @@ export function syncResultAnimation(result: AgentToolResult<Details>, context: R
 		return;
 	}
 	if (context.state.subagentResultAnimationTimer) return;
-	const timer = setInterval(() => context.invalidate(), WIDGET_ANIMATION_MS);
+	const timer = setInterval(() => context.invalidate(), WIDGET_ANIMATION_BASE_MS);
 	timer.unref?.();
 	context.state.subagentResultAnimationTimer = timer;
 	resultAnimationTimers.set(timer, context.state);
@@ -353,21 +366,57 @@ export function buildWidgetLines(jobs: AsyncJobState[], theme: Theme, width = ge
 	return lines;
 }
 
+function computeWidgetHash(jobs: AsyncJobState[]): string {
+	// Lightweight hash based on status and key mutable fields
+	return jobs.map((j) =>
+		`${j.asyncId}:${j.status}:${j.currentTool ?? ""}:${j.currentStep ?? ""}:${j.lastActivityAt ?? 0}:${j.activityState ?? ""}:${j.updatedAt ?? 0}`
+	).join("|");
+}
+
 function refreshAnimatedWidget(): void {
 	if (!latestWidgetCtx?.hasUI || latestWidgetJobs.length === 0) return;
+	// Skip if called too recently (guard against overlapping timers)
+	const now = Date.now();
+	const runningCount = latestWidgetJobs.filter((j) => j.status === "running").length;
+	const minInterval = resolveWidgetInterval(runningCount);
+	if (now - lastWidgetRenderMs < minInterval * 0.8) return;
+	// Skip if content hasn't changed
+	const newHash = computeWidgetHash(latestWidgetJobs);
+	if (newHash === lastWidgetContentHash) return;
+	lastWidgetContentHash = newHash;
+	lastWidgetRenderMs = now;
 	latestWidgetCtx.ui.setWidget(WIDGET_KEY, buildWidgetLines(latestWidgetJobs, latestWidgetCtx.ui.theme));
 	latestWidgetCtx.ui.requestRender?.();
 }
 
+/** Stop animation timer only — preserves jobs/ctx/hash for dedup */
+function stopAnimationTimer(): void {
+	if (widgetTimer) {
+		clearInterval(widgetTimer);
+		widgetTimer = undefined;
+	}
+}
+
 function ensureWidgetAnimation(): void {
 	if (widgetTimer) return;
-	widgetTimer = setInterval(() => {
+	const runningCount = latestWidgetJobs.filter((j) => j.status === "running").length;
+	let interval = resolveWidgetInterval(runningCount);
+	const tick = () => {
 		if (!hasAnimatedWidgetJobs(latestWidgetJobs)) {
 			stopWidgetAnimation();
 			return;
 		}
+		// Dynamically adjust interval if running count changed
+		const currentRunning = latestWidgetJobs.filter((j) => j.status === "running").length;
+		const currentInterval = resolveWidgetInterval(currentRunning);
+		if (currentInterval !== interval) {
+			stopAnimationTimer();
+			ensureWidgetAnimation();
+			return;
+		}
 		refreshAnimatedWidget();
-	}, WIDGET_ANIMATION_MS);
+	};
+	widgetTimer = setInterval(tick, interval);
 	widgetTimer.unref?.();
 }
 
@@ -378,6 +427,7 @@ export function stopWidgetAnimation(): void {
 	}
 	latestWidgetCtx = undefined;
 	latestWidgetJobs = [];
+	lastWidgetContentHash = "";
 	outputActivityCache.clear();
 }
 
@@ -387,6 +437,14 @@ export function stopResultAnimations(): void {
 		state.subagentResultAnimationTimer = undefined;
 	}
 	resultAnimationTimers.clear();
+}
+
+/** @internal Test-only: reset module-level widget state */
+export function _testResetWidgetState(): void {
+	stopWidgetAnimation();
+	stopResultAnimations();
+	lastWidgetRenderMs = 0;
+	lastWidgetContentHash = "";
 }
 
 /**
@@ -402,12 +460,25 @@ export function renderWidget(ctx: ExtensionContext, jobs: AsyncJobState[]): void
 		stopWidgetAnimation();
 		return;
 	}
+
+	// Content dedup: skip requestRender if widget data hasn't changed
+	const newHash = computeWidgetHash(jobs);
+	const contentChanged = newHash !== lastWidgetContentHash;
+	lastWidgetContentHash = newHash;
+
 	latestWidgetCtx = ctx;
 	latestWidgetJobs = [...jobs];
 
+	const hasAnimation = hasAnimatedWidgetJobs(jobs);
 	ctx.ui.setWidget(WIDGET_KEY, buildWidgetLines(jobs, ctx.ui.theme));
-	if (hasAnimatedWidgetJobs(jobs)) ensureWidgetAnimation();
-	else stopWidgetAnimation();
+	if (contentChanged) {
+		ctx.ui.requestRender?.();
+	}
+	if (hasAnimation) ensureWidgetAnimation();
+	else {
+		stopAnimationTimer();
+		outputActivityCache.clear();
+	}
 }
 
 function renderSingleCompact(d: Details, r: Details["results"][number], theme: Theme): Component {
