@@ -28,198 +28,6 @@ Super Pi's answers:
 
 ---
 
-## The Five-Step Loop
-
-```
-01-brainstorm → 02-plan → 03-work → 04-review → 05-learn
-    think          plan      build      review      learn
-```
-
-Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
-
-### New: Stage model routing
-
-Configure once in `.pi/settings.json`:
-
-```json
-{
-  "modelStrategy": {
-    "01-brainstorm": "claude-sonnet-4-20250514",
-    "02-plan": "claude-opus-4-20250115",
-    "03-work": "claude-sonnet-4-20250514",
-    "04-review": "claude-sonnet-4-20250514",
-    "05-learn": "claude-haiku-4-20250414",
-    "default": "claude-sonnet-4-20250514"
-  }
-}
-```
-
-How it works:
-- Model switching is handled automatically by the ce-core extension `input` hook — no manual `/model` needed.
-- When you type `/skill:01-brainstorm` through `/skill:05-learn`, the extension reads `modelStrategy[stage]` (or `modelStrategy.default`) and switches before the skill runs.
-- Supported formats: full reference (`"anthropic/claude-opus-4-1"`) or bare model id (`"claude-opus-4-1"`, reuses current provider).
-- Every stage prints a `📊 Pipeline Status` block with `Current / Output / Next`.
-- A `Switched model for <stage>: <provider>/<model>` notification appears when the model changes.
-
-Quick example:
-1. Run `/skill:01-brainstorm` — model auto-switches to the configured brainstorm model
-2. Approve the design
-3. Run `/skill:02-plan` — model auto-switches to the configured plan model
-4. Continue through each stage — model switches automatically at each step
-
----
-
-## What Each Step Does
-
-### 01-brainstorm: Think First
-
-Not "describe your requirements." Three modes for three scenarios:
-
-| Mode | For | What it does |
-|------|-----|-------------|
-| **Startup Diagnostic** | Startup ideas, new products | Six YC-style forcing questions, pushed until you produce specific evidence (not "people are interested" — "who would freak out if this disappeared tomorrow?") |
-| **Builder Mode** | Side projects, hackathons | Only focused on building the coolest thing. If you accidentally mention revenue, it auto-upgrades to Startup Diagnostic |
-| **CE Brainstorm** | Adding features to existing projects | Multi-round dialog to clarify scope boundaries, generates a structured requirements doc |
-
-All three modes run a **premise challenge** (are your assumptions valid?) and **alternatives generation** (at least one minimal + one ideal approach) before you're allowed to move on.
-
-### 02-plan: Plan Well
-
-Breaks requirements into implementation units, each following strict **RED → GREEN → REFACTOR** (no production code without a failing test first).
-
-**Incremental updates**: Requirements changed? `plan_diff` detects added/removed/modified units and patches the plan instead of rewriting it.
-
-**CEO Review (optional)**: After planning, you can request a CEO Review. It challenges your plan using Bezos reversible-decision frameworks, Munger inversion, Jobs subtraction, forces alternative approaches, and draws error maps. Like having a demanding CTO review your proposal for free.
-
-### 03-work: Build Right
-
-**Parallel execution**: `task_splitter` uses a Union-Find algorithm to analyze file dependencies, feeds conflict-free units to `subagent` (parallel mode, via pi-subagents) for concurrent execution.
-
-**Checkpoint resume**: After each unit, a checkpoint is saved. Interrupted? Next startup auto-loads, skips completed work, continues from the breakpoint. Failed? `fail` records the error → `retry` suggests a recovery strategy (timeout? extend timeout. Permission issue? check permissions first. Code error? fix then retry).
-
-**Strict TDD**: Run failing test → write minimal implementation → test passes → refactor. Every step requires command output as evidence. No skipping.
-
-### 04-review: Review Thoroughly
-
-**Structured code review**: `review_router` auto-assigns reviewer personas based on diff metadata (changed payment code? bring in the security reviewer). Review discipline is technical evaluation, not theater — every finding must cite specific code, YAGNI checks, no performative agreement.
-
-**Browser QA (optional)**: Uses `agent-browser` to open your app, click through pages, screenshot bugs, fix by severity, up to 3 auto-fix iterations. Can auto-generate regression tests. Like having a QA engineer run acceptance tests.
-
-### 05-learn: Compound Learnings
-
-`pattern_extractor` scans existing artifacts, extracts and categorizes patterns. Turns "the pitfall we hit this time" into a YAML-tagged solution card in `docs/solutions/`.
-
-Two-level storage: project-specific → inside the project; cross-project → `~/.pi/agent/docs/solutions/` globally searchable.
-
-Next time `02-plan` or `04-review` runs, a grep-first search strategy automatically retrieves relevant past experience.
-
----
-
-## Built-in Capabilities
-
-One package includes everything:
-
-| What | How to Access |
-|------|--------------|
-| **Agent Manager TUI** | `/agents` or `Ctrl+Shift+A` |
-| **CE Agents** (ce-scout, ce-planner, etc.) | Via subagent tool |
-| **CE Chains** (scout → planner → worker → reviewer) | Via subagent tool |
-| **Parallel execution** | Via subagent tool |
-| **Stage Model Sync** | Automatic — set `modelStrategy` / `thinkingStrategy` in `.pi/settings.json` |
-| **Diagnostics** | `/subagents-status`, `/subagents-doctor` |
-
-### Model/Thinking Sync
-
-The extension reads `modelStrategy` and `thinkingStrategy` from `.pi/settings.json` and automatically syncs them to pi-subagents agent overrides:
-
-```json
-{
-  "modelStrategy": {
-    "02-plan": "gpt-5.5",
-    "03-work": "glm-5.1"
-  },
-  "thinkingStrategy": {
-    "02-plan": "high",
-    "03-work": "medium"
-  }
-}
-```
-
-This ensures your stage-specific models and thinking levels are used when CE Agents execute.
-
----
-
-## Technical Architecture
-
-### 10 Skills (workflow nodes)
-
-| Skill | One-liner | Core Tool |
-|-------|-----------|-----------|
-| `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
-| `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
-| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` |
-| `04-review` | Persona-routed review + live browser testing | `review_router` |
-| `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
-| `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
-| `07-worktree` | Git worktree isolated development | `worktree_manager` |
-| `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
-| `09-help` | Usage guide | — |
-| `10-rules` | Progressive rule loading for coding standards | — |
-
-### 15 Tools (underlying capabilities)
-
-| Tool | What it does |
-|------|-------------|
-| `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
-| `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
-| `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `subagent` | Parallel & serial subagent execution (built-in) |
-| `review_router` | Auto-assign reviewer personas from diff metadata |
-| `pattern_extractor` | Extract and categorize patterns from artifacts |
-| `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
-| `session_history` | Cross-session execution history recording and querying |
-| `workflow_state` | Scan docs/ and .context/ to summarize workflow state |
-| `worktree_manager` | Full git worktree lifecycle management |
-| `artifact_helper` | Artifact path resolution and directory creation |
-| `ask_user_question` | Structured user prompts (choices / free input) |
-| `subagent` | Serial subagent chain with depth guard and context control |
-| `subagent-depth-guard` | Env-based recursion depth tracking (prevents runaway nesting) |
-| `async-mutex` | Serializes `process.env` mutation for concurrency-safe child process spawning |
-
----
-
-## Token Cost
-
-New conversation overhead: **~2,500 tokens** (1.26% of Claude Sonnet 4's 200K context).
-
-| Component | Tokens | When loaded |
-|-----------|--------|-------------|
-| 10 skill registrations | ~615 | Every conversation (fixed) |
-| 13 tool registrations | ~1,914 | Every conversation (fixed) |
-| Hooks & filters | 0 | Runtime interception, zero prompt cost |
-| Single skill trigger | ~1,000–4,000 | On-demand via `read` |
-| Rules minimal (2 files) | ~900 | Before plan/work |
-| Rules + language (7 files) | ~2,600 | Before work with specific language |
-
-| vs bare Pi | vs global rules injection | vs super-pi |
-|-----------|----------------------|------------|
-| No rules | All rules loaded upfront | Progressive on-demand |
-| No output filtering | No output filtering | Auto-compress (bash ~65–98%, read ~30–60%) |
-| No TDD gate | No TDD gate | Hard gate prevents rework |
-| 0 tokens | ~5,000–36,000 tokens | **~2,500 tokens** |
-
-Single `npm install` output filtered once pays for the entire overhead. Full evaluation → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
-
----
-
-## Code Scale
-
-~2800 lines of TypeScript implementing 16 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 175 tests covering all tool logic.
-
-Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
-
----
-
 ## Quick Start
 
 ### New idea
@@ -234,10 +42,6 @@ You: I want to build a tool that helps indie devs find users
 You: continue
 
 → 02-plan breaks into units, optional CEO Review
-→ Generates docs/plans/2026-04-18-find-users-plan.md
-
-You: continue
-
 → 03-work parallel execution, checkpoint resume
 → 04-review code review + optional browser QA
 → 05-learn knowledge compounding
@@ -248,7 +52,7 @@ You: continue
 ```
 You: I want to add user authentication to the project
 
-→ 01-brainstorm CE mode, multi-round dialog: OAuth2? JWT? MFA?
+→ 01-brainstorm CE mode: OAuth2? JWT? MFA?
 → Requirements doc → 02-plan → 03-work → 04-review → 05-learn
 ```
 
@@ -268,17 +72,117 @@ You: Requirements changed, need to add SSO support
 → 02-plan uses plan_diff to detect changes, patches incrementally
 ```
 
-### Check progress anytime
+---
+
+## The Five-Step Loop
 
 ```
-You: /skill:08-status
-
-→ Scans all artifacts, shows progress + recommends next step
+01-brainstorm → 02-plan → 03-work → 04-review → 05-learn
+    think          plan      build      review      learn
 ```
+
+Each step has a dedicated skill + tool pair. Not just prompts — structured toolchains.
+
+### 01-brainstorm: Think First
+
+Three modes for three scenarios:
+
+| Mode | For | What it does |
+|------|-----|-------------|
+| **Startup Diagnostic** | Startup ideas, new products | Six YC-style forcing questions, pushed until you produce specific evidence |
+| **Builder Mode** | Side projects, hackathons | Focused on building. Accidentally mention revenue? Auto-upgrades to Startup Diagnostic |
+| **CE Brainstorm** | Adding features to existing projects | Multi-round dialog to clarify scope, generates structured requirements doc |
+
+All three run a **premise challenge** (are your assumptions valid?) and **alternatives generation** before you move on.
+
+### 02-plan: Plan Well
+
+Breaks requirements into implementation units with strict **RED → GREEN → REFACTOR**. Requirements changed? `plan_diff` patches incrementally instead of rewriting.
+
+**CEO Review (optional)**: Challenges your plan using Bezos reversible-decision frameworks, Munger inversion, Jobs subtraction. Like having a demanding CTO review for free.
+
+### 03-work: Build Right
+
+- **Parallel execution**: `task_splitter` analyzes file dependencies, feeds conflict-free units to `subagent` for concurrent execution
+- **Checkpoint resume**: Interrupted? Next startup auto-loads, skips completed work, continues from breakpoint
+- **Strict TDD**: Failing test → minimal implementation → test passes → refactor. Every step requires command output as evidence
+
+### 04-review: Review Thoroughly
+
+`review_router` auto-assigns reviewer personas based on diff metadata. Every finding must cite specific code — no performative agreement.
+
+**Browser QA (optional)**: Opens your app, clicks through pages, screenshots bugs, fixes by severity, up to 3 auto-fix iterations.
+
+### 05-learn: Compound Learnings
+
+Turns "the pitfall we hit this time" into a YAML-tagged solution card in `docs/solutions/`. Two-level storage: project-specific and global (`~/.pi/agent/docs/solutions/`).
+
+Next time `02-plan` or `04-review` runs, relevant past experience is automatically retrieved.
 
 ---
 
-## Generated File Structure
+## Built-in Capabilities
+
+One package includes everything:
+
+| What | How to Access |
+|------|--------------|
+| **Agent Manager TUI** | `/agents` or `Ctrl+Shift+A` |
+| **CE Agents** (ce-scout, ce-planner, etc.) | Via subagent tool |
+| **CE Chains** (scout → planner → worker → reviewer) | Via subagent tool |
+| **Parallel execution** | Via subagent tool |
+| **Stage Model Sync** | Automatic — set `modelStrategy` / `thinkingStrategy` in `.pi/settings.json` |
+| **Diagnostics** | `/subagents-status`, `/subagents-doctor` |
+
+### Stage model routing
+
+Configure once in `.pi/settings.json`:
+
+```json
+{
+  "modelStrategy": {
+    "01-brainstorm": "claude-sonnet-4-20250514",
+    "02-plan": "claude-opus-4-20250115",
+    "03-work": "claude-sonnet-4-20250514",
+    "default": "claude-sonnet-4-20250514"
+  },
+  "thinkingStrategy": {
+    "02-plan": "high",
+    "03-work": "medium"
+  }
+}
+```
+
+Model switching is handled automatically — no manual `/model` needed. When you run any CE skill, the extension reads the config and switches before the skill runs. Supported formats: full reference (`"anthropic/claude-opus-4-1"`) or bare model id (`"claude-opus-4-1"`).
+
+---
+
+## Technical Architecture
+
+### 10 Skills
+
+| Skill | One-liner | Core Tool |
+|-------|-----------|-----------|
+| `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
+| `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
+| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` |
+| `04-review` | Persona-routed review + live browser testing | `review_router` |
+| `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
+| `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
+| `07-worktree` | Git worktree isolated development | `worktree_manager` |
+| `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
+| `09-help` | Usage guide | — |
+| `10-rules` | Progressive rule loading for coding standards | — |
+
+### Progressive Rule Loading
+
+Built-in `rules/` directory with 13 language layers (TypeScript, Python, Rust, Go, Java, Kotlin, C#, C++, Dart, PHP, Perl, Swift, Elixir) + common + web — 78 Markdown files total.
+
+Rules load **progressively** — never all at once, only what the current task needs. Zero waste.
+
+Customize for your project: create a `rules/` directory in your project root. Project-level rules override package defaults. See `10-rules` skill for details.
+
+### Generated File Structure
 
 ```
 your-project/
@@ -294,94 +198,6 @@ your-project/
 ```
 
 **Recommendation: commit everything to git** — these files are the project's traceable memory.
-
-### `10-rules`: Progressive Rule Loading
-
-Built-in coding rules live under `rules/` in the package. The `10-rules` skill loads them **progressively** — never all at once, only what the current task needs.
-
-**How it works:**
-
-```
-system prompt (30 tokens: skill name + description)
-  → 10-rules SKILL.md (~200 tokens: loading decision tree)
-    → specific rule files via read tool (on-demand, 900–2600 tokens)
-```
-
-Three CE skills auto-trigger rule loading at their entry points:
-
-| Skill | Rules pre-loaded |
-|-------|-----------------|
-| `02-plan` | `common/` rules + language detection + matching language rules (e.g. `rules/typescript/`) |
-| `03-work` | `common/` rules + language detection + matching language rules + `web/` if frontend |
-| `04-review` | `common/code-review.md` + language detection + matching language rules + `web/` if frontend |
-
-**Rule precedence** (when layers overlap on the same topic):
-
-```
-language-specific  >  web  >  common
-```
-
-No rules are loaded when you brainstorm, check status, or do non-code tasks. Zero waste.
-
-#### Included rule layers
-
-| Layer | Files | When loaded |
-|-------|-------|------------|
-| `common/` | 10 files | Always (baseline for all tasks) |
-| `typescript/`, `python/`, `cpp/`, `csharp/`, `dart/`, `golang/`, `java/`, `kotlin/`, `perl/`, `php/`, `rust/`, `swift/` | 5 files each | When the task touches that language |
-| `web/` | 7 files (includes `design-quality.md`, `performance.md`) | When frontend/browser is relevant |
-
-#### Customizing rules for your project
-
-Two rule sources exist, with project-level taking priority:
-
-| Source | Location | Survives `pi update`? |
-|--------|----------|----------------------|
-| **Project-level** | `{your-project-root}/rules/` | ✅ Yes |
-| Package-level | Inside `node_modules/@leing2021/super-pi/rules/` | ❌ No |
-
-To customize, create a `rules/` directory in your project root. `10-rules` checks it first — if a file exists there, it overrides the package default for that topic.
-
-**Add a language** — create a new directory with the 5 standard topics:
-
-```bash
-mkdir rules/elixir
-touch rules/elixir/{coding-style,testing,patterns,security,hooks}.md
-```
-
-Each file should start with:
-
-```markdown
-> This file extends [common/xxx.md](../common/xxx.md) with Elixir-specific content.
-```
-
-**Remove unused languages** — just delete the directory:
-
-```bash
-rm -rf rules/perl rules/cpp  # don't need these? remove them
-```
-
-**Tweak a rule** — edit the `.md` file directly:
-
-```bash
-# Override testing conventions for your team
-vim rules/common/testing.md
-
-# Override for a specific language
-vim rules/typescript/testing.md
-```
-
-**Add a new topic** — create a new `.md` in the appropriate layer:
-
-```bash
-# Common topic
-vim rules/common/api-design.md
-
-# Language-specific override
-vim rules/python/api-design.md
-```
-
-The `10-rules` skill will pick up any `.md` file in `rules/` — no configuration needed. If a language directory exists, it's available for loading. If it's gone, it's simply never loaded.
 
 ---
 
@@ -407,7 +223,7 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 
 | Tip | Why |
 |-----|-----|
-| Start with 01-brainstorm | Whatever the scenario, thinking first never hurts |
+| Start with 01-brainstorm | Thinking first never hurts |
 | Use 07-worktree for big features | Isolated dev, no impact on main branch |
 | Use CEO Review on plans | Like having a demanding CTO review for free |
 | Use browser QA for acceptance | Code review can't catch layout breaks and blank screens |
@@ -428,135 +244,99 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 - 169 tests passing.
 
 ### 0.21.0 — Delegate subagent tools to pi-subagents
+- Subagent capabilities now provided by the `pi-subagents` package.
 - Removed `subagent` and `parallel_subagent` tool registrations from `ce-core` extension.
-- Subagent capabilities (serial, parallel, chain, async, TUI, agent CRUD) now provided by the `pi-subagents` package.
-- Removed `AsyncMutex`, `subagent-depth-guard` exports — no longer needed in this package.
-- Added `pi-subagents` as a peer dependency in `package.json`.
-- Updated `03-work` skill, `ce-worker` agent, and all README references from `parallel_subagent` to `subagent` (pi-subagents).
-- Renamed internal `path` variable to `filePath` in read-output-filter to avoid shadowing.
 
-### 0.20.0 — Extension API migration + v0.19.7 rework
-- Migrated `super-pi-extension` from legacy `export default { load() }` object format to Pi-native factory function `(pi: ExtensionAPI) => void`.
-- Replaced hardcoded `ExtensionContext` import with `ExtensionAPI`-only — context now provided via event handler.
-- Removed dead auto-install comment block and unused `ExtensionContext` type import.
-- Restored v0.19.6 changelog entry that was accidentally overwritten by the v0.19.7 release commit.
+### 0.20.0 — Extension API migration
+- Migrated `super-pi-extension` to Pi-native factory function format.
+
+<details>
+<summary>Older versions</summary>
 
 ### 0.19.6 — pi-subagents integration extension
-- New `super-pi-extension`: pre-configured CE Agents (ce-scout, ce-planner, ce-worker, ce-reviewer, ce-oracle) and CE Chains (ce-standard, ce-review-only, ce-parallel-review).
-- New `thinkingStrategy` setting: per-stage thinking level sync (`modelStrategy` + `thinkingStrategy` → `subagents.agentOverrides`).
-- Removed hardcoded `model` and `thinking` from CE Agent frontmatter — now fully driven by settings.
-- Added graceful pi-subagents dependency detection with install instructions on extension load.
-- Updated `03-work`, `04-review`, `06-next` skills with pi-subagents integration docs.
-- Updated README with Optional: pi-subagents Integration section.
+- New `super-pi-extension`: pre-configured CE Agents and CE Chains.
+- New `thinkingStrategy` setting: per-stage thinking level sync.
 
 ### 0.19.5 — Plan/Work/Review skill rules loading alignment
-
----
-
-> **Note:** v0.19.7 was a broken release — version bump with no code change, changelog entry for v0.19.6 overwritten. v0.20.0 supersedes it.
-- Fixed `02-plan` not loading language-specific rules (e.g. `rules/typescript/`) during the planning phase — only `common/` rules were loaded.
-- Fixed `03-work` Core rules missing explicit `common/` loading and `web/` conditional loading (10-rules defined them but the skill's own instructions didn't).
-- Fixed `04-review` Core rules missing explicit language detection method and `web/` conditional loading.
-- Updated all three skills to use a consistent 4-step progressive loading strategy (common → language detect → language rules → web rules).
-- Updated `10-rules` SKILL.md Pre-flight to include complete language detection mapping for all three phases.
-- Synced `README.md` and `README_CN.md` skill tables to reflect the unified loading strategy.
+- Fixed `02-plan` not loading language-specific rules during the planning phase.
+- Updated all three skills to use a consistent 4-step progressive loading strategy.
 
 ### 0.19.4 — Read output filter markdown truncation fix
-- Fixed `read-output-filter` over-truncating markdown files: raised markdown threshold from 2KB → 8KB.
-- Improved `filterMarkdown()` to fully preserve list items (`-`, `*`, numbered) and keep first 3 lines of paragraphs (was 1).
-- Filter notice now includes actual file path in actionable guidance (`bash cat <path>`).
-- Added 5 new tests covering list preservation, markdown threshold gate, and path-in-notice.
-- 175 tests passing.
+- Fixed `read-output-filter` over-truncating markdown files.
+- Added 5 new tests. 175 tests passing.
 
 ### 0.19.3 — Terminate fix + runtime model routing + autoContinue removal
-- Fixed 6 ce-core tools (`brainstorm_dialog`, `workflow_state`, `review_router`, `session_checkpoint`, `session_history`, `pattern_extractor`) incorrectly returning `terminate: true`, which caused agent turns to end prematurely (brainstorm questions not shown, "type continue to proceed" interruptions).
-- Implemented runtime stage model routing via ce-core extension `input` hook: reads `.pi/settings.json` `modelStrategy`, auto-switches model before skill execution. Supports full reference (`anthropic/claude-opus-4-1`) and bare model id (`claude-opus-4-1`).
-- Removed `pipeline.autoContinue` configuration (never had runtime implementation; Pi lacks `skill_end` event for auto-continue).
-- Updated `skills/references/pipeline-config.md`, `README.md`, `README_CN.md` to reflect runtime model routing behavior.
-- Added 4 new tests covering terminate regression, input hook model routing, and bare model id parsing.
+- Fixed 6 ce-core tools incorrectly returning `terminate: true`.
+- Implemented runtime stage model routing via ce-core extension `input` hook.
 
 ### 0.19.2 — Evidence-first handoff-lite + docs tracking rule
-- Added `context_handoff` with evidence-first default handoff-lite generation when markdown is omitted.
-- Standardized the shared handoff-lite template across 01-05 workflow handoffs via `skills/references/pipeline-config.md`.
-- Added tests protecting default handoff generation and the shared handoff docs contract.
-- Updated docs tracking so Git only uploads `docs/token-cost-evaluation.md` while other `docs/` artifacts stay local.
+- Added `context_handoff` with evidence-first default handoff-lite generation.
 
 ### 0.19.1 — Pipeline config + typecheck baseline fix
-- Added shared pipeline config (`skills/references/pipeline-config.md`) for stage model routing via `.pi/settings.json`.
-- Added runtime stage model routing via ce-core extension `input` hook (reads `modelStrategy` from `.pi/settings.json`, auto-switches model before skill execution).
-- Fixed TypeScript baseline issues so `bunx tsc --noEmit` passes.
+- Added shared pipeline config for stage model routing.
 
 ### 0.19.0 — 0.69.0 alignment + learn rename
-- TypeBox migration: `@sinclair/typebox` → `typebox` (zero old-path imports)
-- Peer/dev dependency upgrade: pi-coding-agent `0.67.6` → `0.69.0`
-- Tool termination: 6 pure-query tools now return `terminate: true` to reduce unnecessary LLM rounds
-- Skill rename: `05-compound` → `05-learn` for clarity
+- TypeBox migration: `@sinclair/typebox` → `typebox`.
+- Peer/dev dependency upgrade: pi-coding-agent `0.67.6` → `0.69.0`.
+- Skill rename: `05-compound` → `05-learn`.
 
 ### 0.18.0 — Progressive rules
-- Built-in `rules/` directory with 13 language layers + common + web (78 Markdown files)
-- New `10-rules` skill: progressive on-demand loading, zero waste
-- `02-plan`, `03-work`, `04-review` auto-trigger rule loading at entry points
-- Users can add/remove languages and edit rules freely — plain Markdown, no config
-- 10 skills, 15 tools, 162 tests passing
+- Built-in `rules/` directory with 13 language layers + common + web (78 Markdown files).
+- New `10-rules` skill: progressive on-demand loading.
 
 ### 0.17.0 — Subagent safety
-- Recursion depth guard (`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`) prevents runaway nesting
-- Async mutex for `process.env` concurrency safety during parallel subagent execution
-- Context slimming: `inheritSkills` parameter, parallel workers default to slim context (`--no-skills`)
-- Shared `createSubagentRunner` factory (deduped runner closures)
-- 162 tests passing
+- Recursion depth guard prevents runaway nesting.
+- Async mutex for `process.env` concurrency safety.
 
 ### 0.16.0 — Context optimization
-- Read output filter: structural compression for large code files, lock files, markdown
-- Compaction optimizer: focused summary instructions for session compaction
-- Bash output filter improvements
+- Read output filter: structural compression for large code files.
 
 ### 0.15.0 — Output filtering
-- Bash output filter: smart truncation by command type (install, test, build)
-- Read output filter: preserves structure while cutting verbosity
+- Bash output filter: smart truncation by command type.
 
 ### 0.14.0 — Structured solution retrieval
-- YAML frontmatter tagging + grep-first two-level search
-- 95 tests passing
+- YAML frontmatter tagging + grep-first two-level search.
 
 ### 0.13.0 — Superpowers engineering discipline
-- Strict TDD gates, design checklists, YAGNI checks
+- Strict TDD gates, design checklists, YAGNI checks.
 
 ### 0.12.0 — Error recovery
-- session_checkpoint fail/retry operations
+- session_checkpoint fail/retry operations.
 
 ### 0.11.0 — Pattern extraction
-- New pattern_extractor tool
+- New pattern_extractor tool.
 
 ### 0.10.0 — Continuous learning
-- New session_history tool
+- New session_history tool.
 
 ### 0.9.0 — Incremental planning
-- New plan_diff tool
+- New plan_diff tool.
 
 ### 0.8.0 — Multi-round dialog
-- New brainstorm_dialog tool
+- New brainstorm_dialog tool.
 
 ### 0.7.0 — Parallel grouping
-- Union-Find based task_splitter
+- Union-Find based task_splitter.
 
 ### 0.6.0 — Checkpoint resume
-- New session_checkpoint tool
+- New session_checkpoint tool.
 
 ### 0.5.0 — Parallel execution
-- New parallel_subagent tool (now delegated to pi-subagents)
+- New parallel_subagent tool.
 
 ### 0.4.0 — Smart review
-- New review_router tool
+- New review_router tool.
 
 ### 0.3.0 — Isolated development
-- New worktree_manager + 07-worktree
+- New worktree_manager + 07-worktree.
 
 ### 0.2.0 — State awareness
-- New workflow_state + 06-next
+- New workflow_state + 06-next.
 
 ### 0.1.0 — Initial release
-- 7 skills, 3 tools
+- 7 skills, 3 tools.
+
+</details>
 
 ---
 
