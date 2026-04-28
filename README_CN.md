@@ -8,6 +8,8 @@
 pi install npm:@leing2021/super-pi
 ```
 
+> **从 v0.21.0 或更早版本升级？** 先运行 `pi uninstall npm:pi-subagents`，再 `pi update`。从 v0.22.0 起，subagent 能力已内置，不再需要单独安装。
+
 ---
 
 ## 为什么用 Super Pi
@@ -113,19 +115,18 @@ Super Pi 的解法：
 
 ---
 
-## 内置 Subagent 能力
+## 内置能力
 
-Super Pi 已将 pi-subagents（by Nico Bailon）集成为内置扩展——无需单独安装。以下能力开箱即用：
+一个包包含所有功能：
 
-| 功能 | 访问方式 | 描述 |
-|------|---------|------|
-| **Agent Manager TUI** | `/agents` 或 `Ctrl+Shift+A` | 可视化 agent 浏览器，配置并启动 agent/chain/并行任务 |
-| **CE Agents** | 通过 subagent 工具 | 与 CE 阶段对齐的预配置代理（ce-scout、ce-planner 等） |
-| **CE Chains** | 通过 subagent 工具 | Scout → Planner → Worker → Reviewer |
-| **并行审查** | 通过 subagent 工具 | 三路并行：正确性 + 测试 + 复杂度 |
-| **模型/Thinking 同步** | 自动 | `modelStrategy` + `thinkingStrategy` 同步到代理配置 |
-| **Subagent 状态** | `/subagents-status` | 显示活跃和最近的异步 subagent 运行 |
-| **诊断** | `/subagents-doctor` | 显示 subagent 诊断信息 |
+| 功能 | 访问方式 |
+|------|----------|
+| **Agent Manager TUI** | `/agents` 或 `Ctrl+Shift+A` |
+| **CE Agents**（ce-scout、ce-planner 等） | 通过 subagent 工具 |
+| **CE Chains**（scout → planner → worker → reviewer） | 通过 subagent 工具 |
+| **并行执行** | 通过 subagent 工具 |
+| **阶段模型同步** | 自动 — 在 `.pi/settings.json` 中设置 `modelStrategy` / `thinkingStrategy` |
+| **诊断** | `/subagents-status`、`/subagents-doctor` |
 
 ### 模型/Thinking 同步原理
 

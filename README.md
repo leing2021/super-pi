@@ -8,6 +8,8 @@ Install it, tell Pi what you want to build, then keep saying "continue" — it w
 pi install npm:@leing2021/super-pi
 ```
 
+> **Upgrading from v0.21.0 or earlier?** Run `pi uninstall npm:pi-subagents` first, then `pi update`. Since v0.22.0, subagent capabilities are built-in — no separate package needed.
+
 ---
 
 ## Why Super Pi
@@ -113,21 +115,20 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ---
 
-## Built-in Subagent Capabilities
+## Built-in Capabilities
 
-Super Pi includes pi-subagents (by Nico Bailon) as a built-in extension — no separate install needed. The following capabilities are available out of the box:
+One package includes everything:
 
-| Feature | How to Access | Description |
-|---------|--------------|-------------|
-| **Agent Manager TUI** | `/agents` or `Ctrl+Shift+A` | Visual agent browser, configure and launch agents/chains/parallel tasks |
-| **CE Agents** | Via subagent tool | Pre-configured agents aligned with CE stages (ce-scout, ce-planner, etc.) |
-| **CE Chains** | Via subagent tool | Scout → Planner → Worker → Reviewer |
-| **Parallel Review** | Via subagent tool | 3-way review: correctness + tests + complexity |
-| **Stage Model Sync** | Automatic | `modelStrategy` + `thinkingStrategy` synced to agent configs |
-| **Subagent Status** | `/subagents-status` | Show active and recent async subagent runs |
-| **Diagnostics** | `/subagents-doctor` | Show subagent diagnostics |
+| What | How to Access |
+|------|--------------|
+| **Agent Manager TUI** | `/agents` or `Ctrl+Shift+A` |
+| **CE Agents** (ce-scout, ce-planner, etc.) | Via subagent tool |
+| **CE Chains** (scout → planner → worker → reviewer) | Via subagent tool |
+| **Parallel execution** | Via subagent tool |
+| **Stage Model Sync** | Automatic — set `modelStrategy` / `thinkingStrategy` in `.pi/settings.json` |
+| **Diagnostics** | `/subagents-status`, `/subagents-doctor` |
 
-### How Model/Thinking Sync Works
+### Model/Thinking Sync
 
 The extension reads `modelStrategy` and `thinkingStrategy` from `.pi/settings.json` and automatically syncs them to pi-subagents agent overrides:
 
@@ -150,21 +151,13 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 
 ## Technical Architecture
 
-### Extensions
-
-| Extension | Description |
-|-----------|------------|
-| `ce-core` | 15 CE tools (task_splitter, session_checkpoint, brainstorm_dialog, etc.) + hooks + filters |
-| `super-pi-extension` | CE Agents/Chains + model strategy sync |
-| `subagent` | Full subagent runtime (serial, parallel, chain, async, TUI, agent CRUD) — based on [pi-subagents](https://github.com/nicobailon/pi-subagents) |
-
 ### 10 Skills (workflow nodes)
 
 | Skill | One-liner | Core Tool |
 |-------|-----------|-----------|
 | `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
 | `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
-| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` (pi-subagents) |
+| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` |
 | `04-review` | Persona-routed review + live browser testing | `review_router` |
 | `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
 | `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
@@ -180,7 +173,7 @@ This ensures your stage-specific models and thinking levels are used when CE Age
 | `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
 | `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
 | `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `subagent` | Parallel & serial subagent execution (built-in, based on pi-subagents) |
+| `subagent` | Parallel & serial subagent execution (built-in) |
 | `review_router` | Auto-assign reviewer personas from diff metadata |
 | `pattern_extractor` | Extract and categorize patterns from artifacts |
 | `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
