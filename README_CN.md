@@ -159,20 +159,25 @@ Super Pi 的解法：
 
 ## 技术架构
 
-### 10 个 Skills
+### 核心：五步循环
 
-| Skill | 一句话 | 核心工具 |
+| Skill | 做什么 | 核心工具 |
 |-------|--------|----------|
-| `01-brainstorm` | 三种模式深度需求挖掘 | `brainstorm_dialog` |
-| `02-plan` | 拆分单元，TDD 门控，增量更新 | `plan_diff` |
+| `01-brainstorm` | 三种模式需求挖掘（Startup Diagnostic / Builder / CE） | `brainstorm_dialog` |
+| `02-plan` | 拆分单元 + TDD 门控 + `plan_diff` 增量更新 | `plan_diff` |
 | `03-work` | 并行执行，断点续传，错误恢复 | `session_checkpoint`、`task_splitter`、`subagent` |
-| `04-review` | 角色路由审查 + 浏览器测试 | `review_router` |
-| `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
-| `06-next` | 不知道下一步做什么？问它 | `workflow_state`、`session_history` |
-| `07-worktree` | Git worktree 隔离开发 | `worktree_manager` |
-| `08-status` | 扫描 artifacts，报告进度 | `workflow_state`、`session_history` |
-| `09-help` | 使用指南 | — |
-| `10-rules` | 渐进式编码规则加载 | — |
+| `04-review` | 角色路由审查 + 浏览器 QA | `review_router` |
+| `05-learn` | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
+
+### 辅助工具
+
+| Skill | 一句话 |
+|-------|--------|
+| `06-next` | 根据工作流状态推荐最佳下一步 |
+| `07-worktree` | Git worktree 隔离开发 |
+| `08-status` | 扫描 artifacts，报告进度 |
+| `09-help` | 使用指南 |
+| `10-rules` | 渐进式编码规则加载 |
 
 ### 渐进式规则加载
 

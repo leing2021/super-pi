@@ -159,20 +159,25 @@ Model switching is handled automatically — no manual `/model` needed. When you
 
 ## Technical Architecture
 
-### 10 Skills
+### Core: Five-Step Loop
 
-| Skill | One-liner | Core Tool |
-|-------|-----------|-----------|
-| `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
-| `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
+| Skill | What | Core Tool |
+|-------|------|----------|
+| `01-brainstorm` | Three-mode requirements mining (Startup Diagnostic / Builder / CE) | `brainstorm_dialog` |
+| `02-plan` | Break into units with TDD gates, incremental `plan_diff` updates | `plan_diff` |
 | `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `subagent` |
-| `04-review` | Persona-routed review + live browser testing | `review_router` |
-| `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
-| `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
-| `07-worktree` | Git worktree isolated development | `worktree_manager` |
-| `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
-| `09-help` | Usage guide | — |
-| `10-rules` | Progressive rule loading for coding standards | — |
+| `04-review` | Persona-routed review + live browser QA | `review_router` |
+| `05-learn` | Pattern extraction → searchable knowledge cards | `pattern_extractor` |
+
+### Utilities
+
+| Skill | One-liner |
+|-------|-----------|
+| `06-next` | Recommend the best next skill based on workflow state |
+| `07-worktree` | Git worktree isolated development |
+| `08-status` | Scan artifacts, report progress |
+| `09-help` | Usage guide |
+| `10-rules` | Progressive rule loading for coding standards |
 
 ### Progressive Rule Loading
 
