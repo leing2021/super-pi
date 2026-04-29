@@ -4,6 +4,7 @@ dist
 .pi/
 coverage/
 .context/
+graphify-out/
 
 # docs/ is local/runtime-heavy by default; only keep the public evaluation doc tracked
 /docs/**

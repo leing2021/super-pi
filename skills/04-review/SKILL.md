@@ -11,11 +11,12 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-- Before reviewing, read the `10-rules` skill and load:
+- Before reviewing, load project rules:
   1. `rules/common/code-review.md`
-  2. **Detect the project's primary language** from the changed files (check for `tsconfig.json` → typescript, `package.json` without tsconfig → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin)
+  2. Detect the project's primary language from the changed files using [language detection](../references/language-detection.md)
   3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
   4. If the review involves frontend/browser changes, also load `rules/web/` files
+- Priority: project-level `{repo-root}/rules/` overrides package-level defaults
 - Determine the **diff scope** before selecting reviewers.
 - Use the **`review_router`** tool to automatically select reviewer personas based on diff metadata.
 - Read the relevant **plan** artifact when one exists.

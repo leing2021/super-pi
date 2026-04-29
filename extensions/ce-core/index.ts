@@ -15,6 +15,7 @@ import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
 import { createPatternExtractorTool } from "./tools/pattern-extractor"
+import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
@@ -272,6 +273,30 @@ const patternSchema = Type.Object({
   sources: Type.Array(Type.String(), { description: "Artifact sources" }),
 })
 
+const contextHandoffParams = Type.Object({
+  operation: Type.Union([
+    Type.Literal("save"),
+    Type.Literal("load"),
+    Type.Literal("latest"),
+    Type.Literal("status"),
+  ], { description: "Handoff operation" }),
+  repoRoot: Type.String({ description: "Repository root" }),
+  currentStage: Type.Optional(Type.String({ description: "Current pipeline stage (e.g. 02-plan)" })),
+  nextStage: Type.Optional(Type.String({ description: "Next pipeline stage" })),
+  contextHealth: Type.Optional(Type.Union([
+    Type.Literal("good"),
+    Type.Literal("watch"),
+    Type.Literal("heavy"),
+    Type.Literal("critical"),
+  ], { description: "Context health assessment" })),
+  activeFiles: Type.Optional(Type.Array(Type.String(), { description: "1-5 must-know active file paths" })),
+  blocker: Type.Optional(Type.String({ description: "Current blocker description" })),
+  verification: Type.Optional(Type.String({ description: "Latest verification command + result" })),
+  artifacts: Type.Optional(Type.Record(Type.String(), Type.Optional(Type.String()), { description: "Artifact paths (requirements, plan, checkpoint, proof)" })),
+  handoffMarkdown: Type.Optional(Type.String({ description: "Custom handoff markdown content" })),
+  handoffPath: Type.Optional(Type.String({ description: "Specific handoff file path to load" })),
+})
+
 const patternExtractorParams = Type.Object({
   operation: Type.Union([
     Type.Literal("extract"),
@@ -353,6 +378,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const planDiff = createPlanDiffTool()
   const sessionHistory = createSessionHistoryTool()
   const patternExtractor = createPatternExtractorTool()
+  const contextHandoff = createContextHandoffTool()
 
   pi.registerTool({
     name: artifactHelper.name,
@@ -669,6 +695,33 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     },
   })
 
+  pi.registerTool({
+    name: contextHandoff.name,
+    label: "Context Handoff",
+    description: "Manage cross-stage context handoffs with evidence-first templates. Supports save (write handoff + state), load (read handoff + state), latest (read latest dated handoff), and status (read current state).",
+    parameters: contextHandoffParams,
+    async execute(_toolCallId, params) {
+      const result = await contextHandoff.execute({
+        operation: params.operation,
+        repoRoot: params.repoRoot,
+        currentStage: params.currentStage,
+        nextStage: params.nextStage,
+        contextHealth: params.contextHealth,
+        activeFiles: params.activeFiles,
+        blocker: params.blocker,
+        verification: params.verification,
+        artifacts: params.artifacts as Record<string, string | undefined> | undefined,
+        handoffMarkdown: params.handoffMarkdown,
+        handoffPath: params.handoffPath,
+      })
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
+
   // Bash output smart filter — reduces context waste from verbose command output
   pi.on("tool_result", async (event, _ctx) => {
     if (event.toolName !== "bash") return undefined
@@ -769,6 +822,7 @@ export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export { createPlanDiffTool } from "./tools/plan-diff"
 export { createSessionHistoryTool } from "./tools/session-history"
 export { createPatternExtractorTool } from "./tools/pattern-extractor"
+export { createContextHandoffTool } from "./tools/context-handoff"
 export {
   getBrainstormArtifactPath,
   getPlanArtifactPath,

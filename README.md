@@ -115,7 +115,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 
 ## Technical Architecture
 
-### 10 Skills (workflow nodes)
+### 8 Skills (workflow nodes)
 
 | Skill | One-liner | Core Tool |
 |-------|-----------|-----------|
@@ -124,13 +124,12 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
 | `04-review` | Persona-routed review + live browser testing | `review_router` |
 | `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
-| `06-next` | Not sure what to do next? Ask this | `workflow_state`, `session_history` |
+| `06-next` | What to do next + full status report | `workflow_state`, `session_history` |
 | `07-worktree` | Git worktree isolated development | `worktree_manager` |
-| `08-status` | Scan artifacts, report progress | `workflow_state`, `session_history` |
-| `09-help` | Usage guide | — |
-| `10-rules` | Progressive rule loading for coding standards | — |
+| `08-help` | Usage guide | — |
 
-### 15 Tools (underlying capabilities)
+
+### 14 Tools + 2 Helpers (underlying capabilities)
 
 | Tool | What it does |
 |------|-------------|
@@ -147,19 +146,20 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `artifact_helper` | Artifact path resolution and directory creation |
 | `ask_user_question` | Structured user prompts (choices / free input) |
 | `subagent` | Serial subagent chain with depth guard and context control |
-| `subagent-depth-guard` | Env-based recursion depth tracking (prevents runaway nesting) |
-| `async-mutex` | Serializes `process.env` mutation for concurrency-safe child process spawning |
+| `context_handoff` | Cross-stage context handoffs with evidence-first templates (save/load/latest/status) |
+| `subagent-depth-guard` | Helper: env-based recursion depth tracking (prevents runaway nesting) |
+| `async-mutex` | Helper: serializes `process.env` mutation for concurrency-safe child process spawning |
 
 ---
 
 ## Token Cost
 
-New conversation overhead: **~2,500 tokens** (1.26% of Claude Sonnet 4's 200K context).
+New conversation overhead: **~2,600 tokens** (1.3% of Claude Sonnet 4's 200K context).
 
 | Component | Tokens | When loaded |
 |-----------|--------|-------------|
-| 10 skill registrations | ~615 | Every conversation (fixed) |
-| 13 tool registrations | ~1,914 | Every conversation (fixed) |
+| 8 skill registrations | ~490 | Every conversation (fixed) |
+| 14 tool registrations | ~2,055 | Every conversation (fixed) |
 | Hooks & filters | 0 | Runtime interception, zero prompt cost |
 | Single skill trigger | ~1,000–4,000 | On-demand via `read` |
 | Rules minimal (2 files) | ~900 | Before plan/work |
@@ -170,7 +170,7 @@ New conversation overhead: **~2,500 tokens** (1.26% of Claude Sonnet 4's 200K co
 | No rules | All rules loaded upfront | Progressive on-demand |
 | No output filtering | No output filtering | Auto-compress (bash ~65–98%, read ~30–60%) |
 | No TDD gate | No TDD gate | Hard gate prevents rework |
-| 0 tokens | ~5,000–36,000 tokens | **~2,500 tokens** |
+| 0 tokens | ~5,000–36,000 tokens | **~2,600 tokens** |
 
 Single `npm install` output filtered once pays for the entire overhead. Full evaluation → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
 
@@ -178,7 +178,7 @@ Single `npm install` output filtered once pays for the entire overhead. Full eva
 
 ## Code Scale
 
-~2800 lines of TypeScript implementing 16 tools, 22 Markdown reference files + 78 rule files driving 10 skills, 175 tests covering all tool logic.
+~2800 lines of TypeScript implementing 14 registered tools + 2 helpers, 23 Markdown reference files + 79 rule files driving 8 skills, 175 tests covering all tool logic.
 
 Not a heavy framework. Each tool has a single responsibility, each skill works independently, and together they form a complete workflow.
 
@@ -235,7 +235,7 @@ You: Requirements changed, need to add SSO support
 ### Check progress anytime
 
 ```
-You: /skill:08-status
+You: /skill:06-next
 
 → Scans all artifacts, shows progress + recommends next step
 ```
@@ -259,25 +259,27 @@ your-project/
 
 **Recommendation: commit everything to git** — these files are the project's traceable memory.
 
-### `10-rules`: Progressive Rule Loading
+### Progressive Rule Loading
 
-Built-in coding rules live under `rules/` in the package. The `10-rules` skill loads them **progressively** — never all at once, only what the current task needs.
+Built-in coding rules live under `rules/` in the package. Rules are loaded **progressively** by each skill — never all at once, only what the current task needs.
 
 **How it works:**
 
 ```
 system prompt (30 tokens: skill name + description)
-  → 10-rules SKILL.md (~200 tokens: loading decision tree)
+  → skill SKILL.md (~200 tokens: loading decision tree)
     → specific rule files via read tool (on-demand, 900–2600 tokens)
 ```
 
-Three CE skills auto-trigger rule loading at their entry points:
+Three skills auto-trigger rule loading at their entry points:
 
 | Skill | Rules pre-loaded |
 |-------|-----------------|
 | `02-plan` | `common/` rules + language detection + matching language rules (e.g. `rules/typescript/`) |
 | `03-work` | `common/` rules + language detection + matching language rules + `web/` if frontend |
 | `04-review` | `common/code-review.md` + language detection + matching language rules + `web/` if frontend |
+
+Language detection uses file heuristics (see `skills/references/language-detection.md`): `tsconfig.json` → TypeScript, `Cargo.toml` → Rust, `go.mod` → Go, etc.
 
 **Rule precedence** (when layers overlap on the same topic):
 
@@ -291,7 +293,7 @@ No rules are loaded when you brainstorm, check status, or do non-code tasks. Zer
 
 | Layer | Files | When loaded |
 |-------|-------|------------|
-| `common/` | 10 files | Always (baseline for all tasks) |
+| `common/` | 11 files (includes `naming.md`) | Always (baseline for all tasks) |
 | `typescript/`, `python/`, `cpp/`, `csharp/`, `dart/`, `golang/`, `java/`, `kotlin/`, `perl/`, `php/`, `rust/`, `swift/` | 5 files each | When the task touches that language |
 | `web/` | 7 files (includes `design-quality.md`, `performance.md`) | When frontend/browser is relevant |
 
@@ -304,7 +306,7 @@ Two rule sources exist, with project-level taking priority:
 | **Project-level** | `{your-project-root}/rules/` | ✅ Yes |
 | Package-level | Inside `node_modules/@leing2021/super-pi/rules/` | ❌ No |
 
-To customize, create a `rules/` directory in your project root. `10-rules` checks it first — if a file exists there, it overrides the package default for that topic.
+To customize, create a `rules/` directory in your project root. Skills check it first — if a file exists there, it overrides the package default for that topic.
 
 **Add a language** — create a new directory with the 5 standard topics:
 
@@ -345,7 +347,7 @@ vim rules/common/api-design.md
 vim rules/python/api-design.md
 ```
 
-The `10-rules` skill will pick up any `.md` file in `rules/` — no configuration needed. If a language directory exists, it's available for loading. If it's gone, it's simply never loaded.
+Skills will pick up any `.md` file in `rules/` — no configuration needed. If a language directory exists, it's available for loading. If it's gone, it's simply never loaded.
 
 ---
 
@@ -375,116 +377,13 @@ Not a fork. Not a wrapper. Methodologies extracted and rebuilt with Pi's native 
 | Use CEO Review on plans | Like having a demanding CTO review for free |
 | Use browser QA for acceptance | Code review can't catch layout breaks and blank screens |
 | Don't panic on interruption | Next 03-work auto-resumes from checkpoint |
-| Use 08-status when lost | One glance shows where you are |
+| Use 06-next when lost | One glance shows where you are and what to do next |
 
 ---
 
 ## Changelog
 
-### 0.19.5 — Plan/Work/Review skill rules loading alignment
-- Fixed `02-plan` not loading language-specific rules (e.g. `rules/typescript/`) during the planning phase — only `common/` rules were loaded.
-- Fixed `03-work` Core rules missing explicit `common/` loading and `web/` conditional loading (10-rules defined them but the skill's own instructions didn't).
-- Fixed `04-review` Core rules missing explicit language detection method and `web/` conditional loading.
-- Updated all three skills to use a consistent 4-step progressive loading strategy (common → language detect → language rules → web rules).
-- Updated `10-rules` SKILL.md Pre-flight to include complete language detection mapping for all three phases.
-- Synced `README.md` and `README_CN.md` skill tables to reflect the unified loading strategy.
-
-### 0.19.4 — Read output filter markdown truncation fix
-- Fixed `read-output-filter` over-truncating markdown files: raised markdown threshold from 2KB → 8KB.
-- Improved `filterMarkdown()` to fully preserve list items (`-`, `*`, numbered) and keep first 3 lines of paragraphs (was 1).
-- Filter notice now includes actual file path in actionable guidance (`bash cat <path>`).
-- Added 5 new tests covering list preservation, markdown threshold gate, and path-in-notice.
-- 175 tests passing.
-
-### 0.19.3 — Terminate fix + runtime model routing + autoContinue removal
-- Fixed 6 ce-core tools (`brainstorm_dialog`, `workflow_state`, `review_router`, `session_checkpoint`, `session_history`, `pattern_extractor`) incorrectly returning `terminate: true`, which caused agent turns to end prematurely (brainstorm questions not shown, "type continue to proceed" interruptions).
-- Implemented runtime stage model routing via ce-core extension `input` hook: reads `.pi/settings.json` `modelStrategy`, auto-switches model before skill execution. Supports full reference (`anthropic/claude-opus-4-1`) and bare model id (`claude-opus-4-1`).
-- Removed `pipeline.autoContinue` configuration (never had runtime implementation; Pi lacks `skill_end` event for auto-continue).
-- Updated `skills/references/pipeline-config.md`, `README.md`, `README_CN.md` to reflect runtime model routing behavior.
-- Added 4 new tests covering terminate regression, input hook model routing, and bare model id parsing.
-
-### 0.19.2 — Evidence-first handoff-lite + docs tracking rule
-- Added `context_handoff` with evidence-first default handoff-lite generation when markdown is omitted.
-- Standardized the shared handoff-lite template across 01-05 workflow handoffs via `skills/references/pipeline-config.md`.
-- Added tests protecting default handoff generation and the shared handoff docs contract.
-- Updated docs tracking so Git only uploads `docs/token-cost-evaluation.md` while other `docs/` artifacts stay local.
-
-### 0.19.1 — Pipeline config + typecheck baseline fix
-- Added shared pipeline config (`skills/references/pipeline-config.md`) for stage model routing via `.pi/settings.json`.
-- Added runtime stage model routing via ce-core extension `input` hook (reads `modelStrategy` from `.pi/settings.json`, auto-switches model before skill execution).
-- Fixed TypeScript baseline issues so `bunx tsc --noEmit` passes.
-
-### 0.19.0 — 0.69.0 alignment + learn rename
-- TypeBox migration: `@sinclair/typebox` → `typebox` (zero old-path imports)
-- Peer/dev dependency upgrade: pi-coding-agent `0.67.6` → `0.69.0`
-- Tool termination: 6 pure-query tools now return `terminate: true` to reduce unnecessary LLM rounds
-- Skill rename: `05-compound` → `05-learn` for clarity
-
-### 0.18.0 — Progressive rules
-- Built-in `rules/` directory with 13 language layers + common + web (78 Markdown files)
-- New `10-rules` skill: progressive on-demand loading, zero waste
-- `02-plan`, `03-work`, `04-review` auto-trigger rule loading at entry points
-- Users can add/remove languages and edit rules freely — plain Markdown, no config
-- 10 skills, 15 tools, 162 tests passing
-
-### 0.17.0 — Subagent safety
-- Recursion depth guard (`PI_SUBAGENT_DEPTH` / `PI_SUBAGENT_MAX_DEPTH`) prevents runaway nesting
-- Async mutex for `process.env` concurrency safety during parallel subagent execution
-- Context slimming: `inheritSkills` parameter, parallel workers default to slim context (`--no-skills`)
-- Shared `createSubagentRunner` factory (deduped runner closures)
-- 162 tests passing
-
-### 0.16.0 — Context optimization
-- Read output filter: structural compression for large code files, lock files, markdown
-- Compaction optimizer: focused summary instructions for session compaction
-- Bash output filter improvements
-
-### 0.15.0 — Output filtering
-- Bash output filter: smart truncation by command type (install, test, build)
-- Read output filter: preserves structure while cutting verbosity
-
-### 0.14.0 — Structured solution retrieval
-- YAML frontmatter tagging + grep-first two-level search
-- 95 tests passing
-
-### 0.13.0 — Superpowers engineering discipline
-- Strict TDD gates, design checklists, YAGNI checks
-
-### 0.12.0 — Error recovery
-- session_checkpoint fail/retry operations
-
-### 0.11.0 — Pattern extraction
-- New pattern_extractor tool
-
-### 0.10.0 — Continuous learning
-- New session_history tool
-
-### 0.9.0 — Incremental planning
-- New plan_diff tool
-
-### 0.8.0 — Multi-round dialog
-- New brainstorm_dialog tool
-
-### 0.7.0 — Parallel grouping
-- Union-Find based task_splitter
-
-### 0.6.0 — Checkpoint resume
-- New session_checkpoint tool
-
-### 0.5.0 — Parallel execution
-- New parallel_subagent tool
-
-### 0.4.0 — Smart review
-- New review_router tool
-
-### 0.3.0 — Isolated development
-- New worktree_manager + 07-worktree
-
-### 0.2.0 — State awareness
-- New workflow_state + 06-next
-
-### 0.1.0 — Initial release
-- 7 skills, 3 tools
+See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
 ---
 

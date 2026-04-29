@@ -12,8 +12,7 @@ const skillNames = [
   "05-learn",
   "06-next",
   "07-worktree",
-  "08-status",
-  "09-help",
+  "08-help",
 ]
 
 describe("skill package contracts", () => {
@@ -50,19 +49,19 @@ describe("skill package contracts", () => {
     expect(existsSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"))).toBe(true)
   })
 
-  test("09-help explains when to use each Phase 1 skill", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "09-help", "SKILL.md"), "utf8")
+  test("08-help explains when to use each Phase 1 skill", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "08-help", "SKILL.md"), "utf8")
 
     expect(content).toContain("01-brainstorm")
     expect(content).toContain("02-plan")
     expect(content).toContain("03-work")
     expect(content).toContain("04-review")
     expect(content).toContain("05-learn")
-    expect(content).toContain("08-status")
+    expect(content).toContain("06-next")
   })
 
-  test("08-status scans repo-local artifacts before recommending next steps", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "08-status", "SKILL.md"), "utf8")
+  test("06-next provides both next-step recommendation and full status report", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "06-next", "SKILL.md"), "utf8")
 
     expect(content).toContain("workflow_state")
     expect(content).toContain("session_history")
@@ -71,7 +70,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("docs/solutions")
     expect(content).toContain(".context/compound-engineering")
     expect(content).toContain("next")
-    expect(content).toContain("workflow_state")
+    expect(content).toContain("status")
   })
 
   test("01-brainstorm writes requirements artifacts and hands off to 02-plan", () => {
@@ -194,8 +193,9 @@ describe("skill package contracts", () => {
     expect(content).toContain("bare prompt")
     expect(content).toContain("implementation units")
     expect(content).toContain("inline")
-    expect(content).toContain("serial subagents")
+    expect(content).toContain("inline mode")
     expect(content).toContain("parallel_subagent")
+    expect(content).toContain("dependent serial chains")
     expect(content).toContain("session_checkpoint")
     expect(content).toContain("task_splitter")
     expect(content).toContain("retry")

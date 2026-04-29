@@ -11,15 +11,17 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-- Before execution, read the `10-rules` skill and load:
+- Before execution, load project rules:
   1. `rules/common/development-workflow.md` and `rules/common/testing.md`
-  2. **Detect the project's primary language** (check for `tsconfig.json` → typescript, `package.json` without tsconfig → javascript, `Cargo.toml` → rust, `go.mod` → golang, `pubspec.yaml` → dart, `pom.xml`/`build.gradle` → java, `*.sln`/`*.csproj` → csharp, `Package.swift` → swift, `requirements.txt`/`pyproject.toml`/`setup.py` → python, `composer.json` → php, `Makefile.PL`/`cpanfile` → perl, `build.gradle.kts` → kotlin)
+  2. Detect the project's primary language using [language detection](../references/language-detection.md)
   3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
   4. If the task involves frontend/browser concerns, also load `rules/web/` files
+- Priority: project-level `{repo-root}/rules/` overrides package-level defaults
 - Distinguish between a **plan path** input and a **bare prompt** input before doing work.
 - Prefer deriving execution tasks from plan **implementation units**.
-- Use **serial subagents** for tasks with dependencies.
-- Use **`parallel_subagent`** for independent tasks that can run concurrently.
+- Prefer inline execution for small or tightly scoped units.
+- Use **`parallel_subagent`** for independent units that can run concurrently.
+- Use **`subagent`** only for dependent serial chains that benefit from isolated context or specialized skill execution.
 - Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
 - On execution failure, use `session_checkpoint` `fail` to record the error, then `retry` to get a retry strategy. Follow the suggested strategy to recover.
 - Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `parallel_subagent` and dependent units serially.
@@ -48,7 +50,7 @@ Every execution step must follow **RED → GREEN → REFACTOR**:
 3. If it is a bare prompt, do a small scope scan before deciding whether to proceed.
 4. Use `session_checkpoint` to load progress and skip completed units.
 5. Use `task_splitter` to identify parallel-safe vs dependent units.
-6. Execute in inline mode, serial subagents, or parallel subagents depending on task dependencies.
+6. Execute in inline mode by default; use `parallel_subagent` for independent units and `subagent` only for valuable dependent serial chains.
 7. For each unit, follow strict TDD:
    a. Run the RED test and confirm expected failure.
    b. Apply minimal implementation.

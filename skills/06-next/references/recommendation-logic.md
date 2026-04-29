@@ -42,5 +42,5 @@ If brainstorm, plan, and solution all exist:
 ## Fallback
 
 If no rule matches cleanly:
-- Recommend `08-status`
-- Reason: State is ambiguous. Get a detailed report before deciding.
+- Summarize the ambiguous state
+- Ask the user what they want to focus on

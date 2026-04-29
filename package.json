@@ -35,8 +35,8 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*",
-    "typebox": "*"
+    "@mariozechner/pi-coding-agent": ">=0.69.0",
+    "typebox": ">=1.0.0"
   },
   "devDependencies": {
     "@mariozechner/pi-coding-agent": "0.69.0",

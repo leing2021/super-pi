@@ -6,4 +6,5 @@
 4. `04-review` → inspect the changes (optionally + Browser QA / QA + Regression Tests)
 5. `05-learn` → save key learnings
 
-Use `08-status` at any point to see where you are.
+Use `06-next` at any point to see where you are and what to do next.
+Use `07-worktree` for isolated feature development on a separate branch.

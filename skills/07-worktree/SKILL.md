@@ -3,25 +3,26 @@ name: 07-worktree
 description: Create and manage git worktrees for isolated feature development.
 ---
 
-# 03-worktree
+# Worktree
 
-Use this skill when you need to create an isolated git worktree for feature work, merge changes back, or clean up after completion.
+Use this skill when you need optional isolated git worktree development for large, risky, or parallel feature work, then merge changes back or clean up after completion.
 
 ## Core rules
 
 - Use the `worktree_manager` tool for all git worktree operations.
-- Default behavior is to **automatically create** a worktree with a descriptive branch name derived from the plan or task.
+- Create a worktree only when the user explicitly asks for isolation, or when the task is large/risky enough and the user confirms.
+- Use a descriptive branch name derived from the plan or task.
 - After creation, report the worktree path so that `03-work` can execute inside it.
-- On completion, merge back and clean up.
+- On completion, offer to merge back and clean up; ask for confirmation before changing the main worktree or deleting branches.
 - Never force operations — if a worktree already exists, report its status instead of creating a duplicate.
 
 ## Workflow
 
-1. **Create**: Use `worktree_manager` with operation `create` to spin up a new worktree with a feature branch.
-2. **Detect**: Use `worktree_manager` with operation `detect` to check if already inside a worktree.
+1. **Detect**: Use `worktree_manager` with operation `detect` to check if already inside a worktree.
+2. **Create**: When confirmed, use `worktree_manager` with operation `create` to spin up a new worktree with a feature branch.
 3. **Execute**: Run `03-work` inside the worktree directory.
-4. **Merge**: Use `worktree_manager` with operation `merge` to merge the feature branch back to main.
-5. **Cleanup**: Use `worktree_manager` with operation `cleanup` to remove the worktree and delete the branch.
+4. **Merge**: After user confirmation, use `worktree_manager` with operation `merge` to merge the feature branch back to main.
+5. **Cleanup**: After user confirmation, use `worktree_manager` with operation `cleanup` to remove the worktree and delete the branch.
 
 ## Output
 

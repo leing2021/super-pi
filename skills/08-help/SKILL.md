@@ -1,5 +1,5 @@
 ---
-name: 09-help
+name: 08-help
 description: Explain when to use each Compound Engineering Phase 1 skill and how they connect.
 ---
 
@@ -14,7 +14,7 @@ Use this skill when the user asks how to use the package, which workflow step co
 - `03-work` — use when there is a plan or a tightly scoped task ready for controlled execution.
 - `04-review` — use after code changes to produce structured findings. After code review, user can optionally extend to browser-based QA testing (find visual/functional bugs with agent-browser) and regression test generation.
 - `05-learn` — use after solving a problem so the repo gains a durable learning in `docs/solutions/`.
-- `08-status` — use when the user wants to know which artifact already exists and what the next workflow step should be.
+- `06-next` — use when the user wants to know what to run next, or wants a full status report of the current project state. Default mode recommends one next step; verbose mode (`--verbose` or ask "show status") shows full artifact details.
 
 ## Recommended flow
 
@@ -30,7 +30,7 @@ Use this skill when the user asks how to use the package, which workflow step co
    - Optionally extend to **Browser QA** for visual and functional bug finding.
    - Or **Browser QA + Regression Tests** to also generate automated test coverage.
 5. Capture key learnings with `05-learn`.
-6. Use `08-status` at any point to inspect repo-local workflow state.
+6. Use `06-next` at any point to check what to do next, or ask for a full status report.
 
 ## Output
 

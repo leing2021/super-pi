@@ -44,8 +44,8 @@ describe("package bootstrap structure", () => {
     expect(readme).toContain("03-work")
     expect(readme).toContain("04-review")
     expect(readme).toContain("05-learn")
-    expect(readme).toContain("09-help")
-    expect(readme).toContain("08-status")
+    expect(readme).toContain("08-help")
+    expect(readme).toContain("06-next")
   })
 
   test("package metadata is publish-ready", () => {

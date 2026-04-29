@@ -1730,6 +1730,7 @@ describe("ce-core extension runtime registration", () => {
       "plan_diff",
       "session_history",
       "pattern_extractor",
+      "context_handoff",
     ])
   })
 
@@ -1968,6 +1969,7 @@ describe("public exports", () => {
       "createPlanDiffTool",
       "createSessionHistoryTool",
       "createPatternExtractorTool",
+      "createContextHandoffTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",
       "getSolutionArtifactPath",
