@@ -11,77 +11,58 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-- Before planning, load project rules:
-  1. `rules/common/development-workflow.md` and `rules/common/testing.md`
-  2. Detect the project's primary language using [language detection](../references/language-detection.md)
-  3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
-  4. If the task involves frontend/browser concerns, also load `rules/web/` files
-- Priority: project-level `{repo-root}/rules/` overrides package-level defaults
-- Search `docs/brainstorms/` for a relevant requirements artifact first.
-- Search solutions with grep-first strategy: extract keywords from the task → `bash grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/` → read only frontmatter (first 15 lines) of matching files → score by severity + tag relevance → fully read top 3. Search both project-level (`docs/solutions/`) and global-level (`~/.pi/agent/docs/solutions/`). If no matches, report "No relevant solutions found" and proceed.
-- Write the final plan to `docs/plans/`.
-- Break the work into implementation units instead of writing an execution script.
-- If a plan already exists, use **`plan_diff`** to compare existing units with new requirements and apply incremental changes instead of rewriting.
-- End by recommending `03-work` once the plan is ready.
+1. Load project rules (4 steps):
+   - Load `rules/common/development-workflow.md` and `rules/common/testing.md`
+   - Detect project language via [language detection](../references/language-detection.md)
+   - Load matching language-specific rules (e.g., `rules/typescript/`)
+   - If frontend/browser concerns, also load `rules/web/` files
+2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
+3. Search `docs/brainstorms/` for relevant requirements first
+4. Run solution search (see `references/solution-search.md`):
+   - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
+   - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
+   - Fully read top 3 candidates
+5. Write plan to `docs/plans/`
+6. If plan exists, use **`plan_diff`** to compare and patch incrementally
+7. End by recommending `03-work`
 
 ## Hard gates — TDD enforcement
 
-Every implementation unit must follow **RED, GREEN, REFACTOR**:
-- No production code step may appear before a failing test step.
-- Every unit must include exact verification commands.
-- No placeholders allowed — replace "handle edge cases" with concrete steps.
+Every unit follows **RED → GREEN → REFACTOR**:
 
-**TDD violation rejection criteria** — stop and revise the plan if any unit:
-- implements code before a failing test
-- lacks a command proving the RED step
-- lacks a command proving the GREEN step
-- skips verification
-- relies on unstated tools or assumptions
+**TDD violation rejection criteria** — reject and revise if any unit:
+- Implements code before failing test
+- Lacks RED step verification
+- Lacks GREEN step verification
+- Skips verification
+- Uses placeholders or unstated assumptions
 
 ## Planning flow
 
-1. Read the most relevant brainstorm artifact from `docs/brainstorms/` when one exists.
-2. Execute the solution search strategy: extract keywords → grep frontmatter fields (tags, title) in `docs/solutions/` and `~/.pi/agent/docs/solutions/` → read frontmatter of candidates only → score and rank → fully read top 3.
-3. Gather repository context from the affected areas.
-4. If a plan already exists:
-   a. Use `plan_diff` `compare` to identify added, removed, modified, and unchanged units.
-   b. Review the diff with the user.
-   c. Use `plan_diff` `patch` to apply approved changes.
-5. If no plan exists, write a new plan artifact under `docs/plans/` using `references/plan-template.md`.
-6. Structure the work using `references/implementation-unit-template.md`.
-7. Verify every unit follows strict TDD — reject units that violate the gates above.
+1. Read relevant brainstorm from `docs/brainstorms/`
+2. Run solution search (keywords → grep frontmatter → read top 3)
+3. Gather repository context
+4. If plan exists: use `plan_diff` `compare` → review with user → `patch`
+5. If no plan: write new plan under `docs/plans/` using `references/plan-template.md`
+6. Structure work using `references/implementation-unit-template.md`
+7. Verify every unit follows TDD gates
 
 ## Optional: CEO Review
 
-After the plan artifact is written (step 5 or 6 above), offer the user a strategic review:
+After plan is written, offer strategic review:
 
-> Plan ready. How do you want to review it?
->
-> - **A) Just go** — trust the plan, skip review
-> - **B) CEO Review** — challenge premises, check for better alternatives, dream-state mapping
-> - **C) Strict Review** — full CEO Review plus error maps, failure modes, test diagrams
+> Plan ready. How to review?
+> - **A) Just go** — trust the plan
+> - **B) CEO Review** — challenge premises, dream-state mapping
+> - **C) Strict Review** — CEO + error maps, failure modes, test diagrams
 
-If the user picks A, proceed directly to the `03-work` handoff.
-If the user picks B or C, read `references/ceo-review-mode.md` and execute the review flow.
+If B or C: read `references/ceo-review-mode.md` and execute review flow.
+After review: update plan artifact, then handoff to `03-work`.
 
-After CEO/Strict Review:
-1. Update the plan artifact with any changes the user approved.
-2. Note the review mode and key decisions in the plan.
-3. Proceed to the `03-work` handoff.
+## Artifact output
 
-## Implementation unit format
-
-Every unit must include:
-- **Purpose**: what this unit accomplishes
-- **Files**: exact paths to create, modify, or test
-- **Steps** as checkboxes:
-  1. Write or update a failing test
-  2. Run the targeted test and confirm it fails for the expected reason (RED)
-  3. Write the minimal implementation needed to pass
-  4. Run the targeted test and confirm it passes (GREEN)
-  5. Refactor if needed while keeping tests green
-  6. Run unit-level verification
-- **Verification commands**: exact commands to run
-- **Expected results**: what success looks like
+- Plan: `docs/plans/<slug>.md`
+- Use `references/plan-template.md` structure
+- Implementation units follow `references/implementation-unit-template.md`
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

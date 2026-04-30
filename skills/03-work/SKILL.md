@@ -5,73 +5,52 @@ description: Execute plan-driven work in a controlled Phase 1 workflow.
 
 # Work
 
-Use this skill when there is a plan path or a tightly scoped bare prompt ready for execution.
+Use this skill when there is a plan path or tightly scoped bare prompt ready for execution.
 
 See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
 
 ## Core rules
 
-- Before execution, load project rules:
-  1. `rules/common/development-workflow.md` and `rules/common/testing.md`
-  2. Detect the project's primary language using [language detection](../references/language-detection.md)
-  3. Load all files in the matching language-specific rules directory (e.g. `rules/typescript/`)
-  4. If the task involves frontend/browser concerns, also load `rules/web/` files
-- Priority: project-level `{repo-root}/rules/` overrides package-level defaults
-- Distinguish between a **plan path** input and a **bare prompt** input before doing work.
-- Prefer deriving execution tasks from plan **implementation units**.
-- Prefer inline execution for small or tightly scoped units.
-- Use **`ce_parallel_subagent`** for independent CE skill-based units that can run concurrently.
-- Use **`ce_subagent`** only for dependent serial chains that benefit from isolated context or specialized CE skill execution.
-- Note: the generic `subagent` / `parallel_subagent` tool names are reserved for third-party agent extensions (e.g. `pi-subagents`); CE skill-router uses the `ce_`-prefixed names to avoid tool-name conflicts.
-- Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
-- On execution failure, use `session_checkpoint` `fail` to record the error, then `retry` to get a retry strategy. Follow the suggested strategy to recover.
-- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `ce_parallel_subagent` and dependent units serially.
-- If inside a **worktree** (created via `07-worktree`), execute within it. Otherwise, consider recommending `07-worktree` for isolation.
-- End by recommending `04-review`.
+1. Load project rules (4 steps):
+   - Load `rules/common/development-workflow.md` and `rules/common/testing.md`
+   - Detect project language via [language detection](../references/language-detection.md)
+   - Load matching language-specific rules
+   - If frontend/browser concerns, also load `rules/web/` files
+2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
+3. **Distinguish input:** plan path vs bare prompt
+4. Derive tasks from plan **implementation units**
+5. **Execution mode:**
+   - **Inline mode** for small/scoped units
+   - **`ce_parallel_subagent`** for independent CE skill units
+   - **`ce_subagent`** only for dependent serial chains
+6. Use **`session_checkpoint`** to track progress and enable resume
+7. Use **`task_splitter`** to analyze dependencies before execution
+8. If in **worktree** (via `07-worktree`), execute inside it
+9. End by recommending `04-review`
 
 ## Hard gates — TDD enforcement
 
-Every execution step must follow **RED → GREEN → REFACTOR**:
-- No production code before a verified failing test.
-- No skipping RED or GREEN verification.
-- No completion claim without command output evidence.
-- Evidence before assertions — always.
+Every step follows **RED → GREEN → REFACTOR**:
 
 **Blocking violations** — stop and ask if:
-- code is written before the RED test
-- a RED step fails for the wrong reason
-- missing evidence that the test failed before implementation
-- missing evidence that the test passed after implementation
-- tests added only after code
+- Code written before RED test
+- RED fails for wrong reason
+- Missing evidence test failed before implementation
+- Missing evidence test passed after implementation
+- Tests added only after code
 
 ## Workflow
 
-1. Detect whether the input is a plan path or a bare prompt.
-2. If it is a plan path, read the implementation units and execute from them.
-3. If it is a bare prompt, do a small scope scan before deciding whether to proceed.
-4. Use `session_checkpoint` to load progress and skip completed units.
-5. Use `task_splitter` to identify parallel-safe vs dependent units.
-6. Execute in inline mode by default; use `ce_parallel_subagent` for independent CE skill units and `ce_subagent` only for valuable dependent serial chains.
-7. For each unit, follow strict TDD:
-   a. Run the RED test and confirm expected failure.
-   b. Apply minimal implementation.
-   c. Run the GREEN test and confirm pass.
-   d. Refactor only while tests stay green.
-   e. Run unit-level verification.
-8. Record progress using `references/progress-update-format.md`.
-9. After each unit, save `session_checkpoint`.
-10. On failure, use `session_checkpoint` `fail` then `retry`.
-11. Provide a **completion report** when done.
-12. Hand off to `04-review` using `references/handoff.md`.
-
-## Completion report
-
-When all units are done, provide:
-
-- **Completed units**: list of unit names
-- **Files changed**: all files created or modified
-- **Commands run**: all verification commands executed
-- **Verification results**: pass/fail status for each
-- **Follow-up work**: any remaining risks or open questions
+1. Detect input type (plan path vs bare prompt)
+2. Read implementation units if plan path
+3. Load `session_checkpoint` to skip completed units
+4. Use `task_splitter` for dependency analysis
+5. Execute: **inline mode** by default, `ce_parallel_subagent` for independent units
+6. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
+7. Record progress via `references/progress-update-format.md`
+8. Save `session_checkpoint` after each unit
+9. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
+10. Provide completion report (see `references/completion-report.md`)
+11. Handoff to `04-review` using `references/handoff.md`
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).
