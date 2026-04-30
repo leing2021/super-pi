@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { createContextHandoffTool } from "../extensions/ce-core/tools/context-handoff"
 
@@ -176,16 +176,268 @@ describe("context_handoff", () => {
     expect(savedText).toContain("## Next Minimal Step")
   })
 
+  // --- Unit 1: Structured runtime-memory fields ---
+
+  test("save persists all five new structured fields in context-state.json", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-new-fields-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      contextHealth: "watch",
+      activeFiles: ["src/a.ts"],
+      currentTruth: ["The API returns 200 for valid requests", "Migration 014 is applied"],
+      invalidatedAssumptions: ["Legacy format is still supported"],
+      openDecisions: ["Choose between REST and GraphQL for v2"],
+      recentlyAccessedFiles: ["src/a.ts", "src/b.ts", "src/c.ts"],
+      compressionRisk: ["Large test output may push context over budget"],
+    })
+
+    // Result should return new fields
+    expect(result.currentTruth).toEqual(["The API returns 200 for valid requests", "Migration 014 is applied"])
+    expect(result.invalidatedAssumptions).toEqual(["Legacy format is still supported"])
+    expect(result.openDecisions).toEqual(["Choose between REST and GraphQL for v2"])
+    expect(result.recentlyAccessedFiles).toEqual(["src/a.ts", "src/b.ts", "src/c.ts"])
+    expect(result.compressionRisk).toEqual(["Large test output may push context over budget"])
+
+    // Persisted state should contain new fields
+    const statePath = path.join(repoRoot, ".context", "compound-engineering", "context-state.json")
+    const state = JSON.parse(readFileSync(statePath, "utf8"))
+    expect(state.currentTruth).toEqual(["The API returns 200 for valid requests", "Migration 014 is applied"])
+    expect(state.invalidatedAssumptions).toEqual(["Legacy format is still supported"])
+    expect(state.openDecisions).toEqual(["Choose between REST and GraphQL for v2"])
+    expect(state.recentlyAccessedFiles).toEqual(["src/a.ts", "src/b.ts", "src/c.ts"])
+    expect(state.compressionRisk).toEqual(["Large test output may push context over budget"])
+  })
+
+  test("load/latest/status return new structured fields", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-read-fields-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      currentTruth: ["Fact A"],
+      invalidatedAssumptions: ["Old assumption"],
+      openDecisions: ["Decision X"],
+      recentlyAccessedFiles: ["file1.ts", "file2.ts"],
+      compressionRisk: ["Risk Z"],
+    })
+
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.currentTruth).toEqual(["Fact A"])
+    expect(loadResult.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(loadResult.openDecisions).toEqual(["Decision X"])
+    expect(loadResult.recentlyAccessedFiles).toEqual(["file1.ts", "file2.ts"])
+    expect(loadResult.compressionRisk).toEqual(["Risk Z"])
+
+    const latestResult = await tool.execute({ operation: "latest", repoRoot })
+    expect(latestResult.currentTruth).toEqual(["Fact A"])
+    expect(latestResult.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(latestResult.openDecisions).toEqual(["Decision X"])
+    expect(latestResult.recentlyAccessedFiles).toEqual(["file1.ts", "file2.ts"])
+    expect(latestResult.compressionRisk).toEqual(["Risk Z"])
+
+    const statusResult = await tool.execute({ operation: "status", repoRoot })
+    expect(statusResult.currentTruth).toEqual(["Fact A"])
+    expect(statusResult.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(statusResult.openDecisions).toEqual(["Decision X"])
+    expect(statusResult.recentlyAccessedFiles).toEqual(["file1.ts", "file2.ts"])
+    expect(statusResult.compressionRisk).toEqual(["Risk Z"])
+  })
+
+  test("default template renders new structured sections", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-new-sections-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      activeFiles: ["src/a.ts"],
+      currentTruth: ["Fact A", "Fact B"],
+      invalidatedAssumptions: ["Old assumption"],
+      openDecisions: ["Decision X"],
+      recentlyAccessedFiles: ["file1.ts"],
+      compressionRisk: ["Risk Z"],
+    })
+
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+
+    expect(savedText).toContain("## Current Truth")
+    expect(savedText).toContain("## Invalidated Assumptions")
+    expect(savedText).toContain("## Open Decisions")
+    expect(savedText).toContain("## Recently Accessed Files")
+    expect(savedText).toContain("## Compression Risk")
+
+    // Verify values appear
+    expect(savedText).toContain("- Fact A")
+    expect(savedText).toContain("- Old assumption")
+    expect(savedText).toContain("- Decision X")
+    expect(savedText).toContain("- file1.ts")
+    expect(savedText).toContain("- Risk Z")
+  })
+
+  test("new fields default correctly when omitted", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-defaults-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      activeFiles: ["src/a.ts", "src/b.ts", "src/c.ts"],
+    })
+
+    // recentlyAccessedFiles defaults to activeFiles.slice(0, 5)
+    expect(result.recentlyAccessedFiles).toEqual(["src/a.ts", "src/b.ts", "src/c.ts"])
+    // Others default to empty arrays
+    expect(result.currentTruth).toEqual([])
+    expect(result.invalidatedAssumptions).toEqual([])
+    expect(result.openDecisions).toEqual([])
+    expect(result.compressionRisk).toEqual([])
+
+    // Template should render N/A for empty arrays
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+    expect(savedText).toContain("## Current Truth")
+    expect(savedText).toContain("## Invalidated Assumptions")
+    expect(savedText).toContain("## Open Decisions")
+    expect(savedText).toContain("## Compression Risk")
+  })
+
+  test("custom handoffMarkdown still persists structured fields in state", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-custom-md-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      activeFiles: ["src/a.ts"],
+      currentTruth: ["Fact A"],
+      invalidatedAssumptions: ["Old assumption"],
+      openDecisions: ["Decision X"],
+      recentlyAccessedFiles: ["file1.ts"],
+      compressionRisk: ["Risk Z"],
+      handoffMarkdown: "## Custom\nMy custom markdown\n",
+    })
+
+    // Structured fields still returned
+    expect(result.currentTruth).toEqual(["Fact A"])
+    expect(result.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(result.openDecisions).toEqual(["Decision X"])
+    expect(result.recentlyAccessedFiles).toEqual(["file1.ts"])
+    expect(result.compressionRisk).toEqual(["Risk Z"])
+
+    // Markdown should be custom, not default template
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+    expect(savedText).toBe("## Custom\nMy custom markdown\n")
+    expect(savedText).not.toContain("## Current Truth")
+
+    // State still has fields
+    const statePath = path.join(repoRoot, ".context", "compound-engineering", "context-state.json")
+    const state = JSON.parse(readFileSync(statePath, "utf8"))
+    expect(state.currentTruth).toEqual(["Fact A"])
+  })
+
+  test("backward compatibility: callers omitting new fields still save/load successfully", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-compat-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    // Save with old-style parameters only
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "01-brainstorm",
+      nextStage: "02-plan",
+      contextHealth: "good",
+      activeFiles: ["docs/a.md"],
+      handoffMarkdown: "## Old-style handoff\n",
+    })
+
+    expect(result.operation).toBe("save")
+    expect(result.found).toBe(true)
+    expect(result.currentTruth).toEqual([])
+    expect(result.invalidatedAssumptions).toEqual([])
+    expect(result.openDecisions).toEqual([])
+    expect(result.recentlyAccessedFiles).toEqual(["docs/a.md"])
+    expect(result.compressionRisk).toEqual([])
+
+    // Load should work fine
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.found).toBe(true)
+    expect(loadResult.currentTruth).toEqual([])
+    expect(loadResult.recentlyAccessedFiles).toEqual(["docs/a.md"])
+  })
+
+  test("backward compatibility: legacy state files without new fields load with safe defaults", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-legacy-state-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const handoffDir = path.join(repoRoot, ".context", "compound-engineering", "handoffs")
+    mkdirSync(handoffDir, { recursive: true })
+    writeFileSync(path.join(handoffDir, "latest.md"), "## Legacy\n", "utf8")
+    writeFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "context-state.json"),
+      JSON.stringify({
+        currentStage: "02-plan",
+        nextStage: "03-work",
+        contextHealth: "watch",
+        latestHandoffPath: ".context/compound-engineering/handoffs/latest.md",
+        activeFiles: ["docs/legacy.md"],
+        blocker: "N/A",
+        verification: "legacy verified",
+        artifacts: {},
+        recommendNewSession: false,
+        updatedAt: "2026-04-30T00:00:00.000Z",
+      }),
+      "utf8",
+    )
+
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.found).toBe(true)
+    expect(loadResult.currentTruth).toEqual([])
+    expect(loadResult.invalidatedAssumptions).toEqual([])
+    expect(loadResult.openDecisions).toEqual([])
+    expect(loadResult.recentlyAccessedFiles).toEqual(["docs/legacy.md"])
+    expect(loadResult.compressionRisk).toEqual([])
+
+    const statusResult = await tool.execute({ operation: "status", repoRoot })
+    expect(statusResult.currentTruth).toEqual([])
+    expect(statusResult.recentlyAccessedFiles).toEqual(["docs/legacy.md"])
+  })
+
   test("phase docs require shared evidence-first handoff-lite template", () => {
     const pipelineConfig = readRepoFile("skills/references/pipeline-config.md")
     expect(pipelineConfig).toContain("### Handoff-lite template")
     expect(pipelineConfig).toContain("## Current Task")
     expect(pipelineConfig).toContain("## Hot Context")
+    expect(pipelineConfig).toContain("## Current Truth")
+    expect(pipelineConfig).toContain("## Invalidated Assumptions")
+    expect(pipelineConfig).toContain("## Open Decisions")
     expect(pipelineConfig).toContain("## Verified Facts")
     expect(pipelineConfig).toContain("## Active Files")
+    expect(pipelineConfig).toContain("## Recently Accessed Files")
     expect(pipelineConfig).toContain("## Artifacts")
     expect(pipelineConfig).toContain("## Current Blocker")
     expect(pipelineConfig).toContain("## Verification")
+    expect(pipelineConfig).toContain("## Compression Risk")
     expect(pipelineConfig).toContain("## Do Not Repeat")
     expect(pipelineConfig).toContain("## Next Minimal Step")
 

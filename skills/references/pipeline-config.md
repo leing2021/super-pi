@@ -55,11 +55,23 @@ When a stage produces or updates handoff-lite, use this evidence-first structure
 ## Hot Context
 - 1-5 must-know facts for the next step
 
+## Current Truth
+- validated truths that must survive compression
+
 ## Verified Facts
 - already validated facts (do not re-prove)
 
+## Invalidated Assumptions
+- assumptions proven wrong this session
+
+## Open Decisions
+- pending decisions that affect next steps
+
 ## Active Files
 - 1-5 file paths only
+
+## Recently Accessed Files
+- files recently read or edited
 
 ## Artifacts
 - requirements: <path or N/A>
@@ -72,6 +84,9 @@ When a stage produces or updates handoff-lite, use this evidence-first structure
 
 ## Verification
 - <latest command + result or Not run>
+
+## Compression Risk
+- context compression risks to watch for
 
 ## Do Not Repeat
 - what should not be re-read/re-run unless needed

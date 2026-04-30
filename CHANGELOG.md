@@ -1,5 +1,15 @@
 # Changelog
 
+### 0.23.2 — Context handoff structured runtime-memory anchor
+- Added 5 new optional structured fields to `context_handoff`: `currentTruth`, `invalidatedAssumptions`, `openDecisions`, `recentlyAccessedFiles`, `compressionRisk`.
+- Persisted new fields in `.context/compound-engineering/context-state.json` for machine-readable runtime state.
+- Extended default handoff-lite markdown template with matching sections.
+- Added `workflow_state.context` that reads structured state from `context-state.json` with safe defaults.
+- Added state normalization layer (`normalizeStateEntry`, `toStringArray`) for backward compatibility with legacy state files.
+- Fixed `workflow_state` to filter non-string array entries from context state.
+- Updated `pipeline-config.md` handoff-lite template with 5 new sections.
+- 191 tests passing, 0 regressions.
+
 ### 0.23.1 — SKILL.md size minimization + thinkingStrategy support
 - Minimized 8 SKILL.md files from 28KB to 18KB (-35% reduction) by moving detailed rules, templates, and examples to `references/` for on-demand loading.
 - Created new reference files:

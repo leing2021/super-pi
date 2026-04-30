@@ -1,5 +1,15 @@
 # 更新日志
 
+### 0.23.2 — Context handoff 结构化运行态内存锚点
+- `context_handoff` 新增 5 个可选结构化字段：`currentTruth`、`invalidatedAssumptions`、`openDecisions`、`recentlyAccessedFiles`、`compressionRisk`。
+- 新字段持久化到 `.context/compound-engineering/context-state.json`，支持机器可读的运行态状态。
+- 扩展默认 handoff-lite markdown 模板，增加对应 sections。
+- 新增 `workflow_state.context`，从 `context-state.json` 读取结构化状态并返回安全默认值。
+- 增加状态归一化层（`normalizeStateEntry`、`toStringArray`），确保与旧版状态文件向后兼容。
+- 修复 `workflow_state` 对 context state 中非字符串数组元素的过滤。
+- 更新 `pipeline-config.md` handoff-lite 模板，增加 5 个新 sections。
+- 191 测试通过，0 回归。
+
 ### 0.23.1 — SKILL.md 精简 + thinkingStrategy 支持
 - 8 个 SKILL.md 文件从 28KB 精简到 18KB（-35%），将详细规则、模板、示例移至 `references/` 按需加载。
 - 新建 reference 文件：

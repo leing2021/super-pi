@@ -326,6 +326,11 @@ const contextHandoffParams = Type.Object({
   artifacts: Type.Optional(Type.Record(Type.String(), Type.Optional(Type.String()), { description: "Artifact paths (requirements, plan, checkpoint, proof)" })),
   handoffMarkdown: Type.Optional(Type.String({ description: "Custom handoff markdown content" })),
   handoffPath: Type.Optional(Type.String({ description: "Specific handoff file path to load" })),
+  currentTruth: Type.Optional(Type.Array(Type.String(), { description: "Known true statements validated during session" })),
+  invalidatedAssumptions: Type.Optional(Type.Array(Type.String(), { description: "Assumptions proven wrong during session" })),
+  openDecisions: Type.Optional(Type.Array(Type.String(), { description: "Pending decisions that affect next steps" })),
+  recentlyAccessedFiles: Type.Optional(Type.Array(Type.String(), { description: "Files recently read or edited (defaults to activeFiles)" })),
+  compressionRisk: Type.Optional(Type.Array(Type.String(), { description: "Context compression risks to watch for" })),
 })
 
 const patternExtractorParams = Type.Object({
@@ -758,6 +763,11 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         artifacts: params.artifacts as Record<string, string | undefined> | undefined,
         handoffMarkdown: params.handoffMarkdown,
         handoffPath: params.handoffPath,
+        currentTruth: params.currentTruth,
+        invalidatedAssumptions: params.invalidatedAssumptions,
+        openDecisions: params.openDecisions,
+        recentlyAccessedFiles: params.recentlyAccessedFiles,
+        compressionRisk: params.compressionRisk,
       })
 
       return {

@@ -17,6 +17,11 @@ export interface ContextHandoffInput {
   artifacts?: Record<string, string | undefined>
   handoffMarkdown?: string
   handoffPath?: string
+  currentTruth?: string[]
+  invalidatedAssumptions?: string[]
+  openDecisions?: string[]
+  recentlyAccessedFiles?: string[]
+  compressionRisk?: string[]
 }
 
 export interface ContextStateEntry {
@@ -29,6 +34,11 @@ export interface ContextStateEntry {
   blocker?: string
   verification?: string
   artifacts: Record<string, string | undefined>
+  currentTruth: string[]
+  invalidatedAssumptions: string[]
+  openDecisions: string[]
+  recentlyAccessedFiles: string[]
+  compressionRisk: string[]
   recommendNewSession: boolean
   updatedAt: string
 }
@@ -47,6 +57,11 @@ export interface ContextHandoffResult {
   artifacts?: Record<string, string | undefined>
   recommendNewSession?: boolean
   handoffMarkdown?: string
+  currentTruth?: string[]
+  invalidatedAssumptions?: string[]
+  openDecisions?: string[]
+  recentlyAccessedFiles?: string[]
+  compressionRisk?: string[]
   updatedAt?: string
 }
 
@@ -112,6 +127,11 @@ function buildDefaultHandoffMarkdown(input: {
   artifacts: Record<string, string | undefined>
   blocker?: string
   verification?: string
+  currentTruth: string[]
+  invalidatedAssumptions: string[]
+  openDecisions: string[]
+  recentlyAccessedFiles: string[]
+  compressionRisk: string[]
 }): string {
   const currentTask = input.nextStage
     ? `Continue from ${input.currentStage} to ${input.nextStage}.`
@@ -137,11 +157,23 @@ function buildDefaultHandoffMarkdown(input: {
     "## Hot Context",
     hotContext,
     "",
+    "## Current Truth",
+    formatBullets(input.currentTruth),
+    "",
     "## Verified Facts",
     verifiedFacts,
     "",
+    "## Invalidated Assumptions",
+    formatBullets(input.invalidatedAssumptions),
+    "",
+    "## Open Decisions",
+    formatBullets(input.openDecisions),
+    "",
     "## Active Files",
     activeFiles,
+    "",
+    "## Recently Accessed Files",
+    formatBullets(input.recentlyAccessedFiles),
     "",
     "## Artifacts",
     artifacts,
@@ -152,6 +184,9 @@ function buildDefaultHandoffMarkdown(input: {
     "## Verification",
     `- ${verification}`,
     "",
+    "## Compression Risk",
+    formatBullets(input.compressionRisk),
+    "",
     "## Do Not Repeat",
     "- Do not reload full history unless the handoff lacks required evidence.",
     "",
@@ -161,13 +196,54 @@ function buildDefaultHandoffMarkdown(input: {
   ].join("\n")
 }
 
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
+}
+
+function normalizeStateEntry(raw: unknown): ContextStateEntry | null {
+  if (!raw || typeof raw !== "object") return null
+
+  const state = raw as Record<string, unknown>
+  const activeFiles = toStringArray(state.activeFiles)
+
+  return {
+    currentStage: typeof state.currentStage === "string" ? state.currentStage : "unknown",
+    nextStage: typeof state.nextStage === "string" ? state.nextStage : undefined,
+    contextHealth: isContextHealth(state.contextHealth) ? state.contextHealth : "watch",
+    latestHandoffPath: typeof state.latestHandoffPath === "string" ? state.latestHandoffPath : undefined,
+    latestDatedHandoffPath: typeof state.latestDatedHandoffPath === "string" ? state.latestDatedHandoffPath : undefined,
+    activeFiles,
+    blocker: typeof state.blocker === "string" ? state.blocker : undefined,
+    verification: typeof state.verification === "string" ? state.verification : undefined,
+    artifacts: isStringRecord(state.artifacts) ? state.artifacts : {},
+    currentTruth: toStringArray(state.currentTruth),
+    invalidatedAssumptions: toStringArray(state.invalidatedAssumptions),
+    openDecisions: toStringArray(state.openDecisions),
+    recentlyAccessedFiles: toStringArray(state.recentlyAccessedFiles).length > 0
+      ? toStringArray(state.recentlyAccessedFiles)
+      : activeFiles.slice(0, 5),
+    compressionRisk: toStringArray(state.compressionRisk),
+    recommendNewSession: typeof state.recommendNewSession === "boolean" ? state.recommendNewSession : false,
+    updatedAt: typeof state.updatedAt === "string" ? state.updatedAt : new Date(0).toISOString(),
+  }
+}
+
+function isContextHealth(value: unknown): value is ContextHealth {
+  return value === "good" || value === "watch" || value === "heavy" || value === "critical"
+}
+
+function isStringRecord(value: unknown): value is Record<string, string | undefined> {
+  if (!value || typeof value !== "object") return false
+  return Object.values(value).every(item => item === undefined || typeof item === "string")
+}
+
 async function readState(repoRoot: string): Promise<ContextStateEntry | null> {
   const filePath = stateFilePath(repoRoot)
   if (!existsSync(filePath)) return null
 
   try {
     const content = await readFile(filePath, "utf8")
-    return JSON.parse(content) as ContextStateEntry
+    return normalizeStateEntry(JSON.parse(content))
   } catch {
     return null
   }
@@ -207,6 +283,14 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
   const blocker = input.blocker
   const verification = input.verification
   const artifacts = input.artifacts ?? {}
+  const currentTruth = input.currentTruth ?? []
+  const invalidatedAssumptions = input.invalidatedAssumptions ?? []
+  const openDecisions = input.openDecisions ?? []
+  const recentlyAccessedFiles = input.recentlyAccessedFiles?.length
+    ? input.recentlyAccessedFiles
+    : activeFiles.slice(0, 5)
+  const compressionRisk = input.compressionRisk ?? []
+
   const handoffMarkdown = input.handoffMarkdown?.trim().length
     ? input.handoffMarkdown
     : buildDefaultHandoffMarkdown({
@@ -216,6 +300,11 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
       artifacts,
       blocker,
       verification,
+      currentTruth,
+      invalidatedAssumptions,
+      openDecisions,
+      recentlyAccessedFiles,
+      compressionRisk,
     })
 
   const recommendNewSession = computeRecommendNewSession(currentStage, nextStage, contextHealth)
@@ -238,6 +327,11 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     blocker,
     verification,
     artifacts,
+    currentTruth,
+    invalidatedAssumptions,
+    openDecisions,
+    recentlyAccessedFiles,
+    compressionRisk,
     recommendNewSession,
     updatedAt: new Date().toISOString(),
   }
@@ -256,6 +350,11 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     blocker,
     verification,
     artifacts,
+    currentTruth,
+    invalidatedAssumptions,
+    openDecisions,
+    recentlyAccessedFiles,
+    compressionRisk,
     recommendNewSession,
     updatedAt: state.updatedAt,
   }
@@ -291,6 +390,11 @@ async function load(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     blocker: state.blocker,
     verification: state.verification,
     artifacts: state.artifacts,
+    currentTruth: state.currentTruth,
+    invalidatedAssumptions: state.invalidatedAssumptions,
+    openDecisions: state.openDecisions,
+    recentlyAccessedFiles: state.recentlyAccessedFiles,
+    compressionRisk: state.compressionRisk,
     recommendNewSession: state.recommendNewSession,
     handoffMarkdown: markdown,
     updatedAt: state.updatedAt,
@@ -320,6 +424,11 @@ async function latest(input: ContextHandoffInput): Promise<ContextHandoffResult>
     blocker: state.blocker,
     verification: state.verification,
     artifacts: state.artifacts,
+    currentTruth: state.currentTruth,
+    invalidatedAssumptions: state.invalidatedAssumptions,
+    openDecisions: state.openDecisions,
+    recentlyAccessedFiles: state.recentlyAccessedFiles,
+    compressionRisk: state.compressionRisk,
     recommendNewSession: state.recommendNewSession,
     updatedAt: state.updatedAt,
   }
@@ -351,6 +460,11 @@ async function status(input: ContextHandoffInput): Promise<ContextHandoffResult>
     blocker: state.blocker,
     verification: state.verification,
     artifacts: state.artifacts,
+    currentTruth: state.currentTruth,
+    invalidatedAssumptions: state.invalidatedAssumptions,
+    openDecisions: state.openDecisions,
+    recentlyAccessedFiles: state.recentlyAccessedFiles,
+    compressionRisk: state.compressionRisk,
     recommendNewSession: state.recommendNewSession,
     updatedAt: state.updatedAt,
   }

@@ -341,6 +341,110 @@ describe("workflow_state", () => {
     expect(result.plans.count).toBe(2)
     expect(result.plans.latest).toBe("2026-04-17-new-plan.md")
   })
+
+  // --- Unit 3: workflow_state.context runtime-state discovery ---
+
+  test("context returns safe empty state when no context-state.json exists", async () => {
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot: `/tmp/pi-ce-ws-no-context-${Date.now()}` })
+
+    expect(result.context).toBeDefined()
+    expect(result.context.found).toBe(false)
+    expect(result.context.currentTruth).toEqual([])
+    expect(result.context.invalidatedAssumptions).toEqual([])
+    expect(result.context.openDecisions).toEqual([])
+    expect(result.context.recentlyAccessedFiles).toEqual([])
+    expect(result.context.compressionRisk).toEqual([])
+  })
+
+  test("context reads structured fields from context-state.json", async () => {
+    const repoRoot = `/tmp/pi-ce-ws-ctx-${Date.now()}`
+    const ctxDir = path.join(repoRoot, ".context", "compound-engineering")
+    await mkdir(ctxDir, { recursive: true })
+    await writeFile(
+      path.join(ctxDir, "context-state.json"),
+      JSON.stringify({
+        currentStage: "03-work",
+        nextStage: "04-review",
+        contextHealth: "watch",
+        latestHandoffPath: ".context/compound-engineering/handoffs/latest.md",
+        latestDatedHandoffPath: ".context/compound-engineering/handoffs/2026-04-30.md",
+        activeFiles: ["src/a.ts", "src/b.ts"],
+        recentlyAccessedFiles: ["src/a.ts", "src/b.ts", "src/c.ts"],
+        blocker: "N/A",
+        verification: "bun test passed",
+        currentTruth: ["Fact A"],
+        invalidatedAssumptions: ["Old assumption"],
+        openDecisions: ["Decision X"],
+        compressionRisk: ["Risk Z"],
+        recommendNewSession: false,
+        updatedAt: "2026-04-30T00:00:00.000Z",
+      }),
+    )
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.context.found).toBe(true)
+    expect(result.context.currentStage).toBe("03-work")
+    expect(result.context.nextStage).toBe("04-review")
+    expect(result.context.contextHealth).toBe("watch")
+    expect(result.context.latestHandoffPath).toBe(".context/compound-engineering/handoffs/latest.md")
+    expect(result.context.latestDatedHandoffPath).toBe(".context/compound-engineering/handoffs/2026-04-30.md")
+    expect(result.context.activeFiles).toEqual(["src/a.ts", "src/b.ts"])
+    expect(result.context.recentlyAccessedFiles).toEqual(["src/a.ts", "src/b.ts", "src/c.ts"])
+    expect(result.context.blocker).toBe("N/A")
+    expect(result.context.verification).toBe("bun test passed")
+    expect(result.context.currentTruth).toEqual(["Fact A"])
+    expect(result.context.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(result.context.openDecisions).toEqual(["Decision X"])
+    expect(result.context.compressionRisk).toEqual(["Risk Z"])
+    expect(result.context.recommendNewSession).toBe(false)
+    expect(result.context.updatedAt).toBe("2026-04-30T00:00:00.000Z")
+  })
+
+  test("context returns safe defaults for malformed context-state.json", async () => {
+    const repoRoot = `/tmp/pi-ce-ws-ctx-malformed-${Date.now()}`
+    const ctxDir = path.join(repoRoot, ".context", "compound-engineering")
+    await mkdir(ctxDir, { recursive: true })
+    await writeFile(path.join(ctxDir, "context-state.json"), "NOT VALID JSON{{{")
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.context.found).toBe(false)
+    expect(result.context.currentTruth).toEqual([])
+    expect(result.context.activeFiles).toEqual([])
+  })
+
+  test("context filters non-string array entries from context-state.json", async () => {
+    const repoRoot = `/tmp/pi-ce-ws-ctx-array-filter-${Date.now()}`
+    const ctxDir = path.join(repoRoot, ".context", "compound-engineering")
+    await mkdir(ctxDir, { recursive: true })
+    await writeFile(
+      path.join(ctxDir, "context-state.json"),
+      JSON.stringify({
+        currentStage: "03-work",
+        activeFiles: ["src/a.ts", 42, null],
+        recentlyAccessedFiles: ["src/b.ts", false],
+        currentTruth: ["Fact A", { nope: true }],
+        invalidatedAssumptions: ["Old assumption", 123],
+        openDecisions: ["Decision X", []],
+        compressionRisk: ["Risk Z", null],
+      }),
+    )
+
+    const tool = createWorkflowStateTool()
+    const result = await tool.execute({ repoRoot })
+
+    expect(result.context.found).toBe(true)
+    expect(result.context.activeFiles).toEqual(["src/a.ts"])
+    expect(result.context.recentlyAccessedFiles).toEqual(["src/b.ts"])
+    expect(result.context.currentTruth).toEqual(["Fact A"])
+    expect(result.context.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(result.context.openDecisions).toEqual(["Decision X"])
+    expect(result.context.compressionRisk).toEqual(["Risk Z"])
+  })
 })
 
 describe("worktree_manager", () => {
@@ -1973,6 +2077,44 @@ describe("ce-core extension runtime registration", () => {
 
     expect(result).toEqual({ action: "continue" })
     expect(setModelCalls).toEqual(["anthropic/claude-opus-4-1"])
+  })
+  test("context_handoff wrapper passes structured runtime-memory fields through", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {
+        // no-op for tests
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op for tests
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const contextHandoff = definitions.get("context_handoff")
+    const repoRoot = `/tmp/pi-ce-handoff-wrapper-${Date.now()}`
+
+    const result = await contextHandoff.execute("tool-call-id", {
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      activeFiles: ["src/a.ts"],
+      currentTruth: ["Fact A", "Fact B"],
+      invalidatedAssumptions: ["Old assumption"],
+      openDecisions: ["Decision X"],
+      recentlyAccessedFiles: ["file1.ts"],
+      compressionRisk: ["Risk Z"],
+    })
+
+    expect(result.details.currentTruth).toEqual(["Fact A", "Fact B"])
+    expect(result.details.invalidatedAssumptions).toEqual(["Old assumption"])
+    expect(result.details.openDecisions).toEqual(["Decision X"])
+    expect(result.details.recentlyAccessedFiles).toEqual(["file1.ts"])
+    expect(result.details.compressionRisk).toEqual(["Risk Z"])
   })
 })
 
