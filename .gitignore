@@ -6,7 +6,7 @@ coverage/
 .context/
 graphify-out/
 
-# docs/ is local/runtime-heavy by default; only keep the public evaluation doc tracked
-/docs/**
+# docs/ is local/runtime-heavy; only token-cost-evaluation.md is tracked
+docs/**
 !/docs/
 !/docs/token-cost-evaluation.md

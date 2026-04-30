@@ -1,5 +1,19 @@
 # 更新日志
 
+### 0.23.1 — SKILL.md 精简 + thinkingStrategy 支持
+- 8 个 SKILL.md 文件从 28KB 精简到 18KB（-35%），将详细规则、模板、示例移至 `references/` 按需加载。
+- 新建 reference 文件：
+  - `ce-brainstorm-mode.md`（01-brainstorm）：标准 CE 模式工作流
+  - `solution-search.md`（02-plan, 04-review）：grep 优先的 solution 搜索策略
+  - `completion-report.md`（03-work）：完成报告模板
+- 扩展已有 references：
+  - `workflow-sequence.md`（08-help）：详细 CE pipeline 指南
+  - `recommendation-logic.md`（06-next）：合并 skill-registry
+- 新增 `thinkingStrategy` 支持，按 skill 控制思考深度。
+- 扩展配置加载，支持全局 `~/.pi/agent/settings.json` 作为项目级 `.pi/settings.json` 的 fallback。
+- 简化 README.md 和 README_CN.md 为核心内容。
+- 更新 `.gitignore`，排除所有 `docs/` 内容，仅保留 `token-cost-evaluation.md`。
+
 ### 0.23.0 — CE 扩展工具命名空间隔离，兼容第三方扩展
 - 将 `ce-core` 的 subagent 工具从 `subagent`/`parallel_subagent` 重命名为 `ce_subagent`/`ce_parallel_subagent`，避免与第三方扩展（如 `pi-subagents`）发生运行时工具名冲突。
 - 同步更新 `03-work` skill 文档和 `README.md`/`README_CN.md` 中的工具名称引用。

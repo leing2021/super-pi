@@ -2,27 +2,11 @@
 
 **让 AI 编程 agent 从「写代码的工具」变成「靠谱的工程师」。**
 
-安装后,告诉 Pi 你想做什么,然后不断说「继续」--它会自己走完 **想清楚 → 计划好 → 写代码 → 审查 → 沉淀经验** 的完整循环。
+安装后,告诉 Pi 你想做什么,然后不断说「继续」——它会自己走完 **想清楚 → 计划好 → 写代码 → 审查 → 沉淀经验** 的完整循环。
 
 ```bash
 pi install npm:@leing2021/super-pi
 ```
-
----
-
-## 为什么用 Super Pi
-
-裸用 AI agent 写代码,三个常见问题:
-
-1. **需求模糊就开干** -- 做完才发现不是想要的
-2. **中断就丢上下文** -- 关掉终端,进度全失
-3. **踩过的坑重复踩** -- 每次都在同一个地方翻车
-
-Super Pi 的解法:
-
-- **强迫先想清楚再动手** -- 不是填表,是 AI 逐条追问,像 YC partner 审项目一样逼你给出具体证据
-- **断点自动续传** -- 中断后重启,跳过已完成的,从断点继续
-- **自动沉淀经验** -- 解决过的坑变成可检索的知识卡片,下次遇到直接复用
 
 ---
 
@@ -33,368 +17,115 @@ Super Pi 的解法:
   想清楚          计划好      写代码       审查         沉淀
 ```
 
-每一步都有专门的 skill + tool 配对,不是纯 prompt,是结构化的工具链。
+| Skill | 功能 | 核心工具 |
+|-------|------|----------|
+| **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE) | `brainstorm_dialog` |
+| **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
+| **03-work** | 并行执行,断点续传,严格 TDD | `ce_subagent`, `ce_parallel_subagent` |
+| **04-review** | 自动分配评审,结构化发现,可选浏览器 QA | `review_router` |
+| **05-learn** | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
+| **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
+| **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
+| **08-help** | Phase 1 skill 说明与使用指南 | — |
 
-### 新增:分阶段模型路由
+### 模型与思考深度路由
 
-在 `.pi/settings.json` 一次配置:
+在 `.pi/settings.json` 中配置:
 
 ```json
 {
   "modelStrategy": {
-    "01-brainstorm": "claude-sonnet-4-20250514",
-    "02-plan": "claude-opus-4-20250115",
-    "03-work": "claude-sonnet-4-20250514",
-    "04-review": "claude-sonnet-4-20250514",
-    "05-learn": "claude-haiku-4-20250414",
-    "default": "claude-sonnet-4-20250514"
+    "01-brainstorm": "anthropic/claude-sonnet-4-20250514",
+    "02-plan": "anthropic/claude-opus-4-20250115"
+  },
+  "thinkingStrategy": {
+    "01-brainstorm": "high",
+    "02-plan": "high",
+    "03-work": "medium"
   }
 }
 ```
 
-行为说明:
-- 模型切换由 ce-core 扩展的 `input` hook 自动处理,无需手动 `/model`。
-- 当你输入 `/skill:01-brainstorm` 到 `/skill:05-learn` 时,扩展自动读取 `modelStrategy[阶段名]`(或 `modelStrategy.default`)并在 skill 执行前切换。
-- 支持完整格式(`"anthropic/claude-opus-4-1"`)和简写格式(`"claude-opus-4-1"`,复用当前 provider)。
-- 每一步都会输出 `📊 Pipeline Status`(`Current / Output / Next`)。
-- 模型切换成功时会显示 `Switched model for <阶段>: <provider>/<model>` 通知。
+模型和思考深度自动切换——无需手动 `/model`。
 
-快速示例:
-1. 执行 `/skill:01-brainstorm` - 模型自动切换到配置的 brainstorm 模型
-2. 你确认设计通过
-3. 执行 `/skill:02-plan` - 模型自动切换到配置的 plan 模型
-4. 继续执行每个阶段,模型会自动切换
+### pi-subagents 兼容性
+
+CE skill 工具使用独立命名空间（`ce_subagent`、`ce_parallel_subagent`），避免与第三方扩展如 [pi-subagents](https://www.npmjs.com/package/pi-subagents) 冲突。两者可共存，无需配置。
 
 ---
 
-## 每一步做了什么
+## 快速开始
 
-### 01-brainstorm:想清楚
+```
+你: 我想做一个帮助独立开发者找到用户的工具
 
-不是简单的「描述一下需求」。三种模式,匹配三种场景:
+→ 01-brainstorm: YC 风格追问 → docs/brainstorms/requirements.md
+→ 02-plan: RED→GREEN→REFACTOR 单元 → docs/plans/plan.md
+→ 03-work: 并行执行,断点续传
+→ 04-review: 结构化发现,可选浏览器 QA
+→ 05-learn: 知识沉淀
 
-| 模式 | 适合 | 它会做什么 |
-|------|------|-----------|
-| **Startup Diagnostic** | 创业想法、新项目 | YC 式六道尖锐问题,逐条追问直到你有具体证据(不是「有人感兴趣」,是「谁会因为没这个产品而抓狂」) |
-| **Builder Mode** | Side project、Hackathon | 只关注怎么做最酷的东西。如果你不小心聊到赚钱,自动升级到 Startup Diagnostic |
-| **CE Brainstorm** | 给现有项目加功能 | 多轮对话澄清需求边界,生成结构化的需求文档 |
+你: 继续
+→ /skill:06-next 自动推荐下一个步骤
+```
 
-三个模式都强制跑一遍**前提挑战**(你的假设站得住吗?)和**方案对比**(至少生成一个最小方案 + 一个理想方案),然后才让你进入计划阶段。
+**中断后恢复:**
+```
+你: /skill:03-work docs/plans/plan.md
+→ 自动加载 checkpoint,跳过已完成单元,从断点继续
+```
 
-### 02-plan:计划好
+---
 
-把需求拆成可执行的 implementation unit,每个 unit 严格遵循 **RED → GREEN → REFACTOR**(不写测试不许写代码)。
+## Token 消耗
 
-**增量更新**:需求变了?`plan_diff` 自动检测新增/删除/修改的 unit,打补丁而不是重写整个计划。
+新对话开销: **~2,600 tokens** (200K 上下文的 1.3%)。
 
-**CEO Review(可选)**:写完计划后,可以选 CEO Review。它会用 Bezos 不可逆决策、Munger 反演法、Jobs 减法原则来挑战你的计划,强制生成替代方案,画错误地图。相当于免费请了个刁钻的 CTO 审你的方案。
+| 组件 | Tokens |
+|------|--------|
+| 8 个 skill 注册 | ~490 |
+| System prompt (skills) | ~1,400 |
+| Skill 内联 (每次调用) | ~500-800 |
 
-### 03-work:写代码
+按需加载:只加载当前需要的 skills。
 
-**并行执行**:`task_splitter` 用 Union-Find 算法分析文件依赖,把不冲突的 unit 扔给 `ce_parallel_subagent` 并行跑。
+完整评估 → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
 
-**断点续传**:每个 unit 完成后自动存 checkpoint。中断了?下次启动自动加载,跳过已完成的,从断点继续。失败了?`fail` 记录错误 → `retry` 给出恢复策略(超时?加长超时。权限问题?先查权限。代码错误?先修再试)。
+---
 
-**严格 TDD**:先跑失败测试 → 写最小实现 → 测试通过 → 重构。每一步都要有命令输出作为证据,不允许跳步。
+## 生成的结构
 
-### 04-review:审查
+```
+your-project/
+├── docs/
+│   ├── brainstorms/      # 需求文档
+│   ├── plans/             # 执行计划
+│   └── solutions/         # 知识卡片
+└── .context/
+    └── compound-engineering/
+        ├── checkpoints/  # 断点文件
+        ├── dialogs/      # 对话状态
+        └── history/       # 执行历史
+```
 
-**结构化代码审查**:`review_router` 根据 diff 自动匹配 reviewer 角色(改了支付代码?叫上安全审查员)。审查纪律是技术评估,不是走过场--每个 finding 必须引用具体代码,YAGNI 检查,不表演性同意。
-
-**浏览器 QA(可选)**:用 `agent-browser` 打开你的应用,逐页点击测试,截图记录 bug,按严重程度排序修复,最多 3 轮自修复循环。还能自动写回归测试。相当于有个 QA 帮你做验收。
-
-### 05-learn:沉淀
-
-`pattern_extractor` 扫描已有 artifact,提取模式、分类归纳。把「这次踩的坑」变成带 YAML 标签的解决方案卡片,存入 `docs/solutions/`。
-
-两级存储:项目特定的 → 项目内;跨项目通用的 → `~/.pi/agent/docs/solutions/` 全局可检索。
-
-下次 `02-plan` 和 `04-review` 执行时,grep-first 策略自动搜索相关历史经验。
+**把所有文件提交到 git** ——这些文件是项目的可追溯记忆。
 
 ---
 
 ## 技术架构
 
-### 8 个 Skills(工作流节点)
-
-| Skill | 一句话 | 核心 Tool |
-|-------|--------|----------|
-| `01-brainstorm` | 三种模式的深度需求挖掘 | `brainstorm_dialog` |
-| `02-plan` | 拆 unit、TDD 门控、增量更新 | `plan_diff` |
-| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `ce_parallel_subagent` |
-| `04-review` | 角色路由审查 + 浏览器真机测试 | `review_router` |
-| `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
-| `06-next` | 下一步推荐 + 完整状态报告 | `workflow_state`, `session_history` |
-| `07-worktree` | Git worktree 隔离开发 | `worktree_manager` |
-| `08-help` | 使用指南 | - |
-
-
-### 14 个 Tools + 2 个 Helpers(底层能力)
-
-| Tool | 干什么 |
-|------|--------|
-| `task_splitter` | Union-Find 算法分析文件依赖,自动分组并行安全的 unit |
-| `session_checkpoint` | JSON 持久化断点,支持 save/load/fail/retry 五种操作 |
-| `plan_diff` | 增量计划:compare 检测差异,patch 打补丁 |
-| `ce_parallel_subagent` | `Promise.allSettled` 风格 CE 并行 skill-based subagent,支持上下文裁剪 |
-| `review_router` | 根据 diff 元数据自动分配 reviewer 角色 |
-| `pattern_extractor` | 从 artifact 中提取和分类模式 |
-| `brainstorm_dialog` | 多轮对话状态机(start → refine × N → summarize) |
-| `session_history` | 跨 session 执行历史记录和查询 |
-| `workflow_state` | 扫描 docs/ 和 .context/ 汇总工作流状态 |
-| `worktree_manager` | Git worktree 全生命周期管理 |
-| `artifact_helper` | Artifact 路径解析和目录创建 |
-| `ask_user_question` | 结构化用户提问(选项 / 自由输入) |
-| `ce_subagent` | CE 串行 skill-based subagent 链,带深度守卫和上下文控制 |
-| `context_handoff` | 跨阶段上下文交接,提供证据优先模板(save/load/latest/status) |
-| `subagent-depth-guard` | Helper:基于 env 的递归深度追踪(防止失控嵌套) |
-| `async-mutex` | Helper:序列化 `process.env` 变更,保障并发安全 |
-
-### 与 pi-subagents 的兼容性
-
-super-pi 的 CE skill-router 工具使用专用命名空间,避免运行时工具名冲突:
-
-- **CE 工具**:`ce_subagent` 和 `ce_parallel_subagent` — 用于 CE pipeline 技能执行
-- **通用 `subagent`**:保留给第三方 agent 扩展,如 [pi-subagents](https://www.npmjs.com/package/pi-subagents)
-
-两个扩展可以同时安装,不会发生工具名碰撞。super-pi 管理 CE pipeline(头脑风暴→规划→构建→审查→学习);pi-subagents 提供通用多 agent 执行能力。无需额外配置 — 安装即可,各自保持独立的工具命名空间。
-
----
-
-## Token 开销
-
-新开对话固定成本:**~2,600 tokens**(占 Claude Sonnet 4 的 200K context 的 1.3%)。
-
-| 组成部分 | Tokens | 加载时机 |
-|---------|--------|----------|
-| 8 个 Skill 注册 | ~490 | 每次对话(固定) |
-| 14 个 Tool 注册 | ~2,055 | 每次对话(固定) |
-| Hooks & Filter | 0 | 运行时拦截,零 prompt 开销 |
-| 单次 skill 触发 | ~1,000-4,000 | 按需 read |
-| Rules 最小必读(2 文件) | ~900 | plan/work 前 |
-| Rules + 语言层(7 文件) | ~2,600 | 涉及特定语言时 |
-
-| 裸 Pi | 全局规则注入 | super-pi |
-|-------|------------|---------|
-| 无规则 | 全量加载 | 渐进式按需 |
-| 无输出过滤 | 无输出过滤 | 自动压缩(bash ~65-98%,read ~30-60%) |
-| 无 TDD 门控 | 无 TDD 门控 | Hard gate 防止返工 |
-| 0 tokens | ~5,000-36,000 tokens | **~2,600 tokens** |
-
-一次 `npm install` 输出过滤即可回本。完整评估 → [`docs/token-cost-evaluation.md`](docs/token-cost-evaluation.md)
-
----
-
-## 代码规模
-
-~2800 行 TypeScript 实现 14 个注册 tool + 2 个 helper,23 个 Markdown reference 文件 + 79 个规则文件驱动 8 个 skill,175 个测试覆盖全部 tool 逻辑。
-
-不是大而全的框架。每个 tool 职责单一,每个 skill 可独立使用,组合起来是完整工作流。
-
----
-
-## 快速上手
-
-### 新想法
-
-```
-你: 我想做一个帮助独立开发者找用户的工具
-
-→ 自动进入 01-brainstorm,YC 式追问
-→ 生成 docs/brainstorms/2026-04-18-find-users-requirements.md
-→ 推荐下一步: 02-plan
-
-你: 继续
-
-→ 02-plan 拆 unit,可选 CEO Review
-→ 生成 docs/plans/2026-04-18-find-users-plan.md
-
-你: 继续
-
-→ 03-work 并行执行,断点续传
-→ 04-review 代码审查 + 可选浏览器 QA
-→ 05-learn 沉淀经验
-```
-
-### 给现有项目加功能
-
-```
-你: 给项目加一个用户认证功能
-
-→ 01-brainstorm CE 模式,多轮对话澄清 OAuth2? JWT? MFA?
-→ 生成需求文档 → 02-plan 拆 unit → 03-work 执行 → 04-review → 05-learn
-```
-
-### 中断后恢复
-
-```
-你: /skill:03-work docs/plans/auth-plan.md
-
-→ 自动加载 checkpoint,跳过已完成 unit,从断点继续
-```
-
-### 需求变了
-
-```
-你: 需求变了,需要加 SSO 支持
-
-→ 02-plan 用 plan_diff 检测变化,增量更新,不重写整个计划
-```
-
-### 随时查进度
-
-```
-你: /skill:06-next
-
-→ 扫描所有 artifact,显示进度 + 推荐下一步
-```
-
----
-
-## 生成的文件结构
-
-```
-your-project/
-├── docs/
-│   ├── brainstorms/                  # 需求文档(01-brainstorm 生成)
-│   ├── plans/                        # 执行计划(02-plan 生成)
-│   └── solutions/                    # 经验卡片(05-learn 生成)
-└── .context/
-    └── compound-engineering/
-        ├── checkpoints/              # 断点文件(session_checkpoint 生成)
-        ├── dialogs/                  # 对话状态(brainstorm_dialog 生成)
-        └── history/                  # 执行历史(session_history 生成)
-```
-
-**建议全部 commit 进 git** -- 这些文件就是项目的可追溯记忆。
-
-### 渐进式规则加载
-
-内置编码规则位于包的 `rules/` 目录下。规则由各 skill **渐进式加载**--绝不全量加载,只读当前任务需要的部分。
-
-**加载链路:**
-
-```
-system prompt(30 tokens:skill 名称 + 描述)
-  → skill SKILL.md(~200 tokens:加载决策树)
-    → 具体规则文件通过 read 工具按需加载(900-2600 tokens)
-```
-
-三个 skill 在入口处自动触发规则加载:
-
-| Skill | 预加载的规则 |
-|-------|-------------|
-| `02-plan` | `common/` 规则 + 语言检测 + 匹配的语言规则(如 `rules/typescript/`) |
-| `03-work` | `common/` 规则 + 语言检测 + 匹配的语言规则 + `web/`(如涉及前端) |
-| `04-review` | `common/code-review.md` + 语言检测 + 匹配的语言规则 + `web/`(如涉及前端) |
-
-语言检测使用文件启发式(见 `skills/references/language-detection.md`):`tsconfig.json` → TypeScript,`Cargo.toml` → Rust,`go.mod` → Go 等。
-
-**规则优先级**(同一主题多层重叠时):
-
-```
-语言规则  >  web  >  common
-```
-
-做 brainstorm、查状态等非编码任务时,不加载任何规则。零浪费。
-
-#### 内置规则层
-
-| 层级 | 文件数 | 何时加载 |
-|------|--------|----------|
-| `common/` | 11 个文件(含 `naming.md`) | 始终加载(所有任务的基线) |
-| `typescript/`、`python/`、`cpp/`、`csharp/`、`dart/`、`golang/`、`java/`、`kotlin/`、`perl/`、`php/`、`rust/`、`swift/` | 各 5 个文件 | 任务涉及该语言时 |
-| `web/` | 7 个文件(含 `design-quality.md`、`performance.md`) | 前端/浏览器相关时 |
-
-#### DIY:自定义规则
-
-规则有两个来源,项目级优先:
-
-| 来源 | 位置 | `pi update` 会覆盖? |
-|------|------|---------------------|
-| **项目级** | `{项目根目录}/rules/` | ✅ 不会被覆盖 |
-| 包内置 | `node_modules/@leing2021/super-pi/rules/` | ❌ 会被覆盖 |
-
-自定义方式:在项目根目录创建 `rules/` 目录。Skills 会优先读取项目级文件--存在即覆盖包内默认规则。
-
-**添加语言**--创建新目录,放入 5 个标准主题文件:
-
-```bash
-mkdir rules/elixir
-touch rules/elixir/{coding-style,testing,patterns,security,hooks}.md
-```
-
-每个文件开头建议写明:
-
-```markdown
-> 本文件是 [common/xxx.md](../common/xxx.md) 的 Elixir 特定扩展。
-```
-
-**删除不需要的语言**--直接删目录:
-
-```bash
-rm -rf rules/perl rules/cpp  # 用不到?直接删
-```
-
-**调整规则**--直接编辑 `.md` 文件:
-
-```bash
-# 修改团队的测试规范
-vim rules/common/testing.md
-
-# 修改特定语言的测试规范
-vim rules/typescript/testing.md
-```
-
-**新增主题**--在对应层级创建新 `.md` 文件即可:
-
-```bash
-# 通用主题
-vim rules/common/api-design.md
-
-# 语言特定覆盖
-vim rules/python/api-design.md
-```
-
-Skills 会自动发现 `rules/` 下的所有 `.md` 文件--不需要任何配置。语言目录存在就能加载,删了就不会被加载。
-
----
-
-## 设计理念 & 致谢
-
-**80% 规划和审查,20% 执行。**
-
-不是让 AI 写得更快,是让 AI 想清楚再写、写完要审查、审完要沉淀。速度来自减少返工,不是来自跳步。
-
-以下项目的思想对本项目有直接启发:
-
-- **[everything-claude-code](https://github.com/affaan-m/everything-claude-code)**(162K★)→ 并行 subagent 编排、断点续传、持续学习循环
-- **[superpowers](https://github.com/obra/superpowers)**(161K★)→ 严格 TDD 门控、设计检查清单、审查纪律
-- **[gstack](https://github.com/garrytan/gstack)**(78K★)→ YC 式追问、CEO Review 认知框架、浏览器 QA
-- **[compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)**(14K★)→ 五步循环、知识复合骨架
-
-不是 fork,不是套壳。取方法论,用 Pi 原生 tool + skill 体系重新实现。
-
----
-
-## 最佳实践
-
-| 建议 | 为什么 |
-|------|--------|
-| 从 01-brainstorm 开始 | 不管什么场景,先想清楚永远不亏 |
-| 大功能用 07-worktree | 隔离开发,不影响主分支 |
-| 用 CEO Review 审计划 | 相当于免费请了个刁钻的 CTO |
-| 用浏览器 QA 验收 | 代码审查看不到布局错乱和白屏 |
-| 执行中断不要慌 | 下次 03-work 自动从 checkpoint 继续 |
-| 不知道该干嘛用 06-next | 扫一眼就知道做到哪了 + 下一步该做什么 |
+- **8 个 skills** 配专用工具
+- **14 个工具** + 2 个辅助
+- **~2800 行** TypeScript, **175 个测试**
+- **渐进式规则加载** ——只加载当前任务需要的
+
+规则放在 `rules/` (11 个通用 + 语言特定)。项目级规则优先。
 
 ---
 
 ## 更新日志
 
 完整版本历史请查看 [CHANGELOG_CN.md](./CHANGELOG_CN.md)。
-
----
 
 ## 仓库
 

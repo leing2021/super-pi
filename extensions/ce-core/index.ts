@@ -31,15 +31,46 @@ const PIPELINE_STAGE_KEYS = new Set([
   "05-learn",
 ])
 
-interface ModelStrategySettings {
+interface StrategySettings {
   modelStrategy?: Record<string, string>
+  thinkingStrategy?: Record<string, string>
 }
 
-async function readProjectSettings(cwd: string): Promise<ModelStrategySettings | null> {
-  const settingsPath = path.join(cwd, ".pi", "settings.json")
+/**
+ * Read settings from two locations:
+ * 1. Project-level: {cwd}/.pi/settings.json (highest priority)
+ * 2. Global-level: ~/.pi/agent/settings.json (fallback)
+ *
+ * Project-level takes precedence; global-level is used as fallback.
+ */
+async function readSettings(cwd: string): Promise<StrategySettings | null> {
+  // Try project-level first
+  const projectPath = path.join(cwd, ".pi", "settings.json")
   try {
-    const content = await readFile(settingsPath, "utf8")
-    return JSON.parse(content) as ModelStrategySettings
+    const content = await readFile(projectPath, "utf8")
+    const projectSettings = JSON.parse(content) as StrategySettings
+    // If project has modelStrategy or thinkingStrategy, use it
+    if (projectSettings.modelStrategy || projectSettings.thinkingStrategy) {
+      return projectSettings
+    }
+  } catch {
+    // Project settings not found, continue to global
+  }
+
+  // Fallback to global-level
+  const globalPath = path.join(process.env.HOME || "~", ".pi", "agent", "settings.json")
+  try {
+    const content = await readFile(globalPath, "utf8")
+    return JSON.parse(content) as StrategySettings
+  } catch {
+    // Global settings not found either
+  }
+
+  // Try ~/.pi/settings.json as another fallback
+  const altGlobalPath = path.join(process.env.HOME || "~", ".pi", "settings.json")
+  try {
+    const content = await readFile(altGlobalPath, "utf8")
+    return JSON.parse(content) as StrategySettings
   } catch {
     return null
   }
@@ -319,47 +350,61 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return { action: "continue" as const }
     }
 
-    const settings = await readProjectSettings(ctx.cwd)
+    const settings = await readSettings(ctx.cwd)
     const modelStrategy = settings?.modelStrategy
-    if (!modelStrategy) {
-      return { action: "continue" as const }
-    }
+    const thinkingStrategy = settings?.thinkingStrategy
 
-    const targetModelRef = modelStrategy[stageKey] ?? modelStrategy.default
-    if (!targetModelRef) {
-      return { action: "continue" as const }
-    }
-
-    const parsed = parseModelRef(targetModelRef, ctx.model?.provider)
-    if (!parsed) {
-      if (ctx.hasUI) {
-        ctx.ui.notify(`Invalid modelStrategy entry for ${stageKey}: ${targetModelRef}`, "warning")
+    // Model switching
+    if (modelStrategy) {
+      const targetModelRef = modelStrategy[stageKey] ?? modelStrategy.default
+      if (targetModelRef) {
+        const parsed = parseModelRef(targetModelRef, ctx.model?.provider)
+        if (parsed) {
+          // Skip if already using the same model
+          if (ctx.model?.provider !== parsed.provider || ctx.model?.id !== parsed.id) {
+            const model = ctx.modelRegistry.find(parsed.provider, parsed.id)
+            if (model) {
+              const switched = await pi.setModel(model)
+              if (switched) {
+                if (ctx.hasUI) {
+                  ctx.ui.notify(`Switched model for ${stageKey}: ${model.provider}/${model.id}`, "info")
+                }
+              } else {
+                if (ctx.hasUI) {
+                  ctx.ui.notify(`No API key for ${stageKey}: ${model.provider}/${model.id}`, "warning")
+                }
+              }
+            } else if (ctx.hasUI) {
+              ctx.ui.notify(`Model not found for ${stageKey}: ${targetModelRef}`, "warning")
+            }
+          }
+        } else if (ctx.hasUI) {
+          ctx.ui.notify(`Invalid modelStrategy for ${stageKey}: ${targetModelRef}`, "warning")
+        }
       }
-      return { action: "continue" as const }
     }
 
-    if (ctx.model?.provider === parsed.provider && ctx.model?.id === parsed.id) {
-      return { action: "continue" as const }
-    }
-
-    const model = ctx.modelRegistry.find(parsed.provider, parsed.id)
-    if (!model) {
-      if (ctx.hasUI) {
-        ctx.ui.notify(`Configured model not found for ${stageKey}: ${targetModelRef}`, "warning")
+    // Thinking level switching
+    if (thinkingStrategy) {
+      const targetThinking = thinkingStrategy[stageKey] ?? thinkingStrategy.default
+      if (targetThinking) {
+        const levelMap: Record<string, "low" | "medium" | "high"> = {
+          low: "low",
+          medium: "medium",
+          high: "high",
+          "0": "low",
+          "1": "medium",
+          "2": "high",
+        }
+        const normalized = levelMap[targetThinking.toLowerCase()] ?? "medium"
+        const currentLevel = ctx.getThinkingLevel?.() ?? "medium"
+        if (currentLevel !== normalized) {
+          ctx.setThinkingLevel?.(normalized)
+          if (ctx.hasUI) {
+            ctx.ui.notify(`Switched thinking level for ${stageKey}: ${normalized}`, "info")
+          }
+        }
       }
-      return { action: "continue" as const }
-    }
-
-    const switched = await pi.setModel(model)
-    if (switched) {
-      if (ctx.hasUI) {
-        ctx.ui.notify(`Switched model for ${stageKey}: ${model.provider}/${model.id}`, "info")
-      }
-      return { action: "continue" as const }
-    }
-
-    if (ctx.hasUI) {
-      ctx.ui.notify(`No API key available for configured model: ${model.provider}/${model.id}`, "warning")
     }
 
     return { action: "continue" as const }

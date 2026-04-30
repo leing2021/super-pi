@@ -1,5 +1,19 @@
 # Changelog
 
+### 0.23.1 — SKILL.md size minimization + thinkingStrategy support
+- Minimized 8 SKILL.md files from 28KB to 18KB (-35% reduction) by moving detailed rules, templates, and examples to `references/` for on-demand loading.
+- Created new reference files:
+  - `ce-brainstorm-mode.md` (01-brainstorm): standard CE mode workflow
+  - `solution-search.md` (02-plan, 04-review): grep-first strategy for solutions
+  - `completion-report.md` (03-work): completion report template
+- Expanded existing references:
+  - `workflow-sequence.md` (08-help): detailed CE pipeline guide
+  - `recommendation-logic.md` (06-next): merged skill-registry
+- Added `thinkingStrategy` support for per-skill thinking level control.
+- Extended settings loading to support global `~/.pi/agent/settings.json` as fallback when project-level `.pi/settings.json` lacks `modelStrategy`/`thinkingStrategy`.
+- Simplified README.md and README_CN.md to essential content.
+- Updated `.gitignore` to exclude all `docs/` content except `token-cost-evaluation.md`.
+
 ### 0.23.0 — CE extension tool namespace isolation for third-party compatibility
 - Renamed `ce-core` subagent tools from `subagent`/`parallel_subagent` to `ce_subagent`/`ce_parallel_subagent` to avoid runtime tool-name conflicts with third-party extensions like `pi-subagents`.
 - Updated `03-work` skill documentation and `README.md`/`README_CN.md` to reference the new `ce_`-prefixed tool names.
