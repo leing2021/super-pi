@@ -27,12 +27,4 @@ export const COMPACTION_FOCUS_INSTRUCTIONS = `Additional focus for this summary:
 6. If any tests were run, summarize results by: file, pass/fail count, and specific failure messages
 7. Note any blocked items and their exact error state`
 
-/**
- * Additional instructions for turn-prefix summaries (split turns).
- * These are more concise since the turn suffix is retained.
- */
-export const TURN_PREFIX_FOCUS_INSTRUCTIONS = `Focus the turn-prefix summary on:
-- What the user originally asked for
-- Key decisions made in the prefix
-- Exact file paths and identifiers needed to understand the retained suffix
-Skip reasoning details — only keep actionable context.`
+

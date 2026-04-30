@@ -2259,7 +2259,6 @@ describe("public exports", () => {
       "filterBashOutput",
       "filterReadOutput",
       "COMPACTION_FOCUS_INSTRUCTIONS",
-      "TURN_PREFIX_FOCUS_INSTRUCTIONS",
       "checkSubagentDepth",
       "getChildDepthEnv",
       "DEFAULT_MAX_SUBAGENT_DEPTH",

@@ -891,4 +891,4 @@ export {
 export { normalizeSlug } from "./utils/name-utils"
 export { filterBashOutput } from "./tools/bash-output-filter"
 export { filterReadOutput } from "./tools/read-output-filter"
-export { COMPACTION_FOCUS_INSTRUCTIONS, TURN_PREFIX_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
+export { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
