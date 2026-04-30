@@ -393,18 +393,21 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     if (thinkingStrategy) {
       const targetThinking = thinkingStrategy[stageKey] ?? thinkingStrategy.default
       if (targetThinking) {
-        const levelMap: Record<string, "low" | "medium" | "high"> = {
+        const levelMap: Record<string, ReturnType<ExtensionAPI["getThinkingLevel"]>> = {
+          off: "off",
+          minimal: "minimal",
           low: "low",
           medium: "medium",
           high: "high",
+          xhigh: "xhigh",
           "0": "low",
           "1": "medium",
           "2": "high",
         }
         const normalized = levelMap[targetThinking.toLowerCase()] ?? "medium"
-        const currentLevel = ctx.getThinkingLevel?.() ?? "medium"
+        const currentLevel = pi.getThinkingLevel()
         if (currentLevel !== normalized) {
-          ctx.setThinkingLevel?.(normalized)
+          pi.setThinkingLevel(normalized)
           if (ctx.hasUI) {
             ctx.ui.notify(`Switched thinking level for ${stageKey}: ${normalized}`, "info")
           }

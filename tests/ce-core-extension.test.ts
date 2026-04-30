@@ -2078,6 +2078,74 @@ describe("ce-core extension runtime registration", () => {
     expect(result).toEqual({ action: "continue" })
     expect(setModelCalls).toEqual(["anthropic/claude-opus-4-1"])
   })
+
+  test("input hook switches thinking level through ExtensionAPI", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const thinkingCalls: string[] = []
+    const notifications: Array<{ message: string, level?: string }> = []
+    const repoRoot = `/tmp/pi-ce-thinking-routing-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        thinkingStrategy: {
+          "02-plan": "high",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      getThinkingLevel() {
+        return "medium"
+      },
+      setThinkingLevel(level: string) {
+        thinkingCalls.push(level)
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const inputHandlers = eventHandlers.get("input") ?? []
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo-plan.md", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: {
+          find(provider: string, id: string) {
+            return { provider, id }
+          },
+        },
+        ui: {
+          notify(message: string, level?: string) {
+            notifications.push({ message, level })
+          },
+        },
+      },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(thinkingCalls).toEqual(["high"])
+    expect(notifications).toEqual([
+      {
+        message: "Switched thinking level for 02-plan: high",
+        level: "info",
+      },
+    ])
+  })
   test("context_handoff wrapper passes structured runtime-memory fields through", async () => {
     const definitions = new Map<string, any>()
     const pi = {
