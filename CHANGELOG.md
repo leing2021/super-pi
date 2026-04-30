@@ -1,5 +1,15 @@
 # Changelog
 
+### 0.23.3 — Context handoff deterministic validation probes (Route B-lite)
+- Added `context_handoff` `operation: "validate"` for deterministic continuation-readiness validation.
+- 4 probes: `recall`, `continuation`, `artifact`, `decision`.
+- `ok` requires `recall` + `continuation` only; `artifact` / `decision` gaps are warnings.
+- Explanatory `checks` array for each probe with name, passed, reason.
+- Placeholder filtering: `N/A`, `- N/A`, `Not run` do not count as evidence in markdown or structured state.
+- All public output paths normalized to repo-relative.
+- Tightened continuation: `verification` / `blocker` alone cannot pass continuation.
+- 203 tests passing, 0 regressions.
+
 ### 0.23.2 — Context handoff structured runtime-memory anchor
 - Added 5 new optional structured fields to `context_handoff`: `currentTruth`, `invalidatedAssumptions`, `openDecisions`, `recentlyAccessedFiles`, `compressionRisk`.
 - Persisted new fields in `.context/compound-engineering/context-state.json` for machine-readable runtime state.

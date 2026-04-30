@@ -2184,6 +2184,51 @@ describe("ce-core extension runtime registration", () => {
     expect(result.details.recentlyAccessedFiles).toEqual(["file1.ts"])
     expect(result.details.compressionRisk).toEqual(["Risk Z"])
   })
+
+  test("context_handoff wrapper supports validate operation with probes and checks", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {
+        // no-op for tests
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op for tests
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const contextHandoff = definitions.get("context_handoff")
+    const repoRoot = `/tmp/pi-ce-handoff-validate-wrapper-${Date.now()}`
+
+    // First save a handoff with recall + continuation evidence
+    await contextHandoff.execute("tool-call-id", {
+      operation: "save",
+      repoRoot,
+      currentStage: "02-plan",
+      nextStage: "03-work",
+      currentTruth: ["Fact A"],
+      handoffMarkdown: "## Current Task\nTask.\n\n## Next Minimal Step\nDo it.\n",
+    })
+
+    // Now validate
+    const result = await contextHandoff.execute("tool-call-id", {
+      operation: "validate",
+      repoRoot,
+    })
+
+    expect(result.details.operation).toBe("validate")
+    expect(result.details.ok).toBe(true)
+    expect(result.details.probes).toBeDefined()
+    expect(result.details.probes.recall).toBe(true)
+    expect(result.details.probes.continuation).toBe(true)
+    expect(result.details.checks).toBeDefined()
+    expect(result.details.checks.length).toBeGreaterThan(0)
+    expect(result.details.recommendedAction).toBe("continue")
+  })
 })
 
 describe("public exports", () => {

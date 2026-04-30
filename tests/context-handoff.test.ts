@@ -455,4 +455,246 @@ describe("context_handoff", () => {
       expect(content).toContain("Handoff-lite template")
     }
   })
+
+  // --- Unit 1 (Route B-lite): context_handoff validate ---
+
+  test("validate returns missing required evidence when no state or handoff exists", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-empty-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.operation).toBe("validate")
+    expect(result.found).toBe(false)
+    expect(result.ok).toBe(false)
+    expect(result.probes!.recall).toBe(false)
+    expect(result.probes!.continuation).toBe(false)
+    expect(result.missing!.length).toBeGreaterThan(0)
+    expect(result.recommendedAction).toBe("save_handoff")
+  })
+
+  test("validate passes when recall and continuation evidence exist", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-pass-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "02-plan",
+      nextStage: "03-work",
+      currentTruth: ["User approved Route B-lite"],
+      activeFiles: ["extensions/ce-core/tools/context-handoff.ts"],
+      handoffMarkdown: "## Current Task\nBuild validate.\n\n## Next Minimal Step\n/skill:03-work\n",
+    })
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.found).toBe(true)
+    expect(result.ok).toBe(true)
+    expect(result.probes!.recall).toBe(true)
+    expect(result.probes!.continuation).toBe(true)
+    expect(result.recommendedAction).toBe("continue")
+  })
+
+  test("validate warns but stays ok when artifact and decision evidence are missing", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-warn-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "02-plan",
+      nextStage: "03-work",
+      // No currentTruth — it satisfies both recall and decision, so omit for pure decision-missing test
+      // No activeFiles, no artifacts, no openDecisions, no invalidatedAssumptions
+      handoffMarkdown: "## Current Task\nTask.\n\n## Next Minimal Step\nDo it.\n",
+    })
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.ok).toBe(true)
+    expect(result.probes!.recall).toBe(true)
+    expect(result.probes!.continuation).toBe(true)
+    expect(result.probes!.artifact).toBe(false)
+    expect(result.probes!.decision).toBe(false)
+    expect(result.warnings!.length).toBeGreaterThan(0)
+    expect(result.missing!.length).toBe(0)
+  })
+
+  test("validate handles legacy state with safe defaults", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-legacy-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const handoffDir = path.join(repoRoot, ".context", "compound-engineering", "handoffs")
+    mkdirSync(handoffDir, { recursive: true })
+    writeFileSync(path.join(handoffDir, "latest.md"), "## Legacy\n", "utf8")
+    writeFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "context-state.json"),
+      JSON.stringify({
+        currentStage: "02-plan",
+        contextHealth: "watch",
+        activeFiles: [],
+        artifacts: {},
+        recommendNewSession: false,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      }),
+      "utf8",
+    )
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.found).toBe(true)
+    // Legacy state has currentStage but no nextStage, no currentTruth, no Next Minimal Step
+    expect(result.probes!.continuation).toBe(false)
+    expect(result.ok).toBe(false)
+    expect(result.recommendedAction).toBe("fill_required_context")
+  })
+
+  test("validate handles corrupted context-state.json without throwing", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-corrupt-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const ceDir = path.join(repoRoot, ".context", "compound-engineering")
+    mkdirSync(ceDir, { recursive: true })
+    writeFileSync(path.join(ceDir, "context-state.json"), "NOT JSON{{{", "utf8")
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.found).toBe(false)
+    expect(result.ok).toBe(false)
+    expect(result.recommendedAction).toBe("save_handoff")
+  })
+
+  test("validate does not pass continuation from verification evidence alone", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-verification-alone-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      // no nextStage
+      verification: "bun test passed",
+      currentTruth: ["Fact A"],
+      handoffMarkdown: "## Current Task\nTask.\n\n## Next Minimal Step\nN/A\n\n## Verification\n- bun test passed\n",
+    })
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    // Recall should pass because currentTruth exists and currentStage is meaningful
+    expect(result.probes!.recall).toBe(true)
+    // Continuation must fail: verification alone does not provide next step
+    expect(result.probes!.continuation).toBe(false)
+    expect(result.ok).toBe(false)
+  })
+
+  test("validate ignores placeholder markdown values", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-placeholder-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      handoffMarkdown: [
+        "## Current Task",
+        "N/A",
+        "",
+        "## Next Minimal Step",
+        "- N/A",
+        "",
+        "## Artifacts",
+        "- N/A",
+        "",
+        "## Open Decisions",
+        "- N/A",
+        "",
+        "## Verification",
+        "- Not run",
+        "",
+      ].join("\n"),
+    })
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    // Placeholder markdown should not count as evidence
+    expect(result.probes!.continuation).toBe(false)
+    expect(result.probes!.artifact).toBe(false)
+    expect(result.probes!.decision).toBe(false)
+    expect(result.ok).toBe(false)
+    expect(result.warnings!.length).toBeGreaterThan(0)
+  })
+
+  test("validate returns repo-relative path for explicit absolute repo handoff path", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-relative-path-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const handoffDir = path.join(repoRoot, ".context", "compound-engineering", "handoffs")
+    mkdirSync(handoffDir, { recursive: true })
+    const absoluteHandoffPath = path.join(handoffDir, "custom.md")
+    writeFileSync(
+      absoluteHandoffPath,
+      "## Current Task\nTask.\n\n## Next Minimal Step\nDo it.\n",
+      "utf8",
+    )
+
+    const result = await tool.execute({
+      operation: "validate",
+      repoRoot,
+      handoffPath: absoluteHandoffPath,
+    })
+
+    expect(result.found).toBe(true)
+    expect(result.path).toBe(".context/compound-engineering/handoffs/custom.md")
+  })
+
+  test("validate ignores placeholder structured state values", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-placeholder-state-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "unknown",
+      nextStage: "N/A",
+      activeFiles: ["N/A"],
+      currentTruth: ["N/A"],
+      openDecisions: ["N/A"],
+      verification: "Not run",
+      handoffMarkdown: "## Current Task\nN/A\n\n## Next Minimal Step\n- N/A\n",
+    })
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.probes!.recall).toBe(false)
+    expect(result.probes!.continuation).toBe(false)
+    expect(result.probes!.artifact).toBe(false)
+    expect(result.probes!.decision).toBe(false)
+    expect(result.ok).toBe(false)
+  })
+
+  test("validate normalizes absolute state handoff path in public result", async () => {
+    const repoRoot = `/tmp/pi-ce-validate-absolute-state-path-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const handoffDir = path.join(repoRoot, ".context", "compound-engineering", "handoffs")
+    mkdirSync(handoffDir, { recursive: true })
+    const absoluteHandoffPath = path.join(handoffDir, "legacy.md")
+    writeFileSync(absoluteHandoffPath, "## Current Task\nTask.\n\n## Next Minimal Step\nDo it.\n", "utf8")
+    writeFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "context-state.json"),
+      JSON.stringify({
+        currentStage: "02-plan",
+        nextStage: "03-work",
+        contextHealth: "watch",
+        latestHandoffPath: absoluteHandoffPath,
+        activeFiles: [],
+        artifacts: {},
+        recommendNewSession: false,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      }),
+      "utf8",
+    )
+
+    const result = await tool.execute({ operation: "validate", repoRoot })
+
+    expect(result.found).toBe(true)
+    expect(result.path).toBe(".context/compound-engineering/handoffs/legacy.md")
+  })
 })

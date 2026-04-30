@@ -1,5 +1,15 @@
 # 更新日志
 
+### 0.23.3 — Context handoff 确定性验证探针（Route B-lite）
+- `context_handoff` 新增 `operation: "validate"`，用于确定性续接就绪性验证。
+- 4 个探针：`recall`、`continuation`、`artifact`、`decision`。
+- `ok` 仅要求 `recall` + `continuation` 通过；`artifact` / `decision` 缺失为 warnings。
+- 可解释 `checks` 数组，每个探针包含 name、passed、reason。
+- 占位符过滤：`N/A`、`- N/A`、`Not run` 不计入 markdown 或结构化状态中的证据。
+- 所有公开输出路径归一化为仓库相对路径。
+- 收紧续接判定：`verification` / `blocker` 单独不能让 continuation 通过。
+- 203 测试通过，0 回归。
+
 ### 0.23.2 — Context handoff 结构化运行态内存锚点
 - `context_handoff` 新增 5 个可选结构化字段：`currentTruth`、`invalidatedAssumptions`、`openDecisions`、`recentlyAccessedFiles`、`compressionRisk`。
 - 新字段持久化到 `.context/compound-engineering/context-state.json`，支持机器可读的运行态状态。

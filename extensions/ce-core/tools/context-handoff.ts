@@ -5,8 +5,23 @@ import { normalizeSlug } from "../utils/name-utils"
 
 export type ContextHealth = "good" | "watch" | "heavy" | "critical"
 
+export type ContextHandoffRecommendedAction = "continue" | "save_handoff" | "fill_required_context"
+
+export interface ContextHandoffValidationCheck {
+  name: string
+  passed: boolean
+  reason: string
+}
+
+export interface ContextHandoffValidationProbes {
+  recall: boolean
+  continuation: boolean
+  artifact: boolean
+  decision: boolean
+}
+
 export interface ContextHandoffInput {
-  operation: "save" | "load" | "latest" | "status"
+  operation: "save" | "load" | "latest" | "status" | "validate"
   repoRoot: string
   currentStage?: string
   nextStage?: string
@@ -63,6 +78,13 @@ export interface ContextHandoffResult {
   recentlyAccessedFiles?: string[]
   compressionRisk?: string[]
   updatedAt?: string
+  // Validation fields
+  ok?: boolean
+  probes?: ContextHandoffValidationProbes
+  checks?: ContextHandoffValidationCheck[]
+  missing?: string[]
+  warnings?: string[]
+  recommendedAction?: ContextHandoffRecommendedAction
 }
 
 function ceDir(repoRoot: string): string {
@@ -268,6 +290,8 @@ export function createContextHandoffTool() {
           return latest(input)
         case "status":
           return status(input)
+        case "validate":
+          return validate(input)
         default:
           throw new Error(`Unknown operation: ${input.operation}`)
       }
@@ -431,6 +455,272 @@ async function latest(input: ContextHandoffInput): Promise<ContextHandoffResult>
     compressionRisk: state.compressionRisk,
     recommendNewSession: state.recommendNewSession,
     updatedAt: state.updatedAt,
+  }
+}
+
+const PLACEHOLDER_VALUES = new Set(["n/a", "na", "not run", "none", "", "-"])
+const PLACEHOLDER_PREFIXES = ["- n/a", "- na", "- not run", "- none", "- "]
+
+function isPlaceholder(text: string): boolean {
+  const trimmed = text.trim().toLowerCase()
+  if (PLACEHOLDER_VALUES.has(trimmed)) return true
+  for (const prefix of PLACEHOLDER_PREFIXES) {
+    if (trimmed === prefix) return true
+  }
+  return false
+}
+
+function isMeaningfulText(value?: string): boolean {
+  return Boolean(value && !isPlaceholder(value))
+}
+
+function toPublicHandoffPath(repoRoot: string, filePath: string): string {
+  return path.isAbsolute(filePath) ? toRepoRelative(repoRoot, filePath) : filePath
+}
+
+function extractSection(markdown: string, heading: string): string {
+  const lines = markdown.split("\n")
+  const sectionLines: string[] = []
+  let inSection = false
+
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      if (inSection) break
+      if (line.slice(3).trim() === heading) {
+        inSection = true
+      }
+      continue
+    }
+    if (inSection) {
+      sectionLines.push(line)
+    }
+  }
+
+  return sectionLines.join("\n").trim()
+}
+
+function sectionHasMeaningfulContent(markdown: string, heading: string): boolean {
+  const section = extractSection(markdown, heading)
+  if (!section) return false
+
+  const lines = section.split("\n")
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    if (!isPlaceholder(trimmed)) return true
+  }
+  return false
+}
+
+function hasMeaningfulArray(arr: string[]): boolean {
+  return arr.some(item => isMeaningfulText(item))
+}
+
+function hasMeaningfulRecord(rec: Record<string, string | undefined>): boolean {
+  return Object.values(rec).some(isMeaningfulText)
+}
+
+function isMeaningfulStage(value?: string): boolean {
+  return Boolean(value && value.trim().length > 0 && value !== "unknown" && !isPlaceholder(value))
+}
+
+async function validate(input: ContextHandoffInput): Promise<ContextHandoffResult> {
+  const checks: ContextHandoffValidationCheck[] = []
+  const missing: string[] = []
+  const warnings: string[] = []
+
+  // Read state
+  const state = await readState(input.repoRoot)
+  const hasState = state !== null
+
+  // Read markdown
+  let markdown = ""
+  let hasMarkdown = false
+  let handoffFile = ""
+
+  if (input.handoffPath) {
+    const absolutePath = resolveRepoPath(input.repoRoot, input.handoffPath)
+    if (existsSync(absolutePath)) {
+      markdown = await readFile(absolutePath, "utf8")
+      hasMarkdown = markdown.trim().length > 0
+      handoffFile = toPublicHandoffPath(input.repoRoot, input.handoffPath)
+    }
+  }
+
+  if (!hasMarkdown && state?.latestHandoffPath) {
+    const absolutePath = resolveRepoPath(input.repoRoot, state.latestHandoffPath)
+    if (existsSync(absolutePath)) {
+      markdown = await readFile(absolutePath, "utf8")
+      hasMarkdown = markdown.trim().length > 0
+      handoffFile = toPublicHandoffPath(input.repoRoot, state.latestHandoffPath)
+    }
+  }
+
+  if (!hasMarkdown) {
+    const latestPath = latestHandoffPath(input.repoRoot)
+    if (existsSync(latestPath)) {
+      markdown = await readFile(latestPath, "utf8")
+      hasMarkdown = markdown.trim().length > 0
+      handoffFile = toRepoRelative(input.repoRoot, latestPath)
+    }
+  }
+
+  const found = hasState || hasMarkdown
+
+  checks.push({
+    name: "state_exists",
+    passed: hasState,
+    reason: hasState ? "Found context-state.json" : "No context-state.json found",
+  })
+
+  checks.push({
+    name: "handoff_exists",
+    passed: hasMarkdown,
+    reason: hasMarkdown ? "Found handoff markdown" : "No handoff markdown found",
+  })
+
+  // --- Recall probe ---
+  const hasCurrentTruth = state ? hasMeaningfulArray(state.currentTruth) : false
+  const hasCurrentStage = state ? isMeaningfulStage(state.currentStage) : false
+  const hasCurrentTaskSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Current Task")
+
+  const recallPass = hasCurrentTruth || (hasCurrentStage && (hasMarkdown || (state?.nextStage !== undefined))) || hasCurrentTaskSection
+
+  checks.push({
+    name: "recall_current_truth",
+    passed: hasCurrentTruth,
+    reason: hasCurrentTruth ? `Found ${state!.currentTruth.length} current truth entries` : "No current truth entries",
+  })
+
+  checks.push({
+    name: "recall_current_task",
+    passed: hasCurrentTaskSection,
+    reason: hasCurrentTaskSection ? "Current Task section has meaningful content" : "Current Task section is missing or placeholder",
+  })
+
+  checks.push({
+    name: "recall_current_stage",
+    passed: hasCurrentStage,
+    reason: hasCurrentStage ? `Current stage: ${state!.currentStage}` : "No meaningful current stage",
+  })
+
+  if (!recallPass) {
+    missing.push("recall: current task or goal evidence")
+  }
+
+  // --- Continuation probe ---
+  // Tightened: only actionable next-step evidence passes
+  const hasNextStage = state ? isMeaningfulStage(state.nextStage) : false
+  const hasNextMinimalStep = hasMarkdown && sectionHasMeaningfulContent(markdown, "Next Minimal Step")
+
+  const continuationPass = hasNextMinimalStep || hasNextStage
+
+  checks.push({
+    name: "continuation_next_stage",
+    passed: hasNextStage,
+    reason: hasNextStage ? `Next stage: ${state!.nextStage}` : "No meaningful next stage",
+  })
+
+  checks.push({
+    name: "continuation_next_minimal_step",
+    passed: hasNextMinimalStep,
+    reason: hasNextMinimalStep ? "Next Minimal Step has meaningful content" : "Next Minimal Step is missing or placeholder",
+  })
+
+  // Diagnostic checks (do not affect continuation pass)
+  const hasBlocker = state ? Boolean(state.blocker && !isPlaceholder(state.blocker)) : false
+  const hasVerification = state ? Boolean(state.verification && !isPlaceholder(state.verification)) : false
+  const hasVerificationSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Verification")
+
+  checks.push({
+    name: "continuation_blocker",
+    passed: hasBlocker,
+    reason: hasBlocker ? `Blocker: ${state!.blocker}` : "No blocker information",
+  })
+
+  checks.push({
+    name: "continuation_verification",
+    passed: hasVerification || hasVerificationSection,
+    reason: (hasVerification || hasVerificationSection) ? "Verification evidence present" : "No verification information",
+  })
+
+  if (!continuationPass) {
+    missing.push("continuation: next minimal step or next stage evidence")
+  }
+
+  // --- Artifact probe ---
+  const hasActiveFiles = state ? hasMeaningfulArray(state.activeFiles) : false
+  const hasRecentlyAccessed = state ? hasMeaningfulArray(state.recentlyAccessedFiles) : false
+  const hasArtifacts = state ? hasMeaningfulRecord(state.artifacts) : false
+  const hasActiveFilesSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Active Files")
+  const hasRecentlyAccessedSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Recently Accessed Files")
+  const hasArtifactsSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Artifacts")
+
+  const artifactPass = hasActiveFiles || hasRecentlyAccessed || hasArtifacts
+    || hasActiveFilesSection || hasRecentlyAccessedSection || hasArtifactsSection
+
+  checks.push({
+    name: "artifact_active_files",
+    passed: hasActiveFiles || hasActiveFilesSection,
+    reason: (hasActiveFiles || hasActiveFilesSection) ? "Active files present" : "No active files",
+  })
+
+  if (!artifactPass) {
+    warnings.push("artifact: active files or artifacts are missing")
+  }
+
+  // --- Decision probe ---
+  const hasOpenDecisions = state ? hasMeaningfulArray(state.openDecisions) : false
+  const hasInvalidatedAssumptions = state ? hasMeaningfulArray(state.invalidatedAssumptions) : false
+  const hasOpenDecisionsSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Open Decisions")
+  const hasInvalidatedSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Invalidated Assumptions")
+  const hasCurrentTruthSection = hasMarkdown && sectionHasMeaningfulContent(markdown, "Current Truth")
+
+  const decisionPass = hasOpenDecisions || hasInvalidatedAssumptions || hasCurrentTruth
+    || hasOpenDecisionsSection || hasInvalidatedSection || hasCurrentTruthSection
+
+  checks.push({
+    name: "decision_open_decisions",
+    passed: hasOpenDecisions || hasOpenDecisionsSection,
+    reason: (hasOpenDecisions || hasOpenDecisionsSection) ? "Open decisions present" : "No open decisions",
+  })
+
+  if (!decisionPass) {
+    warnings.push("decision: decisions or invalidated assumptions are missing")
+  }
+
+  // --- ok derivation ---
+  const ok = recallPass && continuationPass
+
+  // --- recommended action ---
+  let recommendedAction: ContextHandoffRecommendedAction
+  if (!found) {
+    recommendedAction = "save_handoff"
+  } else if (!ok) {
+    recommendedAction = "fill_required_context"
+  } else {
+    recommendedAction = "continue"
+  }
+
+  return {
+    operation: "validate",
+    found,
+    ok,
+    path: handoffFile || undefined,
+    probes: {
+      recall: recallPass,
+      continuation: continuationPass,
+      artifact: artifactPass,
+      decision: decisionPass,
+    },
+    checks,
+    missing,
+    warnings,
+    recommendedAction,
+    currentStage: state?.currentStage,
+    nextStage: state?.nextStage,
+    contextHealth: state?.contextHealth,
+    updatedAt: state?.updatedAt,
   }
 }
 

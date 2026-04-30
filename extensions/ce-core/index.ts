@@ -310,6 +310,7 @@ const contextHandoffParams = Type.Object({
     Type.Literal("load"),
     Type.Literal("latest"),
     Type.Literal("status"),
+    Type.Literal("validate"),
   ], { description: "Handoff operation" }),
   repoRoot: Type.String({ description: "Repository root" }),
   currentStage: Type.Optional(Type.String({ description: "Current pipeline stage (e.g. 02-plan)" })),
@@ -751,7 +752,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: contextHandoff.name,
     label: "Context Handoff",
-    description: "Manage cross-stage context handoffs with evidence-first templates. Supports save (write handoff + state), load (read handoff + state), latest (read latest dated handoff), and status (read current state).",
+    description: "Manage cross-stage context handoffs with evidence-first templates. Supports save (write handoff + state), load (read handoff + state), latest (read latest dated handoff), status (read current state), and validate (check continuation readiness with deterministic probes).",
     parameters: contextHandoffParams,
     async execute(_toolCallId, params) {
       const result = await contextHandoff.execute({
