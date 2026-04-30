@@ -1,5 +1,5 @@
 /**
- * Parallel subagent tool — runs multiple skill-based subagent tasks concurrently.
+ * CE parallel subagent tool — runs multiple CE skill-based subagent tasks concurrently.
  *
  * Features:
  *   - Recursion depth guard (PI_SUBAGENT_DEPTH / PI_SUBAGENT_MAX_DEPTH)
@@ -40,7 +40,7 @@ function buildPrompt(agent: string, task: string): string {
 
 export function createParallelSubagentTool() {
   return {
-    name: "parallel_subagent",
+    name: "ce_parallel_subagent",
     async execute(input: ParallelSubagentInput, runner: SubagentRunner): Promise<ParallelSubagentResult> {
       // Recursion depth guard
       const depthCheck = checkSubagentDepth()
@@ -49,7 +49,7 @@ export function createParallelSubagentTool() {
       }
 
       if (!input.tasks || input.tasks.length === 0) {
-        throw new Error("parallel_subagent requires at least one task")
+        throw new Error("ce_parallel_subagent requires at least one task")
       }
 
       // Default: parallel workers get a slim context (no inherited skills)

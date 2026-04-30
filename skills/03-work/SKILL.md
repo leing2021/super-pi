@@ -20,11 +20,12 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 - Distinguish between a **plan path** input and a **bare prompt** input before doing work.
 - Prefer deriving execution tasks from plan **implementation units**.
 - Prefer inline execution for small or tightly scoped units.
-- Use **`parallel_subagent`** for independent units that can run concurrently.
-- Use **`subagent`** only for dependent serial chains that benefit from isolated context or specialized skill execution.
+- Use **`ce_parallel_subagent`** for independent CE skill-based units that can run concurrently.
+- Use **`ce_subagent`** only for dependent serial chains that benefit from isolated context or specialized CE skill execution.
+- Note: the generic `subagent` / `parallel_subagent` tool names are reserved for third-party agent extensions (e.g. `pi-subagents`); CE skill-router uses the `ce_`-prefixed names to avoid tool-name conflicts.
 - Use **`session_checkpoint`** to track plan execution progress. On start, load the checkpoint and skip completed units. After each unit, save the checkpoint.
 - On execution failure, use `session_checkpoint` `fail` to record the error, then `retry` to get a retry strategy. Follow the suggested strategy to recover.
-- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `parallel_subagent` and dependent units serially.
+- Use **`task_splitter`** to analyze implementation units for file-level dependencies before execution. Run independent units via `ce_parallel_subagent` and dependent units serially.
 - If inside a **worktree** (created via `07-worktree`), execute within it. Otherwise, consider recommending `07-worktree` for isolation.
 - End by recommending `04-review`.
 
@@ -50,7 +51,7 @@ Every execution step must follow **RED → GREEN → REFACTOR**:
 3. If it is a bare prompt, do a small scope scan before deciding whether to proceed.
 4. Use `session_checkpoint` to load progress and skip completed units.
 5. Use `task_splitter` to identify parallel-safe vs dependent units.
-6. Execute in inline mode by default; use `parallel_subagent` for independent units and `subagent` only for valuable dependent serial chains.
+6. Execute in inline mode by default; use `ce_parallel_subagent` for independent CE skill units and `ce_subagent` only for valuable dependent serial chains.
 7. For each unit, follow strict TDD:
    a. Run the RED test and confirm expected failure.
    b. Apply minimal implementation.

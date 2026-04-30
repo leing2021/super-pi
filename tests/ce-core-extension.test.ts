@@ -190,6 +190,11 @@ describe("ask_user_question", () => {
 })
 
 describe("subagent", () => {
+  test("tool is named ce_subagent", () => {
+    const tool = createSubagentTool()
+    expect(tool.name).toBe("ce_subagent")
+  })
+
   test("runs a single subagent task", async () => {
     const calls: string[] = []
     const tool = createSubagentTool()
@@ -541,6 +546,11 @@ describe("review_router", () => {
 })
 
 describe("parallel_subagent", () => {
+  test("tool is named ce_parallel_subagent", () => {
+    const tool = createParallelSubagentTool()
+    expect(tool.name).toBe("ce_parallel_subagent")
+  })
+
   test("runs multiple tasks concurrently and returns all outputs", async () => {
     const calls: string[] = []
     const tool = createParallelSubagentTool()
@@ -1719,11 +1729,11 @@ describe("ce-core extension runtime registration", () => {
     expect(registeredNames).toEqual([
       "artifact_helper",
       "ask_user_question",
-      "subagent",
+      "ce_subagent",
       "workflow_state",
       "worktree_manager",
       "review_router",
-      "parallel_subagent",
+      "ce_parallel_subagent",
       "session_checkpoint",
       "task_splitter",
       "brainstorm_dialog",
@@ -1732,6 +1742,22 @@ describe("ce-core extension runtime registration", () => {
       "pattern_extractor",
       "context_handoff",
     ])
+  })
+
+  test("registers no bare subagent or parallel_subagent", () => {
+    const registeredNames: string[] = []
+    const pi = {
+      registerTool(definition: { name: string }) {
+        registeredNames.push(definition.name)
+      },
+      on(_event: string, _handler: any) {},
+      registerCommand(_name: string, _def: any) {},
+    }
+
+    ceCoreExtension(pi as never)
+
+    expect(registeredNames).not.toContain("subagent")
+    expect(registeredNames).not.toContain("parallel_subagent")
   })
 
   test("brainstorm_dialog does not terminate the agent turn", async () => {

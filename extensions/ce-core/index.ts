@@ -447,8 +447,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
   pi.registerTool({
     name: subagent.name,
-    label: "Subagent",
-    description: "Run a single skill-based subagent or a serial chain in an isolated Pi process.",
+    label: "CE Subagent",
+    description: "Run a single CE skill-based subagent or a serial chain in an isolated Pi process.",
     parameters: subagentParams,
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const result = await subagent.execute(
@@ -541,8 +541,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
   pi.registerTool({
     name: parallelSubagent.name,
-    label: "Parallel Subagent",
-    description: "Run multiple skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
+    label: "CE Parallel Subagent",
+    description: "Run multiple CE skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
     parameters: parallelSubagentParams,
     async execute(_toolCallId, params, signal) {
       let tasks: any[]

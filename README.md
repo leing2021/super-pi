@@ -91,7 +91,7 @@ Breaks requirements into implementation units, each following strict **RED → G
 
 ### 03-work: Build Right
 
-**Parallel execution**: `task_splitter` uses a Union-Find algorithm to analyze file dependencies, feeds conflict-free units to `parallel_subagent` for concurrent execution.
+**Parallel execution**: `task_splitter` uses a Union-Find algorithm to analyze file dependencies, feeds conflict-free units to `ce_parallel_subagent` for concurrent execution.
 
 **Checkpoint resume**: After each unit, a checkpoint is saved. Interrupted? Next startup auto-loads, skips completed work, continues from the breakpoint. Failed? `fail` records the error → `retry` suggests a recovery strategy (timeout? extend timeout. Permission issue? check permissions first. Code error? fix then retry).
 
@@ -121,7 +121,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 |-------|-----------|-----------|
 | `01-brainstorm` | Deep requirements mining in three modes | `brainstorm_dialog` |
 | `02-plan` | Break into units, TDD gates, incremental updates | `plan_diff` |
-| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
+| `03-work` | Parallel execution, checkpoint resume, error recovery | `session_checkpoint`, `task_splitter`, `ce_parallel_subagent` |
 | `04-review` | Persona-routed review + live browser testing | `review_router` |
 | `05-learn` | Pattern extraction → knowledge card compounding | `pattern_extractor` |
 | `06-next` | What to do next + full status report | `workflow_state`, `session_history` |
@@ -136,7 +136,7 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `task_splitter` | Union-Find algorithm analyzes file dependencies, auto-groups parallel-safe units |
 | `session_checkpoint` | JSON-persisted checkpoints with save/load/fail/retry operations |
 | `plan_diff` | Incremental plans: compare detects diffs, patch applies changes |
-| `parallel_subagent` | `Promise.allSettled`-style parallel subagent execution with context slimming |
+| `ce_parallel_subagent` | `Promise.allSettled`-style CE parallel skill-based subagent execution with context slimming |
 | `review_router` | Auto-assign reviewer personas from diff metadata |
 | `pattern_extractor` | Extract and categorize patterns from artifacts |
 | `brainstorm_dialog` | Multi-round dialog state machine (start → refine × N → summarize) |
@@ -145,10 +145,19 @@ Next time `02-plan` or `04-review` runs, a grep-first search strategy automatica
 | `worktree_manager` | Full git worktree lifecycle management |
 | `artifact_helper` | Artifact path resolution and directory creation |
 | `ask_user_question` | Structured user prompts (choices / free input) |
-| `subagent` | Serial subagent chain with depth guard and context control |
+| `ce_subagent` | CE serial skill-based subagent chain with depth guard and context control |
 | `context_handoff` | Cross-stage context handoffs with evidence-first templates (save/load/latest/status) |
 | `subagent-depth-guard` | Helper: env-based recursion depth tracking (prevents runaway nesting) |
 | `async-mutex` | Helper: serializes `process.env` mutation for concurrency-safe child process spawning |
+
+### Compatibility with pi-subagents
+
+super-pi's CE skill-router tools use a dedicated namespace to avoid runtime tool-name conflicts:
+
+- **CE tools**: `ce_subagent` and `ce_parallel_subagent` — for CE pipeline skill execution
+- **Generic `subagent`**: reserved for third-party agent extensions like [pi-subagents](https://www.npmjs.com/package/pi-subagents)
+
+Both extensions can be installed simultaneously without tool collision. super-pi manages the CE pipeline (brainstorm → plan → work → review → learn); pi-subagents provides general-purpose multi-agent execution. No configuration needed — install both and each keeps its own tool namespace.
 
 ---
 

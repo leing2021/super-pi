@@ -1,5 +1,5 @@
 /**
- * Subagent tool — runs a single skill-based subagent or a serial chain.
+ * CE subagent tool — runs a single CE skill-based subagent or a serial chain.
  *
  * Features:
  *   - Recursion depth guard (PI_SUBAGENT_DEPTH / PI_SUBAGENT_MAX_DEPTH)
@@ -43,7 +43,7 @@ export type SubagentRunner = (
 
 export function createSubagentTool() {
   return {
-    name: "subagent",
+    name: "ce_subagent",
     async execute(input: SubagentInput, runner: SubagentRunner): Promise<SubagentResult> {
       // Recursion depth guard
       const depthCheck = checkSubagentDepth()

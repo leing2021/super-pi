@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.23.0 — CE 扩展工具命名空间隔离，兼容第三方扩展
+- 将 `ce-core` 的 subagent 工具从 `subagent`/`parallel_subagent` 重命名为 `ce_subagent`/`ce_parallel_subagent`，避免与第三方扩展（如 `pi-subagents`）发生运行时工具名冲突。
+- 同步更新 `03-work` skill 文档和 `README.md`/`README_CN.md` 中的工具名称引用。
+- 新增 TDD 测试，验证工具名正确且 runtime registration guard 有效（不注册裸 `subagent`/`parallel_subagent`）。
+- README 新增兼容性说明，明确 `ce_subagent`/`ce_parallel_subagent` 与通用 `pi-subagents` 可共存。
+- 新增 `05-learn` solution artifact，记录三种扩展工具重叠处理方案： delegation、source integration、namespace isolation。
+- 修复 `ce_parallel_subagent` 用户可见错误消息中的工具名。
+
 ### Unreleased — 工作流简化与规则加载清理
 - 将 `08-status` 合并进 `06-next`；`06-next` 现在同时支持下一步推荐和 verbose 完整状态报告。
 - 移除独立的 `10-rules`；`02-plan`、`03-work`、`04-review` 现在直接加载项目规则，并共享 `skills/references/language-detection.md`。

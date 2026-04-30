@@ -91,7 +91,7 @@ Super Pi 的解法:
 
 ### 03-work:写代码
 
-**并行执行**:`task_splitter` 用 Union-Find 算法分析文件依赖,把不冲突的 unit 扔给 `parallel_subagent` 并行跑。
+**并行执行**:`task_splitter` 用 Union-Find 算法分析文件依赖,把不冲突的 unit 扔给 `ce_parallel_subagent` 并行跑。
 
 **断点续传**:每个 unit 完成后自动存 checkpoint。中断了?下次启动自动加载,跳过已完成的,从断点继续。失败了?`fail` 记录错误 → `retry` 给出恢复策略(超时?加长超时。权限问题?先查权限。代码错误?先修再试)。
 
@@ -121,7 +121,7 @@ Super Pi 的解法:
 |-------|--------|----------|
 | `01-brainstorm` | 三种模式的深度需求挖掘 | `brainstorm_dialog` |
 | `02-plan` | 拆 unit、TDD 门控、增量更新 | `plan_diff` |
-| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `parallel_subagent` |
+| `03-work` | 并行执行、断点续传、错误恢复 | `session_checkpoint`, `task_splitter`, `ce_parallel_subagent` |
 | `04-review` | 角色路由审查 + 浏览器真机测试 | `review_router` |
 | `05-learn` | 模式提取 → 知识卡片沉淀 | `pattern_extractor` |
 | `06-next` | 下一步推荐 + 完整状态报告 | `workflow_state`, `session_history` |
@@ -136,7 +136,7 @@ Super Pi 的解法:
 | `task_splitter` | Union-Find 算法分析文件依赖,自动分组并行安全的 unit |
 | `session_checkpoint` | JSON 持久化断点,支持 save/load/fail/retry 五种操作 |
 | `plan_diff` | 增量计划:compare 检测差异,patch 打补丁 |
-| `parallel_subagent` | `Promise.allSettled` 风格并行 subagent,支持上下文裁剪 |
+| `ce_parallel_subagent` | `Promise.allSettled` 风格 CE 并行 skill-based subagent,支持上下文裁剪 |
 | `review_router` | 根据 diff 元数据自动分配 reviewer 角色 |
 | `pattern_extractor` | 从 artifact 中提取和分类模式 |
 | `brainstorm_dialog` | 多轮对话状态机(start → refine × N → summarize) |
@@ -145,10 +145,19 @@ Super Pi 的解法:
 | `worktree_manager` | Git worktree 全生命周期管理 |
 | `artifact_helper` | Artifact 路径解析和目录创建 |
 | `ask_user_question` | 结构化用户提问(选项 / 自由输入) |
-| `subagent` | 串行 subagent 链,带深度守卫和上下文控制 |
+| `ce_subagent` | CE 串行 skill-based subagent 链,带深度守卫和上下文控制 |
 | `context_handoff` | 跨阶段上下文交接,提供证据优先模板(save/load/latest/status) |
 | `subagent-depth-guard` | Helper:基于 env 的递归深度追踪(防止失控嵌套) |
 | `async-mutex` | Helper:序列化 `process.env` 变更,保障并发安全 |
+
+### 与 pi-subagents 的兼容性
+
+super-pi 的 CE skill-router 工具使用专用命名空间,避免运行时工具名冲突:
+
+- **CE 工具**:`ce_subagent` 和 `ce_parallel_subagent` — 用于 CE pipeline 技能执行
+- **通用 `subagent`**:保留给第三方 agent 扩展,如 [pi-subagents](https://www.npmjs.com/package/pi-subagents)
+
+两个扩展可以同时安装,不会发生工具名碰撞。super-pi 管理 CE pipeline(头脑风暴→规划→构建→审查→学习);pi-subagents 提供通用多 agent 执行能力。无需额外配置 — 安装即可,各自保持独立的工具命名空间。
 
 ---
 

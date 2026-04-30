@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.23.0 — CE extension tool namespace isolation for third-party compatibility
+- Renamed `ce-core` subagent tools from `subagent`/`parallel_subagent` to `ce_subagent`/`ce_parallel_subagent` to avoid runtime tool-name conflicts with third-party extensions like `pi-subagents`.
+- Updated `03-work` skill documentation and `README.md`/`README_CN.md` to reference the new `ce_`-prefixed tool names.
+- Added TDD tests confirming tool names and runtime registration guard (no bare `subagent`/`parallel_subagent`).
+- Added README compatibility section documenting coexistence of `ce_subagent`/`ce_parallel_subagent` with generic `pi-subagents`.
+- Added `05-learn` solution artifact documenting the three approaches to extension tool overlap: delegation, source integration, and namespace isolation.
+- Fixed user-facing error message in `ce_parallel_subagent` to use the correct tool name.
+
 ### Unreleased — Workflow simplification and rule loading cleanup
 - Merged `08-status` into `06-next`; `06-next` now supports both next-step recommendations and verbose full status reports.
 - Removed standalone `10-rules`; `02-plan`, `03-work`, and `04-review` now load project rules directly and share `skills/references/language-detection.md`.
