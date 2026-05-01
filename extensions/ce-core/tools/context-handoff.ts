@@ -37,6 +37,7 @@ export interface ContextHandoffInput {
   openDecisions?: string[]
   recentlyAccessedFiles?: string[]
   compressionRisk?: string[]
+  activeRules?: string[]
 }
 
 export interface ContextStateEntry {
@@ -54,6 +55,7 @@ export interface ContextStateEntry {
   openDecisions: string[]
   recentlyAccessedFiles: string[]
   compressionRisk: string[]
+  activeRules: string[]
   recommendNewSession: boolean
   updatedAt: string
 }
@@ -77,6 +79,7 @@ export interface ContextHandoffResult {
   openDecisions?: string[]
   recentlyAccessedFiles?: string[]
   compressionRisk?: string[]
+  activeRules?: string[]
   updatedAt?: string
   // Validation fields
   ok?: boolean
@@ -154,6 +157,7 @@ function buildDefaultHandoffMarkdown(input: {
   openDecisions: string[]
   recentlyAccessedFiles: string[]
   compressionRisk: string[]
+  activeRules: string[]
 }): string {
   const currentTask = input.nextStage
     ? `Continue from ${input.currentStage} to ${input.nextStage}.`
@@ -193,6 +197,9 @@ function buildDefaultHandoffMarkdown(input: {
     "",
     "## Active Files",
     activeFiles,
+    "",
+    "## Active Rules",
+    formatBullets(input.activeRules),
     "",
     "## Recently Accessed Files",
     formatBullets(input.recentlyAccessedFiles),
@@ -245,6 +252,7 @@ function normalizeStateEntry(raw: unknown): ContextStateEntry | null {
       ? toStringArray(state.recentlyAccessedFiles)
       : activeFiles.slice(0, 5),
     compressionRisk: toStringArray(state.compressionRisk),
+    activeRules: toStringArray(state.activeRules),
     recommendNewSession: typeof state.recommendNewSession === "boolean" ? state.recommendNewSession : false,
     updatedAt: typeof state.updatedAt === "string" ? state.updatedAt : new Date(0).toISOString(),
   }
@@ -314,6 +322,7 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     ? input.recentlyAccessedFiles
     : activeFiles.slice(0, 5)
   const compressionRisk = input.compressionRisk ?? []
+  const activeRules = input.activeRules ?? []
 
   const handoffMarkdown = input.handoffMarkdown?.trim().length
     ? input.handoffMarkdown
@@ -329,6 +338,7 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
       openDecisions,
       recentlyAccessedFiles,
       compressionRisk,
+      activeRules,
     })
 
   const recommendNewSession = computeRecommendNewSession(currentStage, nextStage, contextHealth)
@@ -356,6 +366,7 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     openDecisions,
     recentlyAccessedFiles,
     compressionRisk,
+    activeRules,
     recommendNewSession,
     updatedAt: new Date().toISOString(),
   }
@@ -379,6 +390,7 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     openDecisions,
     recentlyAccessedFiles,
     compressionRisk,
+    activeRules,
     recommendNewSession,
     updatedAt: state.updatedAt,
   }
@@ -419,6 +431,7 @@ async function load(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     openDecisions: state.openDecisions,
     recentlyAccessedFiles: state.recentlyAccessedFiles,
     compressionRisk: state.compressionRisk,
+    activeRules: state.activeRules,
     recommendNewSession: state.recommendNewSession,
     handoffMarkdown: markdown,
     updatedAt: state.updatedAt,
@@ -453,6 +466,7 @@ async function latest(input: ContextHandoffInput): Promise<ContextHandoffResult>
     openDecisions: state.openDecisions,
     recentlyAccessedFiles: state.recentlyAccessedFiles,
     compressionRisk: state.compressionRisk,
+    activeRules: state.activeRules,
     recommendNewSession: state.recommendNewSession,
     updatedAt: state.updatedAt,
   }
@@ -755,6 +769,7 @@ async function status(input: ContextHandoffInput): Promise<ContextHandoffResult>
     openDecisions: state.openDecisions,
     recentlyAccessedFiles: state.recentlyAccessedFiles,
     compressionRisk: state.compressionRisk,
+    activeRules: state.activeRules,
     recommendNewSession: state.recommendNewSession,
     updatedAt: state.updatedAt,
   }

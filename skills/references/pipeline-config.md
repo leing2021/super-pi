@@ -18,7 +18,34 @@ Supported `modelStrategy` formats in `.pi/settings.json`:
 - Full reference: `"02-plan": "anthropic/claude-opus-4-1"`
 - Bare model id (reuses current provider): `"02-plan": "claude-opus-4-1"`
 
-## End of skill: status + context
+## Start of skill: context loading
+
+Before reading any project files or running repository-wide scans, load the most recent handoff:
+
+1. Try `context_handoff load` or `context_handoff latest` first.
+2. Fallback: `read .context/compound-engineering/handoffs/latest.md` if tool is unavailable.
+3. **Handoff found?** Consume its `activeFiles`, `blocker`, `verification`, `currentTruth`, `activeRules` before any broad project reads.
+4. **No handoff?** Proceed normally — this is a new project or first run. Do not block.
+
+Core principle: **consume handoff before broad project file reads** — a single handoff read (~500 tokens) avoids 5-10 project file scans (~5K-10K tokens).
+
+## End of skill: save handoff + status + context
+
+Every Phase 1 skill (02-plan through 05-learn) must save context handoff at completion:
+
+```
+context_handoff save
+  currentStage: <stageKey>
+  nextStage: <next stage>
+  contextHealth: good | watch | heavy | critical
+  activeFiles: [1-5 currently active paths]
+  blocker: <blocker or N/A>
+  verification: <latest command + result>
+  activeRules: [1-5 rules critical for continuation]
+  currentTruth: [validated truths]
+```
+
+If `context_handoff` is unavailable, manually write the Handoff-lite template to `.context/compound-engineering/handoffs/latest.md`.
 
 Before final completion, always output these blocks (replace placeholders with real values, never output angle-bracket placeholders literally):
 

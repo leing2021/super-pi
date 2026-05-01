@@ -39,13 +39,14 @@ Every unit follows **RED → GREEN → REFACTOR**:
 
 ## Planning flow
 
-1. Read relevant brainstorm from `docs/brainstorms/`
-2. Run solution search (keywords → grep frontmatter → read top 3)
-3. Gather repository context
-4. If plan exists: use `plan_diff` `compare` → review with user → `patch`
-5. If no plan: write new plan under `docs/plans/` using `references/plan-template.md`
-6. Structure work using `references/implementation-unit-template.md`
-7. Verify every unit follows TDD gates
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles` and `blocker` as starting point. If not found, proceed normally (new project).
+2. Read relevant brainstorm from `docs/brainstorms/`
+3. Run solution search (keywords → grep frontmatter → read top 3)
+4. Gather repository context
+5. If plan exists: use `plan_diff` `compare` → review with user → `patch`
+6. If no plan: write new plan under `docs/plans/` using `references/plan-template.md`
+7. Structure work using `references/implementation-unit-template.md`
+8. Verify every unit follows TDD gates
 
 ## Optional: CEO Review
 

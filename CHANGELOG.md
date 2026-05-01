@@ -1,5 +1,16 @@
 # Changelog
 
+### 0.23.4 — Memory Optimization Phase 2: activeRules, context-first skills, handoff lifecycle
+- Added `activeRules?: string[]` field to `context_handoff` for preserving 1-5 continuation-critical rules across sessions.
+- `activeRules` persisted in state, returned by load/latest/status, rendered in default handoff template.
+- Backward compatible: old state files without `activeRules` normalize to `[]`.
+- Soft constraint: >5 rules allowed without failure.
+- Updated `pipeline-config.md` with "Start of skill: context loading" guidance (handoff-first before broad reads) and "End of skill: save handoff" lifecycle.
+- Updated `02-plan`, `03-work`, `04-review` SKILL.md to load handoff as workflow step 1.
+- Rewrote `06-next` recommendation logic with context-first priority chain: health → blocker → recommendNewSession → nextStage → mismatch → artifact-count fallback.
+- 6 new tests for activeRules (round-trip, template, default, soft constraint, backward compat, custom markdown).
+- 209 tests passing, 0 regressions.
+
 ### 0.23.3 — Context handoff deterministic validation probes (Route B-lite)
 - Added `context_handoff` `operation: "validate"` for deterministic continuation-readiness validation.
 - 4 probes: `recall`, `continuation`, `artifact`, `decision`.

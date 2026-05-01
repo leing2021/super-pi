@@ -1,5 +1,16 @@
 # 更新日志
 
+### 0.23.4 — 记忆优化 Phase 2：activeRules、context-first 技能、handoff 生命周期
+- `context_handoff` 新增 `activeRules?: string[]` 字段，用于跨 session 保存 1-5 条续接关键规则。
+- `activeRules` 持久化到 state，通过 load/latest/status 返回，在默认 handoff 模板中渲染。
+- 向后兼容：旧 state 文件缺少 `activeRules` 时归一化为 `[]`。
+- 软约束：>5 条规则不会导致失败。
+- 更新 `pipeline-config.md`，增加「启动时加载 context」指引（handoff 优先于广泛读取）和「结束时保存 handoff」生命周期。
+- 更新 `02-plan`、`03-work`、`04-review` SKILL.md，将加载 handoff 作为工作流第一步。
+- 重写 `06-next` 推荐逻辑，采用 context-first 优先级链：health → blocker → recommendNewSession → nextStage → mismatch → artifact-count 回退。
+- 6 个新测试覆盖 activeRules（round-trip、模板、默认值、软约束、向后兼容、自定义 markdown）。
+- 209 测试通过，0 回归。
+
 ### 0.23.3 — Context handoff 确定性验证探针（Route B-lite）
 - `context_handoff` 新增 `operation: "validate"`，用于确定性续接就绪性验证。
 - 4 个探针：`recall`、`continuation`、`artifact`、`decision`。

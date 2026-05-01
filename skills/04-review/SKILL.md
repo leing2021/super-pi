@@ -46,14 +46,15 @@ Code review is **technical evaluation**, not social performance:
 
 ## Workflow
 
-1. Determine diff scope from branch or explicit target
-2. Collect stats (files, insertions, deletions) → call `review_router`
-3. Read matching plan artifact
-4. Run solution search
-5. Apply each reviewer persona from `review_router`
-6. Merge into structured findings
-7. Verify each finding against codebase
-8. Apply autofixes, re-run tests, re-review if needed
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally.
+2. Determine diff scope from branch or explicit target
+3. Collect stats (files, insertions, deletions) → call `review_router`
+4. Read matching plan artifact
+5. Run solution search
+6. Apply each reviewer persona from `review_router`
+7. Merge into structured findings
+8. Verify each finding against codebase
+9. Apply autofixes, re-run tests, re-review if needed
 
 ## Optional: QA Test Mode
 

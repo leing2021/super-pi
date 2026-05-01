@@ -332,6 +332,7 @@ const contextHandoffParams = Type.Object({
   openDecisions: Type.Optional(Type.Array(Type.String(), { description: "Pending decisions that affect next steps" })),
   recentlyAccessedFiles: Type.Optional(Type.Array(Type.String(), { description: "Files recently read or edited (defaults to activeFiles)" })),
   compressionRisk: Type.Optional(Type.Array(Type.String(), { description: "Context compression risks to watch for" })),
+  activeRules: Type.Optional(Type.Array(Type.String(), { description: "1-5 must-know rules for continuation (TDD gates, constraints, do-not-repeat)" })),
 })
 
 const patternExtractorParams = Type.Object({
@@ -772,6 +773,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         openDecisions: params.openDecisions,
         recentlyAccessedFiles: params.recentlyAccessedFiles,
         compressionRisk: params.compressionRisk,
+        activeRules: params.activeRules,
       })
 
       return {

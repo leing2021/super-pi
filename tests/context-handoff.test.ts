@@ -423,6 +423,167 @@ describe("context_handoff", () => {
     expect(statusResult.recentlyAccessedFiles).toEqual(["docs/legacy.md"])
   })
 
+  // --- Unit 1: activeRules field ---
+
+  test("save/load/latest/status round-trip activeRules", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const saveResult = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      nextStage: "04-review",
+      activeRules: ["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"],
+    })
+
+    expect(saveResult.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"])
+
+    // Persisted state contains activeRules
+    const statePath = path.join(repoRoot, ".context", "compound-engineering", "context-state.json")
+    const state = JSON.parse(readFileSync(statePath, "utf8"))
+    expect(state.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"])
+
+    // load returns activeRules
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"])
+
+    // latest returns activeRules
+    const latestResult = await tool.execute({ operation: "latest", repoRoot })
+    expect(latestResult.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"])
+
+    // status returns activeRules
+    const statusResult = await tool.execute({ operation: "status", repoRoot })
+    expect(statusResult.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR", "No business logic changes"])
+  })
+
+  test("activeRules renders in default template", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-template-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      activeRules: ["TDD gate: RED→GREEN→REFACTOR", "Keep changes test-only"],
+    })
+
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+
+    expect(savedText).toContain("## Active Rules")
+    expect(savedText).toContain("- TDD gate: RED→GREEN→REFACTOR")
+    expect(savedText).toContain("- Keep changes test-only")
+  })
+
+  test("activeRules defaults to empty array when omitted", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-default-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+    })
+
+    expect(result.activeRules).toEqual([])
+
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+    expect(savedText).toContain("## Active Rules")
+    expect(savedText).toContain("- N/A")
+  })
+
+  test("activeRules >5 is allowed (soft constraint) and round-trips correctly", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-soft-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const manyRules = [
+      "TDD gate: RED→GREEN→REFACTOR",
+      "No business logic changes",
+      "Keep changes test-only",
+      "Preserve existing API contracts",
+      "Run full test suite before committing",
+      "Do not change file naming conventions",
+      "Follow TypeScript strict mode",
+    ]
+
+    const saveResult = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      activeRules: manyRules,
+    })
+
+    expect(saveResult.activeRules).toEqual(manyRules)
+    expect(saveResult.activeRules!.length).toBe(7)
+
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.activeRules).toEqual(manyRules)
+  })
+
+  test("backward compatibility: old state without activeRules loads with empty array", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-compat-${Date.now()}`
+    const tool = createContextHandoffTool()
+    const handoffDir = path.join(repoRoot, ".context", "compound-engineering", "handoffs")
+    mkdirSync(handoffDir, { recursive: true })
+    writeFileSync(path.join(handoffDir, "latest.md"), "## Legacy\n", "utf8")
+    writeFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "context-state.json"),
+      JSON.stringify({
+        currentStage: "02-plan",
+        nextStage: "03-work",
+        contextHealth: "watch",
+        latestHandoffPath: ".context/compound-engineering/handoffs/latest.md",
+        activeFiles: ["docs/legacy.md"],
+        artifacts: {},
+        recommendNewSession: false,
+        updatedAt: "2026-04-30T00:00:00.000Z",
+      }),
+      "utf8",
+    )
+
+    const loadResult = await tool.execute({ operation: "load", repoRoot })
+    expect(loadResult.found).toBe(true)
+    expect(loadResult.activeRules).toEqual([])
+    expect(loadResult.currentStage).toBe("02-plan") // other fields still work
+
+    const statusResult = await tool.execute({ operation: "status", repoRoot })
+    expect(statusResult.activeRules).toEqual([])
+  })
+
+  test("activeRules persists in state even with custom handoffMarkdown", async () => {
+    const repoRoot = `/tmp/pi-ce-handoff-activeRules-custom-md-${Date.now()}`
+    const tool = createContextHandoffTool()
+
+    const result = await tool.execute({
+      operation: "save",
+      repoRoot,
+      currentStage: "03-work",
+      activeRules: ["TDD gate: RED→GREEN→REFACTOR"],
+      handoffMarkdown: "## Custom\nMy custom markdown\n",
+    })
+
+    // activeRules still returned
+    expect(result.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR"])
+
+    // Persisted in state
+    const statePath = path.join(repoRoot, ".context", "compound-engineering", "context-state.json")
+    const state = JSON.parse(readFileSync(statePath, "utf8"))
+    expect(state.activeRules).toEqual(["TDD gate: RED→GREEN→REFACTOR"])
+
+    // Custom markdown preserved (not default template)
+    const savedText = readFileSync(
+      path.join(repoRoot, ".context", "compound-engineering", "handoffs", "latest.md"),
+      "utf8",
+    )
+    expect(savedText).toBe("## Custom\nMy custom markdown\n")
+  })
+
   test("phase docs require shared evidence-first handoff-lite template", () => {
     const pipelineConfig = readRepoFile("skills/references/pipeline-config.md")
     expect(pipelineConfig).toContain("### Handoff-lite template")

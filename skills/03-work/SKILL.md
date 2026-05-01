@@ -41,16 +41,18 @@ Every step follows **RED → GREEN → REFACTOR**:
 
 ## Workflow
 
-1. Detect input type (plan path vs bare prompt)
-2. Read implementation units if plan path
-3. Load `session_checkpoint` to skip completed units
-4. Use `task_splitter` for dependency analysis
-5. Execute: **inline mode** by default, `ce_parallel_subagent` for independent units
-6. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
-7. Record progress via `references/progress-update-format.md`
-8. Save `session_checkpoint` after each unit
-9. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
-10. Provide completion report (see `references/completion-report.md`)
-11. Handoff to `04-review` using `references/handoff.md`
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point. If not found, proceed normally.
+2. Detect input type (plan path vs bare prompt)
+3. Read implementation units if plan path
+4. Load `session_checkpoint` to skip completed units
+5. Use `task_splitter` for dependency analysis
+6. Execute: **inline mode** by default, `ce_parallel_subagent` for independent units
+7. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
+8. Record progress via `references/progress-update-format.md`
+9. Save `session_checkpoint` after each unit
+10. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
+11. Provide completion report (see `references/completion-report.md`)
+12. **Save handoff**: `context_handoff save` with current stage, next stage, activeFiles, blocker, verification, activeRules
+13. Handoff to `04-review` using `references/handoff.md`
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).
