@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.23.8 — 收窄 CE subagent 的主流程阶段委托
+- `ce_subagent` 现在会拒绝调用主流程 stage skill（`01-brainstorm` 到 `05-learn`），并提示直接使用 `/skill:<stage>` 执行。
+- `ce_parallel_subagent` 在启动并行任务前应用同样 guard。
+- `03-work` 现在明确为 inline 优先，CE subagents 仅用于有明确边界、无需交互、容易验证的叶子任务。
+- README 和 README_CN 明确 Super Pi 是 Pi-native 工程 workflow 层，不是通用 multi-agent 执行器。
+- 212 个测试通过，0 回归。
+
 ### 0.23.5 — Agent-skills 微模式吸收：嵌入式行为门禁、技能路由、仓库整理
 - **Skill 描述强化** — 8 个技能的 frontmatter description 均加入 "Use when" 触发条件，提升自动技能路由准确性。
 - **Source-driven 门禁** — 嵌入 3 处：`rules/common/development-workflow.md`（规则）+ `02-plan` workflow step + `03-work` workflow step。当实现依赖框架/库 API 或版本特定行为时，先查官方文档再实现。

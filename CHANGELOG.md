@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.23.8 — constrain CE subagent pipeline-stage delegation
+- `ce_subagent` now rejects pipeline-stage skills (`01-brainstorm` through `05-learn`) and tells users to run those stages directly with `/skill:<stage>`.
+- `ce_parallel_subagent` applies the same guard before spawning parallel tasks.
+- `03-work` is now documented as inline-first, with CE subagents scoped to bounded, non-interactive, easily verifiable leaf tasks.
+- README and README_CN clarify that Super Pi is a Pi-native engineering workflow layer, not a general-purpose multi-agent executor.
+- 212 tests passing, 0 regressions.
+
 ### 0.23.7 — ask_user_question: default allowCustom to true
 - `ask_user_question` now defaults `allowCustom` to `true` when `options` are provided, automatically appending an "Other" option that lets users enter custom text.
 - Existing callers can opt out by explicitly setting `allowCustom: false`.
