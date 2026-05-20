@@ -80,6 +80,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 |------|--------------------------|
 | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | “Use when” 技能触发条件、source-driven verification、stop-the-line hard gate、anti-rationalization、五轴 review baseline。仅作为嵌入式微模式吸收，不新增 skills/tools/commands/agents。 |
 | [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | 并行 subagent 编排、checkpoint 断点续传、持续学习循环、token-conscious agent workflow 设计。 |
+| [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents) | context window ownership、压缩已解决错误、限制重复重试、预取明显前置数据。作为轻量上下文卫生规则吸收到现有 Phase 1 pipeline 中。 |
 | [superpowers](https://github.com/obra/superpowers) | 严格 TDD gates、设计检查清单、review discipline，以及“agent 需要硬门禁而不是温和建议”的理念。 |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | think → plan → build → review → learn 五步循环，以及 knowledge compounding 的骨架。 |
 | [gstack](https://github.com/garrytan/gstack) | YC 式 forcing questions、CEO Review 认知框架、Browser QA 模式、failure maps、evidence-first validation。 |

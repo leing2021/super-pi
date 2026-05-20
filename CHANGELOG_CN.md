@@ -1,8 +1,10 @@
 # 更新日志
 
-### Unreleased — 上下文卫生规则
+### 0.23.9 — 上下文卫生规则
 - 新增 Phase 1 共享上下文卫生指引：压缩已解决错误、预取明显前置数据、限制重复失败重试、保存 handoff 前裁剪无关内容。
 - 新增 `03-work` 恢复后处理规则：用 `ERROR(resolved): <root cause>` 替代已解决 stop-the-line 完整 trace，并在同一工具、命令或 unit 连续失败 3 次后停止重试。
+- 在 Design Philosophy & Acknowledgements / 设计哲学与致谢中加入 `humanlayer/12-factor-agents`，作为上下文卫生规则的灵感来源。
+- 升级 package 版本到 `0.23.9`，便于 npm 发布和本地升级识别。
 - 212 个测试通过，0 回归。
 
 ### 0.23.8 — 收窄 CE subagent 的主流程阶段委托

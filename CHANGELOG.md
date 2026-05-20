@@ -1,8 +1,10 @@
 # Changelog
 
-### Unreleased — context hygiene rules
+### 0.23.9 — context hygiene rules
 - Added shared Phase 1 context hygiene guidance for compacting resolved errors, fetching obvious prerequisites, capping repeated failures, and pruning handoffs before save.
 - Added `03-work` recovery guidance to replace resolved stop-the-line traces with `ERROR(resolved): <root cause>` and stop after 3 repeated failures on the same tool, command, or unit.
+- Added `humanlayer/12-factor-agents` to Design Philosophy & Acknowledgements as the inspiration source for context hygiene.
+- Bumped package version to `0.23.9` for npm publishing and local upgrade detection.
 - 212 tests passing, 0 regressions.
 
 ### 0.23.8 — constrain CE subagent pipeline-stage delegation
