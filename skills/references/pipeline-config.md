@@ -29,6 +29,15 @@ Before reading any project files or running repository-wide scans, load the most
 
 Core principle: **consume handoff before broad project file reads** — a single handoff read (~500 tokens) avoids 5-10 project file scans (~5K-10K tokens).
 
+## Context hygiene rules
+
+Applies to all Phase 1 skills when preparing context or saving handoff.
+
+1. **Compact resolved errors** — Once an error is diagnosed, fixed, and verified, do not carry the full trace forward. Replace it with `ERROR(resolved): <root cause>` and keep repro/verification only if still relevant.
+2. **Fetch obvious prerequisites** — If the next step has an obvious deterministic prerequisite, fetch it before reasoning further instead of spending an LLM round trip asking for it.
+3. **Cap repeated failures** — After 3 consecutive failures on the same tool, command, or implementation unit, stop retrying. Summarize evidence and ask the user for direction.
+4. **Prune before handoff** — Before saving handoff, keep only what the next stage needs. Move broad history to artifact paths; remove intermediate debug output that is no longer relevant.
+
 ## End of skill: save handoff + status + context
 
 Every Phase 1 skill (02-plan through 05-learn) must save context handoff at completion:

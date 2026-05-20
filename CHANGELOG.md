@@ -1,5 +1,10 @@
 # Changelog
 
+### Unreleased — context hygiene rules
+- Added shared Phase 1 context hygiene guidance for compacting resolved errors, fetching obvious prerequisites, capping repeated failures, and pruning handoffs before save.
+- Added `03-work` recovery guidance to replace resolved stop-the-line traces with `ERROR(resolved): <root cause>` and stop after 3 repeated failures on the same tool, command, or unit.
+- 212 tests passing, 0 regressions.
+
 ### 0.23.8 — constrain CE subagent pipeline-stage delegation
 - `ce_subagent` now rejects pipeline-stage skills (`01-brainstorm` through `05-learn`) and tells users to run those stages directly with `/skill:<stage>`.
 - `ce_parallel_subagent` applies the same guard before spawning parallel tasks.

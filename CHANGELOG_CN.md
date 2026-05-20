@@ -1,5 +1,10 @@
 # 更新日志
 
+### Unreleased — 上下文卫生规则
+- 新增 Phase 1 共享上下文卫生指引：压缩已解决错误、预取明显前置数据、限制重复失败重试、保存 handoff 前裁剪无关内容。
+- 新增 `03-work` 恢复后处理规则：用 `ERROR(resolved): <root cause>` 替代已解决 stop-the-line 完整 trace，并在同一工具、命令或 unit 连续失败 3 次后停止重试。
+- 212 个测试通过，0 回归。
+
 ### 0.23.8 — 收窄 CE subagent 的主流程阶段委托
 - `ce_subagent` 现在会拒绝调用主流程 stage skill（`01-brainstorm` 到 `05-learn`），并提示直接使用 `/skill:<stage>` 执行。
 - `ce_parallel_subagent` 在启动并行任务前应用同样 guard。

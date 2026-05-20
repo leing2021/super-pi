@@ -58,6 +58,17 @@ Anti-rationalization — when a gate fails or evidence is missing:
 
 This is a hard gate — do not push past a failing test or broken build to continue implementation. Errors compound.
 
+## Error compaction after recovery
+
+After a stop-the-line failure is diagnosed, fixed, and verified:
+
+1. Replace full traces in handoff/context with `ERROR(resolved): <root cause>`
+2. Keep only the final repro, root cause, fix summary, and verification result
+3. Remove intermediate debug output and failed exploratory runs that are no longer relevant
+4. Update `session_checkpoint` with the compacted state only
+
+If the same tool, command, or implementation unit fails 3 consecutive times, stop retrying and ask the user for direction with a concise evidence summary.
+
 ## Workflow
 
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point. If not found, proceed normally.
