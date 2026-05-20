@@ -41,6 +41,23 @@ export type SubagentRunner = (
   options?: SubagentExecOptions,
 ) => Promise<string>
 
+const PIPELINE_STAGE_SKILLS = new Set([
+  "01-brainstorm",
+  "02-plan",
+  "03-work",
+  "04-review",
+  "05-learn",
+])
+
+export function assertNonPipelineStageSkill(agent: string, toolName: string): void {
+  if (PIPELINE_STAGE_SKILLS.has(agent)) {
+    throw new Error(
+      `Pipeline-stage skill "${agent}" cannot run through ${toolName}. ` +
+      `Run it directly with /skill:${agent} instead.`,
+    )
+  }
+}
+
 export function createSubagentTool() {
   return {
     name: "ce_subagent",
@@ -61,6 +78,7 @@ export function createSubagentTool() {
       const execOptions = buildExecOptions(input.inheritSkills)
 
       if (hasSingle) {
+        assertNonPipelineStageSkill(input.agent!, "ce_subagent")
         const prompt = buildPrompt(input.agent!, input.task!)
         const output = await runner(prompt, execOptions)
         return {
@@ -73,6 +91,7 @@ export function createSubagentTool() {
       let previous = ""
 
       for (const task of input.chain ?? []) {
+        assertNonPipelineStageSkill(task.agent, "ce_subagent")
         const prompt = buildPrompt(task.agent, task.task.replace(/\{previous\}/g, previous))
         const output = await runner(prompt, execOptions)
         outputs.push(output)

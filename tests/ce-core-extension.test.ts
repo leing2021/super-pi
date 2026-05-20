@@ -280,6 +280,28 @@ describe("subagent", () => {
       tool.execute({ chain: [] }, async () => "ok"),
     ).rejects.toThrow("Provide exactly one mode")
   })
+
+  test("rejects pipeline-stage skills in single mode", async () => {
+    const tool = createSubagentTool()
+
+    await expect(
+      tool.execute(
+        { agent: "02-plan", task: "Create a plan" },
+        async () => "ok",
+      ),
+    ).rejects.toThrow("Pipeline-stage skill \"02-plan\" cannot run through ce_subagent")
+  })
+
+  test("rejects pipeline-stage skills in chain mode", async () => {
+    const tool = createSubagentTool()
+
+    await expect(
+      tool.execute(
+        { chain: [{ agent: "01-brainstorm", task: "Discover requirements" }] },
+        async () => "ok",
+      ),
+    ).rejects.toThrow("Pipeline-stage skill \"01-brainstorm\" cannot run through ce_subagent")
+  })
 })
 
 describe("workflow_state", () => {
@@ -731,6 +753,23 @@ describe("parallel_subagent", () => {
 
     expect(result.outputs[0].value).toBe("slow-done")
     expect(result.outputs[1].value).toBe("fast-done")
+  })
+
+  test("rejects pipeline-stage skills before spawning parallel tasks", async () => {
+    const tool = createParallelSubagentTool()
+    const calls: string[] = []
+
+    await expect(
+      tool.execute(
+        { tasks: [{ agent: "04-review", task: "Review changes" }] },
+        async (prompt: string) => {
+          calls.push(prompt)
+          return "ok"
+        },
+      ),
+    ).rejects.toThrow("Pipeline-stage skill \"04-review\" cannot run through ce_parallel_subagent")
+
+    expect(calls).toEqual([])
   })
 })
 

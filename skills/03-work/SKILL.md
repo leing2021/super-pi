@@ -20,9 +20,10 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 3. **Distinguish input:** plan path vs bare prompt
 4. Derive tasks from plan **implementation units**
 5. **Execution mode:**
-   - **Inline mode** for small/scoped units
-   - **`ce_parallel_subagent`** for independent CE skill units
-   - **`ce_subagent`** only for dependent serial chains
+   - **Inline mode** is the default execution path
+   - **`ce_parallel_subagent`** only for bounded, non-interactive, easily verifiable leaf tasks
+   - **`ce_subagent`** only for rare dependent serial chains of leaf tasks
+   - Never use either tool to invoke pipeline-stage skills (`01-brainstorm through 05-learn`). Run those stages directly with `/skill:<stage>`.
 6. Use **`session_checkpoint`** to track progress and enable resume
 7. Use **`task_splitter`** to analyze dependencies before execution
 8. If in **worktree** (via `07-worktree`), execute inside it
@@ -64,7 +65,7 @@ This is a hard gate — do not push past a failing test or broken build to conti
 3. Read implementation units if plan path
 4. Load `session_checkpoint` to skip completed units
 5. Use `task_splitter` for dependency analysis
-6. Execute: **inline mode** by default, `ce_parallel_subagent` for independent units
+6. Execute: **inline mode** by default; use subagents only for bounded, non-interactive, easily verifiable leaf tasks
 7. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
 8. **Source-driven gate:** Before implementing framework/library-specific code, verify the API or pattern against official documentation. Flag unverified patterns as UNVERIFIED in output.
 9. Record progress via `references/progress-update-format.md`

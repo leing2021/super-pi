@@ -8,6 +8,8 @@
 
 **Turn your AI coding agent into a reliable engineer.**
 
+Super Pi is a Pi-native engineering workflow layer: it adds stage discipline, durable artifacts, TDD gates, checkpoints, review, and learning loops on top of your coding agent. It is not a general-purpose multi-agent executor; subagents are optional helpers for bounded leaf tasks.
+
 Install, describe what you want to build, then keep saying "continue." Super Pi drives the full loop:
 
  **think → plan → build → review → compound learnings.**
@@ -23,7 +25,7 @@ pi install npm:@leing2021/super-pi
 - **Five-step loop** — brainstorm → plan → work → review → learn, with automatic skill routing
 - **Checkpoint resume** — interrupted? Resume from the exact unit you left off
 - **TDD enforcement** — every unit follows RED → GREEN → REFACTOR with hard gates
-- **Parallel execution** — independent units run concurrently via `ce_parallel_subagent`
+- **Controlled subagents** — inline execution by default; subagents are limited to bounded, non-interactive leaf tasks
 - **Evidence-first review** — auto-assigned reviewers across five axes, autofix loop
 - **Knowledge compounding** — solved problems become searchable solution artifacts
 - **Token-efficient** — ~2,600 tokens new-conversation overhead; progressive loading
@@ -43,7 +45,7 @@ You: I want to build a CLI tool that helps indie devs find early users
 
 → 01-brainstorm: structured discovery → requirements artifact
 → 02-plan: TDD-gated implementation units → plan artifact
-→ 03-work: parallel execution, checkpoint resume
+→ 03-work: inline-first execution, bounded subagents, checkpoint resume
 → 04-review: five-axis findings, autofix loop
 → 05-learn: knowledge compounding
 
@@ -71,7 +73,7 @@ You: /skill:03-work docs/plans/plan.md
 |-------|-------------|-----------|
 | **01-brainstorm** | Structured multi-round discovery | `brainstorm_dialog` |
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
-| **03-work** | Parallel execution, checkpoint resume, strict TDD, stop-the-line | `ce_subagent`, `ce_parallel_subagent` |
+| **03-work** | Inline-first execution, bounded subagents, checkpoint resume, strict TDD, stop-the-line | `ce_subagent`, `ce_parallel_subagent` |
 | **04-review** | Auto-assigned reviewers, five-axis findings, autofix loop | `review_router` |
 | **05-learn** | Pattern extraction → searchable solution artifacts | `pattern_extractor` |
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
@@ -81,6 +83,8 @@ You: /skill:03-work docs/plans/plan.md
 ### Subagent tool namespace
 
 Super Pi ships CE-specific tools named `ce_subagent` and `ce_parallel_subagent`. They are intentionally namespaced so they can coexist with the compatible third-party `pi-subagents` extension without tool-name collisions.
+
+These tools are helpers, not the core workflow. Use inline execution by default. Use CE subagents only for bounded, non-interactive, easily verifiable leaf tasks. Do not use them to invoke pipeline-stage skills (`01-brainstorm` through `05-learn`); run those stages directly with `/skill:<stage>`.
 
 ### Model & Thinking Routing
 

@@ -12,6 +12,8 @@
 
 **让 AI 编程 agent 从「写代码的工具」变成「靠谱的工程师」。**
 
+Super Pi 是 Pi-native 的工程 workflow 层：它给 coding agent 加上阶段纪律、持久化 artifacts、TDD gates、checkpoint、review 和学习闭环。它不是通用 multi-agent 执行器；subagents 只是用于有明确边界的叶子任务的可选辅助。
+
 安装后,告诉 Pi 你想做什么,然后不断说「继续」——它会自己走完 
 
 **想清楚 → 计划好 → 写代码 → 审查 → 沉淀经验** 的完整循环。
@@ -33,7 +35,7 @@ pi install npm:@leing2021/super-pi
 |-------|------|----------|
 | **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE) | `brainstorm_dialog` |
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
-| **03-work** | 并行执行,断点续传,严格 TDD | `ce_subagent`, `ce_parallel_subagent` |
+| **03-work** | inline 优先,受限 subagent,断点续传,严格 TDD | `ce_subagent`, `ce_parallel_subagent` |
 | **04-review** | 自动分配评审,结构化发现,可选浏览器 QA | `review_router` |
 | **05-learn** | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
@@ -43,6 +45,8 @@ pi install npm:@leing2021/super-pi
 ### Subagent 工具命名空间
 
 Super Pi 内置 CE 专用工具 `ce_subagent` 和 `ce_parallel_subagent`。它们刻意使用命名空间前缀，因此可以与兼容的第三方 `pi-subagents` 扩展共存，不会发生工具名冲突。
+
+这些工具只是辅助能力，不是核心 workflow。默认使用 inline execution；仅在任务有明确边界、无需交互、容易验证时使用 CE subagents。不要用它们调用主流程 skill（`01-brainstorm` 到 `05-learn`）；这些阶段应直接通过 `/skill:<stage>` 执行。
 
 ### 模型与思考深度路由
 

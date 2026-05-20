@@ -10,7 +10,7 @@ import {
   checkSubagentDepth,
   getChildDepthEnv,
 } from "./subagent-depth-guard"
-import type { SubagentExecOptions, SubagentRunner } from "./subagent"
+import { assertNonPipelineStageSkill, type SubagentExecOptions, type SubagentRunner } from "./subagent"
 
 export interface ParallelSubagentTask {
   agent: string
@@ -50,6 +50,10 @@ export function createParallelSubagentTool() {
 
       if (!input.tasks || input.tasks.length === 0) {
         throw new Error("ce_parallel_subagent requires at least one task")
+      }
+
+      for (const task of input.tasks) {
+        assertNonPipelineStageSkill(task.agent, "ce_parallel_subagent")
       }
 
       // Default: parallel workers get a slim context (no inherited skills)
