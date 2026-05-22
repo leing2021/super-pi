@@ -19,10 +19,12 @@ import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
-import { AsyncMutex } from "./tools/async-mutex"
-import type { SubagentExecOptions, SubagentRunner } from "./tools/subagent"
+import { createJsonRunner, type JsonRunConfig } from "./tools/subagent-json-runner"
+import { getFinalOutput, isFailedResult, type SingleResult } from "./tools/subagent-events"
+import { renderSubagentCall, renderSubagentResult } from "./tools/subagent-renderer"
+import type { SubagentLiveRunner, SubagentLiveExecOptions, SubagentLiveDetails } from "./tools/subagent"
+import type { ParallelSubagentLiveDetails } from "./tools/parallel-subagent"
 
-const _subagentEnvMutex = new AsyncMutex()
 const PIPELINE_STAGE_KEYS = new Set([
   "01-brainstorm",
   "02-plan",
@@ -115,43 +117,30 @@ function parseModelRef(
 }
 
 /**
- * Create a subagent runner that handles env injection with mutex protection
- * for concurrency safety when multiple parallel subagents share the process.
+ * Create a spawn-based subagent runner that uses pi --mode json
+ * with per-process env (no global process.env mutation).
  */
 function createSubagentRunner(
   pi: ExtensionAPI,
   signal?: AbortSignal,
-): SubagentRunner {
-  return async (prompt: string, options?: SubagentExecOptions) => {
-    const args = ["--no-session", ...(options?.extraFlags ?? []), "-p", prompt]
-    const release = await _subagentEnvMutex.acquire()
-    const savedEnv: Record<string, string | undefined> = {}
-    const extraEnv = options?.extraEnv ?? {}
-    for (const [key, value] of Object.entries(extraEnv)) {
-      savedEnv[key] = process.env[key]
-      process.env[key] = value
+): SubagentLiveRunner {
+  const jsonRunner = createJsonRunner()
+  return async (prompt: string, options?: SubagentLiveExecOptions) => {
+    const config: JsonRunConfig = {
+      prompt,
+      agent: "",
+      task: "",
+      cwd: pi.cwd ?? process.cwd(),
+      extraFlags: options?.extraFlags,
+      extraEnv: options?.extraEnv,
+      signal,
+      onUpdate: options?.onUpdate,
     }
-    try {
-      const execResult = await pi.exec("pi", args, {
-        signal,
-        timeout: 10 * 60 * 1000,
-      })
-
-      if (execResult.code !== 0) {
-        throw new Error(execResult.stderr || execResult.stdout || `Subagent failed for prompt: ${prompt}`)
-      }
-
-      return (execResult.stdout || "").trim()
-    } finally {
-      for (const [key, oldValue] of Object.entries(savedEnv)) {
-        if (oldValue === undefined) {
-          delete process.env[key]
-        } else {
-          process.env[key] = oldValue
-        }
-      }
-      release()
+    const result = await jsonRunner.run(config)
+    if (isFailedResult(result) || result.exitCode !== 0) {
+      throw new Error(result.errorMessage || result.stderr || `Subagent failed for prompt: ${prompt}`)
     }
+    return result
   }
 }
 
@@ -505,7 +494,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     label: "CE Subagent",
     description: "Run a single CE skill-based subagent or a serial chain in an isolated Pi process.",
     parameters: subagentParams,
-    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+    async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const result = await subagent.execute(
         {
           agent: params.agent,
@@ -514,12 +503,25 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           inheritSkills: params.inheritSkills,
         },
         createSubagentRunner(pi, signal),
+        { onUpdate },
       )
 
+      // Build final content from results
+      const lastResult = result.results[result.results.length - 1]
+      const finalText = lastResult ? getFinalOutput(lastResult.messages) : ""
+      const isError = lastResult ? isFailedResult(lastResult) : false
+
       return {
-        content: [{ type: "text", text: result.outputs[result.outputs.length - 1] ?? "" }],
+        content: [{ type: "text", text: finalText || "(no output)" }],
         details: result,
+        isError: isError || undefined,
       }
+    },
+    renderCall(args, theme, _context) {
+      return renderSubagentCall(args, theme)
+    },
+    renderResult(result, renderContext, theme, _context) {
+      return renderSubagentResult(result.details as SubagentLiveDetails, renderContext, theme)
     },
   })
 
@@ -599,7 +601,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     label: "CE Parallel Subagent",
     description: "Run multiple CE skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
     parameters: parallelSubagentParams,
-    async execute(_toolCallId, params, signal) {
+    async execute(_toolCallId, params, signal, onUpdate) {
       let tasks: any[]
       if (typeof params.tasks === "string") {
         try {
@@ -618,12 +620,31 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           inheritSkills: params.inheritSkills,
         },
         createSubagentRunner(pi, signal),
+        { onUpdate },
       )
 
+      // Build summary content
+      const successCount = result.results.filter(r => r.exitCode === 0).length
+      const failCount = result.results.filter(r => isFailedResult(r)).length
+      const summaries = result.results.map(r => {
+        const output = getFinalOutput(r.messages) || r.errorMessage || r.stderr || "(no output)"
+        const status = isFailedResult(r) ? "failed" : "completed"
+        return `### [${r.agent}] ${status}\n\n${output}`
+      })
+
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{
+          type: "text",
+          text: `Parallel: ${successCount}/${result.results.length} succeeded${failCount > 0 ? `, ${failCount} failed` : ""}\n\n${summaries.join("\n\n---\n\n")}`,
+        }],
         details: result,
       }
+    },
+    renderCall(args, theme, _context) {
+      return renderSubagentCall(args, theme)
+    },
+    renderResult(result, renderContext, theme, _context) {
+      return renderSubagentResult(result.details as SubagentLiveDetails, renderContext, theme)
     },
   })
 
@@ -873,6 +894,24 @@ export { createAskUserQuestionTool } from "./tools/ask-user-question"
 export { createSubagentTool } from "./tools/subagent"
 export { checkSubagentDepth, getChildDepthEnv, DEFAULT_MAX_SUBAGENT_DEPTH } from "./tools/subagent-depth-guard"
 export { AsyncMutex } from "./tools/async-mutex"
+export { createJsonRunner } from "./tools/subagent-json-runner"
+export {
+  parseJsonEvent,
+  applyEventToResult,
+  type SingleResult as SingleResultType,
+  type UsageStats,
+  type ParsedEvent,
+  isFailedResult as isFailedSingleResult,
+  formatUsageStats,
+  makeInitialResult,
+  getFinalOutput as getFinalOutputFromMessages,
+  getDisplayItems,
+} from "./tools/subagent-events"
+export {
+  formatToolCall,
+  renderSubagentCall,
+  renderSubagentResult,
+} from "./tools/subagent-renderer"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"

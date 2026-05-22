@@ -1,5 +1,16 @@
 # Changelog
 
+### 0.23.10 — subagent TUI live status via spawn-based JSON runner
+- **New architecture**: `ce_subagent` and `ce_parallel_subagent` now spawn `pi --mode json` child processes with per-process env, replacing `pi.exec()` + global `process.env` mutation.
+- **Real-time TUI updates**: tool calls, status icons (⏳/✓/✗), usage stats, and Markdown output rendered live during subagent execution.
+- **Collapsed/expanded views**: collapsed shows agent + status + recent tool calls; Ctrl+O expands to full output + usage.
+- **Parallel vertical layout**: each `ce_parallel_subagent` task displayed in its own box with per-task status.
+- **Concurrency control**: `mapWithConcurrencyLimit` (from pi official example) limits parallel spawns to 4.
+- **Shared event model**: `subagent-events.ts` provides `parseJsonEvent`, `applyEventToResult`, `invokeRunner`, `isSingleResult` used by both tools.
+- **Per-process env**: no more `AsyncMutex` or `process.env` mutation; env passed via `spawn({ env })` options.
+- **Renderer**: `subagent-renderer.ts` with `formatToolCall` (adapted from pi official example) for bash/read/write/edit/ls/find/grep.
+- 284 tests passing, 72 new, 0 regressions.
+
 ### 0.23.9 — context hygiene rules
 - Added shared Phase 1 context hygiene guidance for compacting resolved errors, fetching obvious prerequisites, capping repeated failures, and pruning handoffs before save.
 - Added `03-work` recovery guidance to replace resolved stop-the-line traces with `ERROR(resolved): <root cause>` and stop after 3 repeated failures on the same tool, command, or unit.

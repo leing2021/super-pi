@@ -11,6 +11,7 @@ import {
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
 import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
 import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
+import { getFinalOutput } from "../extensions/ce-core/tools/subagent-events"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
@@ -691,11 +692,12 @@ describe("parallel_subagent", () => {
       },
     )
 
-    expect(result.outputs.length).toBe(3)
-    expect(result.outputs.map(o => o.status)).toEqual(["fulfilled", "fulfilled", "fulfilled"])
-    expect(result.outputs[0].value).toBe("result-1")
-    expect(result.outputs[1].value).toBe("result-2")
-    expect(result.outputs[2].value).toBe("result-3")
+    expect(result.results.length).toBe(3)
+    expect(result.results.every(r => r.exitCode === 0)).toBe(true)
+    // Legacy runner returns string, wrapped as message text
+    expect(result.results[0].messages[0]).toBeDefined()
+    expect(result.results[1].messages[0]).toBeDefined()
+    expect(result.results[2].messages[0]).toBeDefined()
   })
 
   test("handles individual task failures gracefully", async () => {
@@ -715,13 +717,11 @@ describe("parallel_subagent", () => {
       },
     )
 
-    expect(result.outputs.length).toBe(3)
-    expect(result.outputs[0].status).toBe("fulfilled")
-    expect(result.outputs[0].value).toBe("ok")
-    expect(result.outputs[1].status).toBe("rejected")
-    expect(result.outputs[1].reason).toContain("Task failed")
-    expect(result.outputs[2].status).toBe("fulfilled")
-    expect(result.outputs[2].value).toBe("ok")
+    expect(result.results.length).toBe(3)
+    expect(result.results[0].exitCode).toBe(0)
+    expect(result.results[1].exitCode).not.toBe(0)
+    expect(result.results[1].errorMessage).toContain("Task failed")
+    expect(result.results[2].exitCode).toBe(0)
   })
 
   test("rejects empty task array", async () => {
@@ -751,8 +751,11 @@ describe("parallel_subagent", () => {
       },
     )
 
-    expect(result.outputs[0].value).toBe("slow-done")
-    expect(result.outputs[1].value).toBe("fast-done")
+    expect(result.results[0].exitCode).toBe(0)
+    expect(result.results[1].exitCode).toBe(0)
+    // Order preserved: first is slow, second is fast
+    expect(getFinalOutput(result.results[0].messages)).toBe("slow-done")
+    expect(getFinalOutput(result.results[1].messages)).toBe("fast-done")
   })
 
   test("rejects pipeline-stage skills before spawning parallel tasks", async () => {
@@ -2298,6 +2301,17 @@ describe("public exports", () => {
       "getChildDepthEnv",
       "DEFAULT_MAX_SUBAGENT_DEPTH",
       "AsyncMutex",
+      "createJsonRunner",
+      "parseJsonEvent",
+      "applyEventToResult",
+      "isFailedSingleResult",
+      "formatUsageStats",
+      "makeInitialResult",
+      "getFinalOutputFromMessages",
+      "getDisplayItems",
+      "formatToolCall",
+      "renderSubagentCall",
+      "renderSubagentResult",
     ]
 
     expect(exportNames.sort()).toEqual(expectedExports.sort())

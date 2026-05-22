@@ -1,5 +1,16 @@
 # 更新日志
 
+### 0.23.10 — subagent TUI 实时状态：spawn JSON runner 架构
+- **新架构**：`ce_subagent` 和 `ce_parallel_subagent` 改用 `pi --mode json` 子进程 + per-process 环境变量，替代 `pi.exec()` + 全局 `process.env` 改写。
+- **实时 TUI 更新**：执行过程中实时渲染工具调用、状态图标（⏳/✓/✗）、用量统计和 Markdown 输出。
+- **折叠/展开视图**：折叠显示 agent + 状态 + 最近工具调用；Ctrl+O 展开查看完整输出和用量。
+- **并行垂直布局**：`ce_parallel_subagent` 每个任务独立显示在各自的框中。
+- **并发控制**：`mapWithConcurrencyLimit`（来自 pi 官方示例）限制并行 spawn 数量为 4。
+- **共享事件模型**：`subagent-events.ts` 提供 `parseJsonEvent`、`applyEventToResult`、`invokeRunner`、`isSingleResult`，两个工具共用。
+- **per-process env**：不再需要 `AsyncMutex` 或 `process.env` 改写；通过 `spawn({ env })` 传递环境变量。
+- **渲染器**：`subagent-renderer.ts`，`formatToolCall`（适配自 pi 官方示例）支持 bash/read/write/edit/ls/find/grep 格式化。
+- 284 项测试通过，新增 72 项，0 回归。
+
 ### 0.23.9 — 上下文卫生规则
 - 新增 Phase 1 共享上下文卫生指引：压缩已解决错误、预取明显前置数据、限制重复失败重试、保存 handoff 前裁剪无关内容。
 - 新增 `03-work` 恢复后处理规则：用 `ERROR(resolved): <root cause>` 替代已解决 stop-the-line 完整 trace，并在同一工具、命令或 unit 连续失败 3 次后停止重试。

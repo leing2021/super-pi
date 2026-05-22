@@ -4,13 +4,63 @@
  * Features:
  *   - Recursion depth guard (PI_SUBAGENT_DEPTH / PI_SUBAGENT_MAX_DEPTH)
  *   - Optional context slimming via --no-skills flag
+ *   - Concurrency limit via mapWithConcurrencyLimit (from pi official example)
+ *   - Live TUI updates with running placeholders and per-task status
+ *   - Promise.allSettled semantics: one failure does NOT cancel others
  */
 
 import {
   checkSubagentDepth,
   getChildDepthEnv,
 } from "./subagent-depth-guard"
-import { assertNonPipelineStageSkill, type SubagentExecOptions, type SubagentRunner } from "./subagent"
+import {
+  type SingleResult,
+  makeInitialResult,
+  isFailedResult,
+  getFinalOutput,
+  makeFailedResult,
+  invokeRunner,
+} from "./subagent-events"
+import {
+  assertNonPipelineStageSkill,
+  type SubagentLiveRunner,
+  type SubagentLiveExecOptions,
+} from "./subagent"
+
+// ---------------------------------------------------------------------------
+// Constants (from pi official example)
+// ---------------------------------------------------------------------------
+
+const MAX_PARALLEL_TASKS = 8
+const MAX_CONCURRENCY = 4
+
+// ---------------------------------------------------------------------------
+// mapWithConcurrencyLimit (directly from pi official subagent example)
+// ---------------------------------------------------------------------------
+
+async function mapWithConcurrencyLimit<TIn, TOut>(
+  items: TIn[],
+  concurrency: number,
+  fn: (item: TIn, index: number) => Promise<TOut>,
+): Promise<TOut[]> {
+  if (items.length === 0) return []
+  const limit = Math.max(1, Math.min(concurrency, items.length))
+  const results: TOut[] = new Array(items.length)
+  let nextIndex = 0
+  const workers = new Array(limit).fill(null).map(async () => {
+    while (true) {
+      const current = nextIndex++
+      if (current >= items.length) return
+      results[current] = await fn(items[current], current)
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
 
 export interface ParallelSubagentTask {
   agent: string
@@ -23,25 +73,24 @@ export interface ParallelSubagentInput {
   inheritSkills?: boolean
 }
 
-export interface ParallelResultItem {
-  status: "fulfilled" | "rejected"
-  value?: string
-  reason?: string
-}
-
-export interface ParallelSubagentResult {
+export interface ParallelSubagentLiveDetails {
   mode: "parallel"
-  outputs: ParallelResultItem[]
+  results: SingleResult[]
 }
 
-function buildPrompt(agent: string, task: string): string {
-  return `/skill:${agent} ${task}`
-}
+// ---------------------------------------------------------------------------
+// Tool factory
+// ---------------------------------------------------------------------------
 
 export function createParallelSubagentTool() {
   return {
-    name: "ce_parallel_subagent",
-    async execute(input: ParallelSubagentInput, runner: SubagentRunner): Promise<ParallelSubagentResult> {
+    name: "ce_parallel_subagent" as const,
+
+    async execute(
+      input: ParallelSubagentInput,
+      runner: SubagentLiveRunner,
+      toolCtx?: { onUpdate?: (details: ParallelSubagentLiveDetails) => void },
+    ): Promise<ParallelSubagentLiveDetails> {
       // Recursion depth guard
       const depthCheck = checkSubagentDepth()
       if (!depthCheck.allowed) {
@@ -52,53 +101,94 @@ export function createParallelSubagentTool() {
         throw new Error("ce_parallel_subagent requires at least one task")
       }
 
+      if (input.tasks.length > MAX_PARALLEL_TASKS) {
+        throw new Error(
+          `Too many parallel tasks (${input.tasks.length}). Max is ${MAX_PARALLEL_TASKS}.`,
+        )
+      }
+
       for (const task of input.tasks) {
         assertNonPipelineStageSkill(task.agent, "ce_parallel_subagent")
       }
 
-      // Default: parallel workers get a slim context (no inherited skills)
-      const inheritSkills = input.inheritSkills ?? false
-      const execOptions = buildParallelExecOptions(inheritSkills)
+      const execOptions = buildParallelExecOptions(input.inheritSkills)
 
-      const promises = input.tasks.map(({ agent, task }) =>
-        runner(buildPrompt(agent, task), execOptions),
+      // Initialize all results as running placeholders
+      const allResults: SingleResult[] = input.tasks.map(({ agent, task }) =>
+        makeInitialResult(agent, task),
       )
 
-      const settled = await Promise.allSettled(promises)
+      // Emit initial state (all running)
+      emitParallelUpdate(allResults, toolCtx)
 
-      const outputs: ParallelResultItem[] = settled.map((result) => {
-        if (result.status === "fulfilled") {
-          return { status: "fulfilled", value: result.value }
+      // Run tasks with concurrency limit
+      await mapWithConcurrencyLimit(input.tasks, MAX_CONCURRENCY, async (t, index) => {
+        const liveOptions: SubagentLiveExecOptions = {
+          ...execOptions,
+          onUpdate: (partial: SingleResult) => {
+            allResults[index] = partial
+            emitParallelUpdate(allResults, toolCtx)
+          },
         }
-        return { status: "rejected", reason: result.reason?.message || String(result.reason) }
+
+        try {
+          const result = await invokeRunner(runner, `/skill:${t.agent} ${t.task}`, liveOptions)
+          allResults[index] = result
+        } catch (e) {
+          // Preserve allSettled semantics: one failure does not cancel others
+          allResults[index] = makeFailedResult(t.agent, t.task, e instanceof Error ? e.message : String(e))
+        }
+        emitParallelUpdate(allResults, toolCtx)
+        return allResults[index]
       })
 
-      return {
-        mode: "parallel",
-        outputs,
-      }
+      return { mode: "parallel", results: allResults }
     },
   }
 }
 
-/**
- * Build exec options for parallel subagent workers.
- * Defaults to slim context (no inherited skills).
- */
-function buildParallelExecOptions(inheritSkills: boolean): SubagentExecOptions {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function emitParallelUpdate(
+  results: SingleResult[],
+  toolCtx?: { onUpdate?: (details: ParallelSubagentLiveDetails) => void },
+) {
+  if (toolCtx?.onUpdate) {
+    toolCtx.onUpdate({ mode: "parallel", results: [...results] })
+  }
+}
+
+function buildParallelExecOptions(inheritSkills?: boolean): { extraFlags?: string[]; extraEnv: Record<string, string> } {
   const flags: string[] = []
   const env: Record<string, string> = {}
 
-  // Context slimming
-  if (!inheritSkills) {
+  if (inheritSkills !== true) {
     flags.push("--no-skills")
   }
 
-  // Recursion depth
   Object.assign(env, getChildDepthEnv())
 
   return {
     extraFlags: flags.length > 0 ? flags : undefined,
     extraEnv: env,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy backward-compat types and exports
+// ---------------------------------------------------------------------------
+
+/** @deprecated Use ParallelSubagentLiveDetails instead */
+export interface ParallelResultItem {
+  status: "fulfilled" | "rejected"
+  value?: string
+  reason?: string
+}
+
+/** @deprecated Use ParallelSubagentLiveDetails instead */
+export interface ParallelSubagentResult {
+  mode: "parallel"
+  outputs: ParallelResultItem[]
 }

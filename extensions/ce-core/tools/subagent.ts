@@ -4,12 +4,22 @@
  * Features:
  *   - Recursion depth guard (PI_SUBAGENT_DEPTH / PI_SUBAGENT_MAX_DEPTH)
  *   - Optional context slimming via --no-skills flag
+ *   - Live TUI updates via onUpdate callback + SingleResult details
  */
 
 import {
   checkSubagentDepth,
   getChildDepthEnv,
 } from "./subagent-depth-guard"
+import {
+  type SingleResult,
+  getFinalOutput,
+  invokeRunner,
+} from "./subagent-events"
+
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
 
 export interface SubagentTask {
   agent: string
@@ -24,22 +34,47 @@ export interface SubagentInput {
   inheritSkills?: boolean
 }
 
-export interface SubagentResult {
+export interface SubagentLiveDetails {
   mode: "single" | "chain"
-  outputs: string[]
+  results: SingleResult[]
 }
+
+/** @deprecated Use SubagentLiveRunner instead */
+export type SubagentRunner = (
+  prompt: string,
+  options?: SubagentExecOptions,
+) => Promise<string>
 
 export interface SubagentExecOptions {
   /** Extra CLI flags to pass to the child pi process */
   extraFlags?: string[]
   /** Environment variables to inject into the child process */
   extraEnv?: Record<string, string>
+  /** Callback for live TUI partial updates */
+  onUpdate?: (partial: SingleResult) => void
 }
 
-export type SubagentRunner = (
+/**
+ * Live runner that returns a structured SingleResult and supports
+ * onUpdate for partial progress.
+ */
+export type SubagentLiveRunner = (
   prompt: string,
-  options?: SubagentExecOptions,
-) => Promise<string>
+  options?: SubagentLiveExecOptions,
+) => Promise<SingleResult>
+
+export type SubagentLiveExecOptions = SubagentExecOptions
+
+export interface SubagentLiveResult {
+  mode: "single" | "chain"
+  results: SingleResult[]
+  /** @deprecated Backward compat: final text output per step */
+  outputs?: string[]
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline stage guard
+// ---------------------------------------------------------------------------
 
 const PIPELINE_STAGE_SKILLS = new Set([
   "01-brainstorm",
@@ -58,10 +93,26 @@ export function assertNonPipelineStageSkill(agent: string, toolName: string): vo
   }
 }
 
+// ---------------------------------------------------------------------------
+// Tool factory
+// ---------------------------------------------------------------------------
+
 export function createSubagentTool() {
   return {
-    name: "ce_subagent",
-    async execute(input: SubagentInput, runner: SubagentRunner): Promise<SubagentResult> {
+    name: "ce_subagent" as const,
+
+    /**
+     * Execute the subagent tool.
+     *
+     * Supports two runner signatures:
+     *   - SubagentLiveRunner (preferred): returns SingleResult, supports onUpdate
+     *   - SubagentRunner (legacy): returns string, no onUpdate
+     */
+    async execute(
+      input: SubagentInput,
+      runner: SubagentLiveRunner | SubagentRunner,
+      toolCtx?: { onUpdate?: (details: SubagentLiveDetails) => void },
+    ): Promise<SubagentLiveResult> {
       // Recursion depth guard
       const depthCheck = checkSubagentDepth()
       if (!depthCheck.allowed) {
@@ -80,46 +131,71 @@ export function createSubagentTool() {
       if (hasSingle) {
         assertNonPipelineStageSkill(input.agent!, "ce_subagent")
         const prompt = buildPrompt(input.agent!, input.task!)
-        const output = await runner(prompt, execOptions)
+
+        const liveOptions: SubagentLiveExecOptions = {
+          ...execOptions,
+          onUpdate: (partial: SingleResult) => {
+            if (toolCtx?.onUpdate) {
+              toolCtx.onUpdate({ mode: "single", results: [partial] })
+            }
+          },
+        }
+
+        const result = await invokeRunner(runner, prompt, liveOptions)
+        result.agent = input.agent!
+        result.task = input.task!
         return {
           mode: "single",
-          outputs: [output],
+          results: [result],
+          outputs: [getFinalOutput(result.messages)],
         }
       }
 
-      const outputs: string[] = []
+      // Chain mode
+      const results: SingleResult[] = []
       let previous = ""
 
       for (const task of input.chain ?? []) {
         assertNonPipelineStageSkill(task.agent, "ce_subagent")
         const prompt = buildPrompt(task.agent, task.task.replace(/\{previous\}/g, previous))
-        const output = await runner(prompt, execOptions)
-        outputs.push(output)
-        previous = output
+
+        const liveOptions: SubagentLiveExecOptions = {
+          ...execOptions,
+          onUpdate: (partial: SingleResult) => {
+            if (toolCtx?.onUpdate) {
+              toolCtx.onUpdate({ mode: "chain", results: [...results, partial] })
+            }
+          },
+        }
+
+        const result = await invokeRunner(runner, prompt, liveOptions)
+        result.agent = task.agent
+        result.task = task.task
+        results.push(result)
+        previous = getFinalOutput(result.messages)
       }
 
       return {
         mode: "chain",
-        outputs,
+        results,
+        outputs: results.map(r => getFinalOutput(r.messages)),
       }
     },
   }
 }
 
-/**
- * Build exec options based on subagent configuration.
- * Controls context inheritance and recursion depth.
- */
-function buildExecOptions(inheritSkills?: boolean): SubagentExecOptions {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildExecOptions(inheritSkills?: boolean): { extraFlags?: string[]; extraEnv: Record<string, string> } {
   const flags: string[] = []
   const env: Record<string, string> = {}
 
-  // Context slimming: skip skills inheritance when explicitly disabled
   if (inheritSkills === false) {
     flags.push("--no-skills")
   }
 
-  // Recursion depth: pass incremented depth to child process
   Object.assign(env, getChildDepthEnv())
 
   return {

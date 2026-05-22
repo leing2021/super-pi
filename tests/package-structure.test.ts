@@ -105,3 +105,27 @@ describe("package bootstrap structure", () => {
     expect(workflow).toContain("bun test")
   })
 })
+
+describe("subagent-tui-live-status brainstorm artifact", () => {
+  const brainstormPath = path.join(
+    repoRoot,
+    "docs",
+    "brainstorms",
+    "2026-05-22-subagent-tui-live-status.md",
+  )
+
+  test("brainstorm artifact file exists", () => {
+    expect(existsSync(brainstormPath)).toBe(true)
+  })
+
+  test("brainstorm artifact contains key requirement keywords", () => {
+    const content = readFileSync(brainstormPath, "utf8")
+
+    expect(content).toContain("ce_subagent")
+    expect(content).toContain("ce_parallel_subagent")
+    expect(content).toContain("onUpdate")
+    expect(content).toContain("renderResult")
+    expect(content).toContain("Promise.allSettled")
+    expect(content.toLowerCase()).toContain("concurrency")
+  })
+})
