@@ -94,20 +94,27 @@ describe("subagent-renderer: renderSubagentCall", () => {
     expect(text).toContain("step1")
   })
 
-  test("renders parallel call", () => {
+  test("renders parallel call with all tasks listed", () => {
     const component = renderSubagentCall(
       {
         tasks: [
           { agent: "t1", task: "task one" },
           { agent: "t2", task: "task two" },
+          { agent: "t3", task: "task three" },
+          { agent: "t4", task: "task four" },
         ],
       },
       mockTheme,
     )
     const lines = component.render(80)
     const text = lines.join("\n")
-    expect(text).toContain("parallel")
-    expect(text).toContain("2 tasks")
+    expect(text).toContain("4 agents launching")
+    expect(text).toContain("t1")
+    expect(text).toContain("t2")
+    expect(text).toContain("t3")
+    expect(text).toContain("t4")  // All tasks shown, not folded
+    expect(text).toContain("task one")
+    expect(text).toContain("task four")
   })
 })
 
@@ -222,25 +229,75 @@ describe("subagent-renderer: renderSubagentResult single", () => {
 })
 
 describe("subagent-renderer: renderSubagentResult parallel", () => {
-  test("renders parallel collapsed with per-task status icons", () => {
+  test("renders parallel collapsed with summary per task", () => {
     const details: SubagentLiveDetails = {
       mode: "parallel",
       results: [
         makeSuccessResult("s1", "task 1"),
-        makeRunningResult("s2", "task 2"),
-        makeFailedResult("s3", "task 3", "error msg"),
+        makeSuccessResult("s2", "task 2"),
       ],
     }
     const component = renderSubagentResult(details, { expanded: false }, mockTheme)
     const lines = component.render(80)
     const text = lines.join("\n")
     expect(text).toContain("✓")
-    expect(text).toContain("⏳")
-    expect(text).toContain("✗")
-    expect(text).toContain("parallel")
+    expect(text).toContain("2/2 succeeded")
+    expect(text).toContain("s1")
+    expect(text).toContain("s2")
+    // Collapsed shows summary line, not tool calls
+    expect(text).toContain("final output text")
+    expect(text).toContain("Ctrl+O")
   })
 
-  test("renders expanded with per-task details", () => {
+  test("renders parallel with mixed success/failure summary", () => {
+    const details: SubagentLiveDetails = {
+      mode: "parallel",
+      results: [
+        makeSuccessResult("s1", "task 1"),
+        makeFailedResult("s2", "task 2", "something broke"),
+        makeSuccessResult("s3", "task 3"),
+      ],
+    }
+    const component = renderSubagentResult(details, { expanded: false }, mockTheme)
+    const lines = component.render(80)
+    const text = lines.join("\n")
+    expect(text).toContain("2/3 succeeded")
+    expect(text).toContain("1 failed")
+    expect(text).toContain("something broke")
+  })
+
+  test("renders running state with progress indicator", () => {
+    const details: SubagentLiveDetails = {
+      mode: "parallel",
+      results: [
+        makeRunningResult("s1", "t1"),
+        makeRunningResult("s2", "t2"),
+      ],
+    }
+    const component = renderSubagentResult(details, { expanded: false }, mockTheme)
+    const lines = component.render(80)
+    const text = lines.join("\n")
+    expect(text).toContain("⏳")
+    expect(text).toContain("running")
+  })
+
+  test("renders partial progress with done count", () => {
+    const details: SubagentLiveDetails = {
+      mode: "parallel",
+      results: [
+        makeSuccessResult("s1", "t1"),
+        makeRunningResult("s2", "t2"),
+        makeRunningResult("s3", "t3"),
+      ],
+    }
+    const component = renderSubagentResult(details, { expanded: false }, mockTheme)
+    const lines = component.render(80)
+    const text = lines.join("\n")
+    expect(text).toContain("1✓")
+    expect(text).toContain("2 running")
+  })
+
+  test("expanded view includes full output", () => {
     const details: SubagentLiveDetails = {
       mode: "parallel",
       results: [
@@ -253,8 +310,7 @@ describe("subagent-renderer: renderSubagentResult parallel", () => {
     const text = lines.join("\n")
     expect(text).toContain("s1")
     expect(text).toContain("s2")
-    expect(text).toContain("task 1")
-    expect(text).toContain("task 2")
+    expect(text).toContain("final output text")
   })
 
   test("running partial does not crash", () => {

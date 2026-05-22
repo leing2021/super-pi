@@ -521,7 +521,10 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return renderSubagentCall(args, theme)
     },
     renderResult(result, renderContext, theme, _context) {
-      return renderSubagentResult(result.details as SubagentLiveDetails, renderContext, theme)
+      // Handle partial updates where data is at top level (from onUpdate)
+      // rather than nested in .details (from final result return value)
+      const data = (result.details || result) as SubagentLiveDetails
+      return renderSubagentResult(data, renderContext, theme)
     },
   })
 
@@ -623,19 +626,29 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         { onUpdate },
       )
 
-      // Build summary content
+      // Build compact summary content for LLM consumption
       const successCount = result.results.filter(r => r.exitCode === 0).length
       const failCount = result.results.filter(r => isFailedResult(r)).length
-      const summaries = result.results.map(r => {
+      const summaries = result.results.map((r, i) => {
+        const icon = isFailedResult(r) ? "✗" : "✓"
         const output = getFinalOutput(r.messages) || r.errorMessage || r.stderr || "(no output)"
-        const status = isFailedResult(r) ? "failed" : "completed"
-        return `### [${r.agent}] ${status}\n\n${output}`
+        // Compact: first non-empty line, stripped of markdown formatting
+        const summaryLine = output.split("\n").find((l: string) => l.trim().length > 0) || ""
+        const cleaned = summaryLine.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim()
+        const oneLine = cleaned.length > 200 ? cleaned.slice(0, 199) + "…" : cleaned
+        return `${i + 1}. ${icon} ${r.agent} — ${oneLine}`
+      })
+
+      // Full outputs available in details for expanded view
+      const fullOutputs = result.results.map(r => {
+        const output = getFinalOutput(r.messages) || ""
+        return output
       })
 
       return {
         content: [{
           type: "text",
-          text: `Parallel: ${successCount}/${result.results.length} succeeded${failCount > 0 ? `, ${failCount} failed` : ""}\n\n${summaries.join("\n\n---\n\n")}`,
+          text: `Parallel: ${successCount}/${result.results.length} succeeded${failCount > 0 ? `, ${failCount} failed` : ""}\n${summaries.join("\n")}`,
         }],
         details: result,
       }
@@ -644,7 +657,10 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return renderSubagentCall(args, theme)
     },
     renderResult(result, renderContext, theme, _context) {
-      return renderSubagentResult(result.details as SubagentLiveDetails, renderContext, theme)
+      // Handle partial updates where data is at top level (from onUpdate)
+      // rather than nested in .details (from final result return value)
+      const data = (result.details || result) as SubagentLiveDetails
+      return renderSubagentResult(data, renderContext, theme)
     },
   })
 

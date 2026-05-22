@@ -142,13 +142,14 @@ export function renderSubagentCall(
 
   if (args.tasks && args.tasks.length > 0) {
     let text =
-      theme.fg("toolTitle", theme.bold("ce_parallel_subagent ")) +
-      theme.fg("accent", `parallel (${args.tasks.length} tasks)`)
-    for (const t of args.tasks.slice(0, 3)) {
-      const preview = t.task.length > 40 ? `${t.task.slice(0, 40)}...` : t.task
-      text += `\n  ${theme.fg("accent", t.agent)}${theme.fg("dim", ` ${preview}`)}`
+      theme.fg("toolTitle", theme.bold("⬇ parallel ")) +
+      theme.fg("accent", `${args.tasks.length} agents launching...`)
+    for (let i = 0; i < args.tasks.length; i++) {
+      const t = args.tasks[i]
+      const num = theme.fg("muted", `${i + 1}.`)
+      const preview = t.task.length > 50 ? `${t.task.slice(0, 50)}...` : t.task
+      text += `\n  ${num} ${theme.fg("accent", t.agent)} ${theme.fg("dim", preview)}`
     }
-    if (args.tasks.length > 3) text += `\n  ${theme.fg("muted", `... +${args.tasks.length - 3} more`)}`
     return new Text(text, 0, 0)
   }
 
@@ -373,68 +374,92 @@ function renderParallelResult(
   const successCount = results.filter(r => r.exitCode !== -1 && !isFailedResult(r)).length
   const failCount = results.filter(r => r.exitCode !== -1 && isFailedResult(r)).length
   const isRunning = running > 0
-  const icon = isRunning
-    ? theme.fg("warning", "⏳")
-    : failCount > 0
-      ? theme.fg("warning", "◐")
-      : theme.fg("success", "✓")
-  const status = isRunning
-    ? `${successCount + failCount}/${results.length} done, ${running} running`
-    : `${successCount}/${results.length} tasks`
 
-  if (context.expanded && !isRunning) {
+  if (isRunning) {
+    // --- Live progress: compact status line ---
+    const doneCount = successCount + failCount
+    const icon = theme.fg("warning", "⏳")
+    const bar = renderProgressBar(doneCount, results.length, theme)
+    const doneLabel = failCount > 0
+      ? theme.fg("success", `${successCount}✓`) + " " + theme.fg("error", `${failCount}✗`)
+      : theme.fg("success", `${successCount}✓`)
+    const runningLabel = theme.fg("dim", `, ${running} running...`)
+    return new Text(`${icon} ${bar} ${doneLabel}${runningLabel}`, 0, 0)
+  }
+
+  // --- Completed: summary card layout ---
+  const allSuccess = failCount === 0
+  const headerIcon = allSuccess ? theme.fg("success", "✓") : theme.fg("warning", "◐")
+  const headerText = failCount > 0
+    ? `${successCount}/${results.length} succeeded, ${failCount} failed`
+    : `${successCount}/${results.length} succeeded`
+
+  if (context.expanded) {
+    // Expanded: header + per-task details with tool calls and output
     const container = new Container()
-    container.addChild(new Text(`${icon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", status)}`, 0, 0))
+    container.addChild(new Text(`${headerIcon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", headerText)}`, 0, 0))
+    container.addChild(new Spacer(1))
 
     for (const r of results) {
       const rIcon = isFailedResult(r) ? theme.fg("error", "✗") : theme.fg("success", "✓")
-      const displayItems = getDisplayItems(r.messages)
       const finalOutput = getFinalOutput(r.messages)
+      const summaryText = isFailedResult(r)
+        ? (r.errorMessage || r.stderr || "unknown error")
+        : (finalOutput ? summarizeText(finalOutput, 200) : "(no output)")
 
-      container.addChild(new Spacer(1))
-      container.addChild(new Text(`${theme.fg("muted", "─── ")}${theme.fg("accent", r.agent)} ${rIcon}`, 0, 0))
-      container.addChild(new Text(theme.fg("muted", "Task: ") + theme.fg("dim", r.task), 0, 0))
-      for (const item of displayItems) {
-        if (item.type === "toolCall")
-          container.addChild(new Text(theme.fg("muted", "→ ") + formatToolCall(item.name, item.args, theme.fg.bind(theme)), 0, 0))
-      }
-      if (finalOutput) {
-        container.addChild(new Spacer(1))
+      container.addChild(new Text(`${rIcon} ${theme.fg("accent", r.agent)} — ${summaryText}`, 0, 0))
+
+      if (!isFailedResult(r) && finalOutput) {
         container.addChild(new Markdown(finalOutput.trim(), 0, 0, mdTheme))
       }
+
       const taskUsage = formatUsageStats(r.usage, r.model)
       if (taskUsage) container.addChild(new Text(theme.fg("dim", taskUsage), 0, 0))
+      container.addChild(new Spacer(1))
     }
 
     const usageStr = formatUsageStats(aggregateUsage(results))
     if (usageStr) {
-      container.addChild(new Spacer(1))
       container.addChild(new Text(theme.fg("dim", `Total: ${usageStr}`), 0, 0))
     }
     return container
   }
 
-  // Collapsed (or still running)
-  let text = `${icon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", status)}`
+  // Collapsed: one-line summary per task
+  let text = `${headerIcon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", headerText)}`
   for (const r of results) {
-    const rIcon =
-      r.exitCode === -1
-        ? theme.fg("warning", "⏳")
-        : isFailedResult(r)
-          ? theme.fg("error", "✗")
-          : theme.fg("success", "✓")
-    const displayItems = getDisplayItems(r.messages)
-    text += `\n\n${theme.fg("muted", "─── ")}${theme.fg("accent", r.agent)} ${rIcon}`
-    if (displayItems.length === 0)
-      text += `\n${theme.fg("muted", r.exitCode === -1 ? "(running...)" : "(no output)")}`
-    else text += `\n${renderDisplayItems(displayItems, 5)}`
+    const rIcon = isFailedResult(r) ? theme.fg("error", "✗") : theme.fg("success", "✓")
+    const finalOutput = getFinalOutput(r.messages)
+    const summaryText = isFailedResult(r)
+      ? (r.errorMessage || r.stderr || "unknown error")
+      : (finalOutput ? summarizeText(finalOutput, 120) : "(no output)")
+    text += `\n  ${rIcon} ${theme.fg("accent", r.agent)} — ${summaryText}`
   }
-  if (!isRunning) {
-    const usageStr = formatUsageStats(aggregateUsage(results))
-    if (usageStr) text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`
-  }
-  if (!context.expanded) text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`
+  const usageStr = formatUsageStats(aggregateUsage(results))
+  if (usageStr) text += `\n${theme.fg("dim", usageStr)}`
+  text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`
   return new Text(text, 0, 0)
+}
+
+// ---------------------------------------------------------------------------
+// Progress bar & text helpers
+// ---------------------------------------------------------------------------
+
+function renderProgressBar(done: number, total: number, theme: Theme): string {
+  const width = Math.min(total, 20)
+  const filled = Math.round((done / total) * width)
+  const empty = width - filled
+  const bar = theme.fg("success", "█".repeat(filled)) + theme.fg("dim", "░".repeat(empty))
+  return bar
+}
+
+function summarizeText(text: string, maxLen: number): string {
+  // Take first meaningful paragraph or line
+  const firstLine = text.split("\n").find(l => l.trim().length > 0) || ""
+  // Strip markdown headers and bold for summary
+  const cleaned = firstLine.replace(/^#+\s*/, "").replace(/\*\*/g, "").replace(/\[.*?\]\(.*?\)/g, "").trim()
+  if (cleaned.length <= maxLen) return cleaned
+  return cleaned.slice(0, maxLen - 1) + "…"
 }
 
 // ---------------------------------------------------------------------------
