@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.23.11 — compact parallel subagent TUI with progress bar and summary cards
+- **Call phase**: show all agents with numbered list instead of folding at 3.
+- **Running phase**: live progress bar (█░) with done/running count.
+- **Completed collapsed**: one-line summary per agent (icon + name + conclusion).
+- **Completed expanded (Ctrl+O)**: full Markdown output per agent.
+- **Content text**: compact summary instead of full output dump, reducing LLM context waste.
+- 6 new renderer tests. 285 tests passing, 0 regressions.
+
 ### 0.23.10 — subagent TUI live status via spawn-based JSON runner
 - **New architecture**: `ce_subagent` and `ce_parallel_subagent` now spawn `pi --mode json` child processes with per-process env, replacing `pi.exec()` + global `process.env` mutation.
 - **Real-time TUI updates**: tool calls, status icons (⏳/✓/✗), usage stats, and Markdown output rendered live during subagent execution.

@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.23.11 — 紧凑型并行 subagent TUI：进度条 + 摘要卡片
+- **调用阶段**：展示全部 agent 编号列表，不再折叠到只显示 3 个。
+- **运行阶段**：实时进度条（█░）+ 已完成/运行中计数。
+- **完成折叠**：每个 agent 一行摘要（图标 + 名称 + 结论）。
+- **完成展开（Ctrl+O）**：每个 agent 的完整 Markdown 输出。
+- **内容文本**：紧凑摘要替代完整输出拼接，减少 LLM 上下文浪费。
+- 新增 6 个渲染器测试。285 个测试全部通过，0 回归。
+
 ### 0.23.10 — subagent TUI 实时状态：spawn JSON runner 架构
 - **新架构**：`ce_subagent` 和 `ce_parallel_subagent` 改用 `pi --mode json` 子进程 + per-process 环境变量，替代 `pi.exec()` + 全局 `process.env` 改写。
 - **实时 TUI 更新**：执行过程中实时渲染工具调用、状态图标（⏳/✓/✗）、用量统计和 Markdown 输出。
