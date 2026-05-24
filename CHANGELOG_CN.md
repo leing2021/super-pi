@@ -1,5 +1,9 @@
 # 更新日志
 
+### 0.23.13 — 修复并行 subagent inheritSkills 默认值与 ce_subagent 不一致
+- **Bug 修复**：`ce_parallel_subagent` 的 `inheritSkills` 默认值改为 `true`（与 `ce_subagent` 一致）。此前省略该参数会传入 `--no-skills`，导致并行子进程静默丢失 skill 继承。
+- 同步更新工具 schema 描述、接口注释和测试用例。
+
 ### 0.23.12 — 引入 CONTEXT 词汇表/ADR/调试纪律 + tsc 类型修复 + 并行进度总数
 - **Skills（融合 mattpocock/skills）**：`01-brainstorm` 可选 CONTEXT.md 词汇表，`02-plan` 轻量 ADR 模板，`03-work` 反馈环优先调试纪律。零新 skill/tool。
 - **类型修复**：解决 5 处 tsc 类型错误。

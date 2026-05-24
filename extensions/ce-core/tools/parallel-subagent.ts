@@ -71,7 +71,7 @@ export interface ParallelSubagentTask {
 
 export interface ParallelSubagentInput {
   tasks: ParallelSubagentTask[]
-  /** Whether subagents should inherit skills. Default: false for parallel */
+  /** Whether subagents should inherit skills. Default: true */
   inheritSkills?: boolean
 }
 
@@ -166,7 +166,7 @@ function buildParallelExecOptions(inheritSkills?: boolean): { extraFlags?: strin
   const flags: string[] = []
   const env: Record<string, string> = {}
 
-  if (inheritSkills !== true) {
+  if (inheritSkills === false) {
     flags.push("--no-skills")
   }
 

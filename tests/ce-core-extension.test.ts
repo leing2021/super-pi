@@ -987,7 +987,7 @@ describe("subagent_depth_guard", () => {
     cleanup()
   })
 
-  test("parallel_subagent defaults to inheritSkills=false (no skills)", async () => {
+  test("parallel_subagent defaults to inheritSkills=true (inherits skills)", async () => {
     delete process.env.PI_SUBAGENT_DEPTH
     delete process.env.PI_SUBAGENT_MAX_DEPTH
 
@@ -1003,7 +1003,7 @@ describe("subagent_depth_guard", () => {
     )
 
     expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraFlags).toContain("--no-skills")
+    expect(capturedOptions[0].extraFlags).toBeUndefined()
 
     cleanup()
   })

@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.23.13 — fix parallel subagent inheritSkills default mismatch with ce_subagent
+- **Bug fix**: `ce_parallel_subagent` now defaults `inheritSkills` to `true` (matching `ce_subagent` behavior). Previously, omitting `inheritSkills` caused `--no-skills` to be passed to child processes, silently disabling skill inheritance in all parallel subagent tasks.
+- Updated tool schema description, interface JSDoc, and test expectations.
+
 ### 0.23.12 — adopt context glossary/ADR/debug discipline + tsc fixes + parallel progress
 - **Skills (mattpocock/skills)**: `01-brainstorm` optional CONTEXT.md vocabulary, `02-plan` lightweight ADR template, `03-work` feedback-loop-first debug discipline. Zero new skills/tools.
 - **Type fixes**: resolve 5 `bunx tsc --noEmit` errors (mode union, onUpdate bridge, pi.cwd, SingleResult import, unknown assertions).

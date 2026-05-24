@@ -210,7 +210,7 @@ const parallelSubagentParams = Type.Object({
     Type.Array(parallelSubagentTaskSchema),
     Type.String({ description: "JSON stringified array of tasks" }),
   ], { description: "Array of independent tasks to run concurrently (can be a JSON string)" }),
-  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: false" })),
+  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: true" })),
 })
 
 const sessionCheckpointParams = Type.Object({
