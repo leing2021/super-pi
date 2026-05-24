@@ -59,6 +59,15 @@ Before summarizing, ensure the design answers:
 - What can fail, and how?
 - How will we verify success?
 
+## Domain vocabulary (optional)
+
+After mode-specific questions, check if the project has a `CONTEXT.md` at root.
+If not, and the brainstorm reveals 3+ domain-specific terms with ambiguous meanings,
+offer to create one using `references/context-glossary.md`. Update it inline during
+the session — don't batch. If it exists, cross-reference and flag conflicts:
+
+> "Your CONTEXT.md defines 'cancellation' as X, but you seem to mean Y — which is it?"
+
 ## Stop conditions
 
 Stop and ask instead of guessing when: requirements conflict, success criteria unclear, task spans multiple systems, or user hasn't approved design.
@@ -70,15 +79,17 @@ Stop and ask instead of guessing when: requirements conflict, success criteria u
 ## Workflow
 
 1. Scan repository for nearby context
-2. Determine mode (Startup / Builder / CE)
-3. Run mode-specific questions (use reference files)
-4. Run Premise Challenge
-5. Generate 2-3 alternatives (minimal viable + ideal architecture)
-6. Validate against design checklist
-7. Use `brainstorm_dialog` `summarize` to finalize
-8. Capture requirements in `docs/brainstorms/`
-9. Get explicit user approval
-10. Handoff to `02-plan` using `references/handoff.md`
+2. Check for existing `CONTEXT.md` at repo root
+3. Determine mode (Startup / Builder / CE)
+4. Run mode-specific questions (use reference files)
+5. Run Premise Challenge
+6. Generate 2-3 alternatives (minimal viable + ideal architecture)
+7. Validate against design checklist
+8. Offer to create/update `CONTEXT.md` if domain terms emerged
+9. Use `brainstorm_dialog` `summarize` to finalize
+10. Capture requirements in `docs/brainstorms/`
+11. Get explicit user approval
+12. Handoff to `02-plan` using `references/handoff.md`
 
 ## Artifact contract
 

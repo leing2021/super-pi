@@ -33,7 +33,7 @@ pi install npm:@leing2021/super-pi
 
 | Skill | 功能 | 核心工具 |
 |-------|------|----------|
-| **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE) | `brainstorm_dialog` |
+| **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE),领域词汇持久化 | `brainstorm_dialog` |
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
 | **03-work** | inline 优先,受限 subagent,断点续传,严格 TDD | `ce_subagent`, `ce_parallel_subagent` |
 | **04-review** | 自动分配评审,结构化发现,可选浏览器 QA | `review_router` |
@@ -84,6 +84,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 | [superpowers](https://github.com/obra/superpowers) | 严格 TDD gates、设计检查清单、review discipline，以及“agent 需要硬门禁而不是温和建议”的理念。 |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | think → plan → build → review → learn 五步循环，以及 knowledge compounding 的骨架。 |
 | [gstack](https://github.com/garrytan/gstack) | YC 式 forcing questions、CEO Review 认知框架、Browser QA 模式、failure maps、evidence-first validation。 |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | 项目领域词汇表（`CONTEXT.md`）跨会话持久化、轻量 ADR 三条件门槛、反馈环优先的调试纪律。作为参考模板嵌入到现有 skill 中，不新增 skill 或 tool。 |
 
 ---
 
@@ -133,6 +134,7 @@ your-project/
 ├── docs/
 │   ├── brainstorms/      # 需求文档
 │   ├── plans/             # 执行计划
+│   ├── adr/               # 架构决策记录（按需创建）
 │   └── solutions/         # 知识卡片
 └── .context/
     └── compound-engineering/

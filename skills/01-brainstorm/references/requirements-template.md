@@ -23,3 +23,8 @@ Describe the chosen direction and why it is the best fit.
 ## Success criteria
 
 List the concrete outcomes that would mean this work succeeded.
+
+## Domain vocabulary
+
+List any canonical terms established during this session.
+If a `CONTEXT.md` was created or updated, link it here.

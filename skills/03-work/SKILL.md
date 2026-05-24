@@ -46,7 +46,7 @@ When any unexpected failure occurs during execution:
 
 1. **STOP** adding features or making changes
 2. **PRESERVE** evidence (error output, repro steps)
-3. **DIAGNOSE** root cause — reproduce, localize, reduce
+3. **DIAGNOSE** root cause — follow debug discipline (`references/debug-discipline.md`): build feedback loop first, then reproduce → hypothesise → instrument → fix
 4. **FIX** the root cause, not the symptom
 5. **GUARD** with a regression test
 6. **RESUME** only after verification passes

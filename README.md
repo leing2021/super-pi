@@ -71,7 +71,7 @@ You: /skill:03-work docs/plans/plan.md
 
 | Skill | What it does | Core tool |
 |-------|-------------|-----------|
-| **01-brainstorm** | Structured multi-round discovery | `brainstorm_dialog` |
+| **01-brainstorm** | Structured multi-round discovery, domain vocabulary persistence | `brainstorm_dialog` |
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
 | **03-work** | Inline-first execution, bounded subagents, checkpoint resume, strict TDD, stop-the-line | `ce_subagent`, `ce_parallel_subagent` |
 | **04-review** | Auto-assigned reviewers, five-axis findings, autofix loop | `review_router` |
@@ -122,6 +122,7 @@ Super Pi is not a fork or wrapper. It extracts useful methods from the projects 
 | [superpowers](https://github.com/obra/superpowers) | Strict TDD gates, design checklists, review discipline, and the idea that agents need hard gates instead of gentle suggestions. |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | The five-step think → plan → build → review → learn loop and the knowledge-compounding backbone. |
 | [gstack](https://github.com/garrytan/gstack) | YC-style forcing questions, CEO Review cognitive frameworks, browser QA patterns, failure maps, and evidence-first validation. |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | Context glossary (`CONTEXT.md`) for cross-session term persistence, lightweight ADR with three-condition threshold, and feedback-loop-first debug discipline. Adopted as reference templates embedded into existing skills — no new skills or tools. |
 
 ---
 
@@ -133,8 +134,8 @@ When an unexpected failure occurs during `03-work`:
 
 1. **STOP** adding features
 2. **PRESERVE** evidence
-3. **DIAGNOSE** root cause
-4. **FIX** the root cause
+3. **DIAGNOSE** root cause — build a feedback loop first, then reproduce → hypothesise → instrument → fix
+4. **FIX** the root cause, not the symptom
 5. **GUARD** with a regression test
 6. **RESUME** only after verification passes
 
@@ -173,6 +174,7 @@ your-project/
 ├── docs/
 │   ├── brainstorms/      # Requirements
 │   ├── plans/             # Execution plans
+│   ├── adr/               # Architecture decisions (lazy)
 │   └── solutions/         # Knowledge cards
 └── .context/
     └── compound-engineering/
