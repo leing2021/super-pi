@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
-import type { SingleResult, SubagentLiveExecOptions, SubagentLiveRunner } from "../extensions/ce-core/tools/subagent"
+import type { SingleResult } from "../extensions/ce-core/tools/subagent-events"
+import type { SubagentLiveExecOptions, SubagentLiveRunner } from "../extensions/ce-core/tools/subagent"
 
 /**
  * Fake live runner that simulates JSON event stream results

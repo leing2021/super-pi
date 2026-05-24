@@ -35,7 +35,7 @@ export interface SubagentInput {
 }
 
 export interface SubagentLiveDetails {
-  mode: "single" | "chain"
+  mode: "single" | "chain" | "parallel"
   results: SingleResult[]
 }
 
