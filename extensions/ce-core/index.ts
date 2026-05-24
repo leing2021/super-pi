@@ -130,7 +130,7 @@ function createSubagentRunner(
       prompt,
       agent: "",
       task: "",
-      cwd: pi.cwd ?? process.cwd(),
+      cwd: (pi as any).cwd ?? process.cwd(),
       extraFlags: options?.extraFlags,
       extraEnv: options?.extraEnv,
       signal,
@@ -503,7 +503,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           inheritSkills: params.inheritSkills,
         },
         createSubagentRunner(pi, signal),
-        { onUpdate },
+        { onUpdate: onUpdate ? (details) => onUpdate({ content: [], details }) : undefined },
       )
 
       // Build final content from results
@@ -623,7 +623,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           inheritSkills: params.inheritSkills,
         },
         createSubagentRunner(pi, signal),
-        { onUpdate },
+        { onUpdate: onUpdate ? (details) => onUpdate({ content: [], details }) : undefined },
       )
 
       // Build compact summary content for LLM consumption
@@ -654,12 +654,14 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       }
     },
     renderCall(args, theme, _context) {
-      return renderSubagentCall(args, theme)
+      return renderSubagentCall({
+        tasks: typeof args.tasks === "string" ? [] : args.tasks,
+      }, theme)
     },
     renderResult(result, renderContext, theme, _context) {
       // Handle partial updates where data is at top level (from onUpdate)
       // rather than nested in .details (from final result return value)
-      const data = (result.details || result) as SubagentLiveDetails
+      const data = (result.details || result) as ParallelSubagentLiveDetails
       return renderSubagentResult(data, renderContext, theme)
     },
   })

@@ -20,11 +20,13 @@ import {
   getFinalOutput,
   makeFailedResult,
   invokeRunner,
+  type AnyRunner,
 } from "./subagent-events"
 import {
   assertNonPipelineStageSkill,
   type SubagentLiveRunner,
   type SubagentLiveExecOptions,
+  type SubagentRunner,
 } from "./subagent"
 
 // ---------------------------------------------------------------------------
@@ -88,7 +90,7 @@ export function createParallelSubagentTool() {
 
     async execute(
       input: ParallelSubagentInput,
-      runner: SubagentLiveRunner,
+      runner: SubagentLiveRunner | SubagentRunner,
       toolCtx?: { onUpdate?: (details: ParallelSubagentLiveDetails) => void },
     ): Promise<ParallelSubagentLiveDetails> {
       // Recursion depth guard

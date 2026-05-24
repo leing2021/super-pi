@@ -145,7 +145,7 @@ describe("subagent-events: parseJsonEvent", () => {
     expect(event).not.toBeNull()
     expect(event!.type).toBe("message_end")
     if (event!.type === "message_end") {
-      expect(event!.message.role).toBe("assistant")
+      expect((event!.message as any).role).toBe("assistant")
       expect(event!.usage).toBeDefined()
       expect(event!.usage!.input).toBe(100)
       expect(event!.stopReason).toBe("end")
@@ -166,7 +166,7 @@ describe("subagent-events: parseJsonEvent", () => {
     expect(event).not.toBeNull()
     expect(event!.type).toBe("tool_result_end")
     if (event!.type === "tool_result_end") {
-      expect(event!.message.role).toBe("user")
+      expect((event!.message as any).role).toBe("user")
     }
   })
 
