@@ -293,7 +293,7 @@ describe("subagent-renderer: renderSubagentResult parallel", () => {
     const component = renderSubagentResult(details, { expanded: false }, mockTheme)
     const lines = component.render(80)
     const text = lines.join("\n")
-    expect(text).toContain("1✓")
+    expect(text).toContain("1/3✓")
     expect(text).toContain("2 running")
   })
 

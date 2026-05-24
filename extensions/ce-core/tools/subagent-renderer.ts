@@ -381,8 +381,8 @@ function renderParallelResult(
     const icon = theme.fg("warning", "⏳")
     const bar = renderProgressBar(doneCount, results.length, theme)
     const doneLabel = failCount > 0
-      ? theme.fg("success", `${successCount}✓`) + " " + theme.fg("error", `${failCount}✗`)
-      : theme.fg("success", `${successCount}✓`)
+      ? theme.fg("success", `${doneCount}/${results.length}✓`) + " " + theme.fg("error", `${failCount}✗`)
+      : theme.fg("success", `${doneCount}/${results.length}✓`)
     const runningLabel = theme.fg("dim", `, ${running} running...`)
     return new Text(`${icon} ${bar} ${doneLabel}${runningLabel}`, 0, 0)
   }

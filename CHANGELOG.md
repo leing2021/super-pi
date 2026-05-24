@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.23.12 — adopt context glossary/ADR/debug discipline + tsc fixes + parallel progress
+- **Skills (mattpocock/skills)**: `01-brainstorm` optional CONTEXT.md vocabulary, `02-plan` lightweight ADR template, `03-work` feedback-loop-first debug discipline. Zero new skills/tools.
+- **Type fixes**: resolve 5 `bunx tsc --noEmit` errors (mode union, onUpdate bridge, pi.cwd, SingleResult import, unknown assertions).
+- **Parallel TUI**: progress bar now shows total count (`1/3✓` instead of `1✓`).
+
 ### 0.23.11 — compact parallel subagent TUI with progress bar and summary cards
 - **Call phase**: show all agents with numbered list instead of folding at 3.
 - **Running phase**: live progress bar (█░) with done/running count.
