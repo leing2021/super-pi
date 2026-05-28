@@ -31,7 +31,7 @@ describe("package bootstrap structure", () => {
     const packageJson = readFileSync(path.join(repoRoot, "package.json"), "utf8")
 
     expect(packageJson).toContain('"peerDependencies"')
-    expect(packageJson).toContain('"@mariozechner/pi-coding-agent"')
+    expect(packageJson).toContain('"@earendil-works/pi-coding-agent"')
     expect(packageJson).toContain('"typebox"')
   })
 

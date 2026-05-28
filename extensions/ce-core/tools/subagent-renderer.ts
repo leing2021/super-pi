@@ -10,7 +10,7 @@
  */
 
 import * as os from "node:os"
-import { Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui"
+import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui"
 import {
   type SingleResult,
   getFinalOutput,
@@ -470,7 +470,7 @@ function getMarkdownTheme(): any {
   // Return a simple theme for testing / default usage
   // In production, pi provides getMarkdownTheme()
   try {
-    const { getMarkdownTheme: gmt } = require("@mariozechner/pi-coding-agent")
+    const { getMarkdownTheme: gmt } = require("@earendil-works/pi-coding-agent")
     return gmt()
   } catch {
     return undefined
