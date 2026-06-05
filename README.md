@@ -73,18 +73,22 @@ You: /skill:03-work docs/plans/plan.md
 |-------|-------------|-----------|
 | **01-brainstorm** | Structured multi-round discovery, domain vocabulary persistence | `brainstorm_dialog` |
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
-| **03-work** | Inline-first execution, bounded subagents, checkpoint resume, strict TDD, stop-the-line | `ce_subagent`, `ce_parallel_subagent` |
+| **03-work** | Inline-first execution, checkpoint resume, strict TDD, stop-the-line | `session_checkpoint`, `task_splitter` |
 | **04-review** | Auto-assigned reviewers, five-axis findings, autofix loop | `review_router` |
 | **05-learn** | Pattern extraction → searchable solution artifacts | `pattern_extractor` |
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
 | **07-worktree** | Isolated git worktree development | `worktree_manager` |
 | **08-help** | Phase 1 skill explainer | — |
 
-### Subagent tool namespace
+### Optional: External subagent delegation
 
-Super Pi ships CE-specific tools named `ce_subagent` and `ce_parallel_subagent`. They are intentionally namespaced so they can coexist with the compatible third-party `pi-subagents` extension without tool-name collisions.
+For generic child agent delegation (background jobs, parallel audits, scout/worker/oracle agents), install the community extension `pi-subagents` separately. Super Pi does not require it.
 
-These tools are helpers, not the core workflow. Use inline execution by default. Use CE subagents only for bounded, non-interactive, easily verifiable leaf tasks. Do not use them to invoke pipeline-stage skills (`01-brainstorm` through `05-learn`); run those stages directly with `/skill:<stage>`.
+```bash
+pi install npm:pi-subagents
+```
+
+Super Pi focuses on inline workflow execution. Use subagents only when you need true process isolation or background runs.
 
 ### Model & Thinking Routing
 

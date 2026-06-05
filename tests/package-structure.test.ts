@@ -48,19 +48,19 @@ describe("package bootstrap structure", () => {
     expect(readme).toContain("06-next")
   })
 
-  test("README documents coexistence of ce_subagent tools with pi-subagents", () => {
+  test("README documents optional pi-subagents extension", () => {
     const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8")
     const readmeCn = readFileSync(path.join(repoRoot, "README_CN.md"), "utf8")
 
-    // Both READMEs should document the CE-specific namespace tools
-    expect(readme).toContain("ce_subagent")
-    expect(readme).toContain("ce_parallel_subagent")
-    expect(readmeCn).toContain("ce_subagent")
-    expect(readmeCn).toContain("ce_parallel_subagent")
-
-    // Both should mention pi-subagents as a compatible third-party extension
+    // Both READMEs should mention pi-subagents as an optional extension
     expect(readme.toLowerCase()).toContain("pi-subagents")
     expect(readmeCn.toLowerCase()).toContain("pi-subagents")
+
+    // Neither should reference removed CE subagent tools
+    expect(readme).not.toContain("ce_subagent")
+    expect(readme).not.toContain("ce_parallel_subagent")
+    expect(readmeCn).not.toContain("ce_subagent")
+    expect(readmeCn).not.toContain("ce_parallel_subagent")
   })
 
   test("package metadata is publish-ready", () => {

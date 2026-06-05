@@ -41,10 +41,10 @@ Use `07-worktree` for isolated feature development on a separate branch.
 ### 03-work
 **Use when:** plan is ready or task is tightly scoped.
 
-**Execution modes:**
-- Inline execution for small units
-- `ce_parallel_subagent` for independent CE skill units
-- `ce_subagent` only for dependent serial chains
+**Execution mode:**
+- Inline execution for all units in the current session
+
+**Advanced:** For external child agent delegation, install `pi-subagents` separately.
 
 **Key outputs:**
 - Completion report with verification evidence

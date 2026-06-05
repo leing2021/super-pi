@@ -1,6 +1,6 @@
 ---
 name: 03-work
-description: "Execute plan units with parallel subagents, TDD enforcement, and checkpoint resume. Use when a plan path is ready for implementation."
+description: "Execute plan units with TDD enforcement and checkpoint resume. Use when a plan path is ready for implementation."
 ---
 
 # Work
@@ -19,15 +19,13 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
 3. **Distinguish input:** plan path vs bare prompt
 4. Derive tasks from plan **implementation units**
-5. **Execution mode:**
-   - **Inline mode** is the default execution path
-   - **`ce_parallel_subagent`** only for bounded, non-interactive, easily verifiable leaf tasks
-   - **`ce_subagent`** only for rare dependent serial chains of leaf tasks
-   - Never use either tool to invoke pipeline-stage skills (`01-brainstorm through 05-learn`). Run those stages directly with `/skill:<stage>`.
+5. **Execution mode:** **inline mode** — all plan units execute inline in the current session. No built-in subagent tools.
 6. Use **`session_checkpoint`** to track progress and enable resume
 7. Use **`task_splitter`** to analyze dependencies before execution
 8. If in **worktree** (via `07-worktree`), execute inside it
 9. End by recommending `04-review`
+
+> **Advanced:** If you need external child agent delegation (background runs, parallel audits), install `pi-subagents` separately. Super Pi does not require it.
 
 ## Hard gates — TDD enforcement
 
@@ -76,7 +74,7 @@ If the same tool, command, or implementation unit fails 3 consecutive times, sto
 3. Read implementation units if plan path
 4. Load `session_checkpoint` to skip completed units
 5. Use `task_splitter` for dependency analysis
-6. Execute: **inline mode** by default; use subagents only for bounded, non-interactive, easily verifiable leaf tasks
+6. Execute: **inline mode** — all units run in the current session
 7. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
 8. **Source-driven gate:** Before implementing framework/library-specific code, verify the API or pattern against official documentation. Flag unverified patterns as UNVERIFIED in output.
 9. Record progress via `references/progress-update-format.md`
