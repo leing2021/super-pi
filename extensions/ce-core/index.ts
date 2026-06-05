@@ -295,6 +295,8 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     const settings = await readSettings(ctx.cwd)
     const modelStrategy = settings?.modelStrategy
     const thinkingStrategy = settings?.thinkingStrategy
+    // Notification guard: only notify in interactive (TUI) or RPC modes.
+    // For interactive input capability checks (askUserQuestion), use ctx.hasUI directly.
     const shouldNotify = ctx.mode === "tui" || ctx.mode === "rpc"
 
     // Model switching

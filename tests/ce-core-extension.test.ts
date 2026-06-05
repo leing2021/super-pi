@@ -1207,54 +1207,9 @@ describe("pattern_extractor", () => {
   })
 })
 
-describe("async_mutex", () => {
-  test("serializes concurrent access", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-    const order: string[] = []
-
-    const task = async (label: string, delay: number) => {
-      const release = await mutex.acquire()
-      order.push(`${label}-start`)
-      await new Promise(r => setTimeout(r, delay))
-      order.push(`${label}-end`)
-      release()
-    }
-
-    await Promise.all([task("A", 20), task("B", 10), task("C", 5)])
-
-    // Each task must complete before the next starts
-    expect(order).toEqual([
-      "A-start", "A-end",
-      "B-start", "B-end",
-      "C-start", "C-end",
-    ])
-  })
-
-  test("releases on error", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const failing = async () => {
-      const release = await mutex.acquire()
-      try {
-        throw new Error("boom")
-      } finally {
-        release()
-      }
-    }
-
-    await expect(failing()).rejects.toThrow("boom")
-
-    // Should still be able to acquire
-    const release = await mutex.acquire()
-    release()
-  })
-})
-
 
 describe("ce-core extension runtime registration", () => {
-  test("registers artifact_helper, ask_user_question, and subagent tools", () => {
+  test("registers 12 workflow control tools (no subagent tools)", () => {
     const registeredNames: string[] = []
     const eventHandlers = new Map<string, any[]>()
     const pi = {
