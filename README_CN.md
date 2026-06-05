@@ -35,18 +35,22 @@ pi install npm:@leing2021/super-pi
 |-------|------|----------|
 | **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE),领域词汇持久化 | `brainstorm_dialog` |
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
-| **03-work** | inline 优先,受限 subagent,断点续传,严格 TDD | `ce_subagent`, `ce_parallel_subagent` |
+| **03-work** | inline 优先,断点续传,严格 TDD | `session_checkpoint`, `task_splitter` |
 | **04-review** | 自动分配评审,结构化发现,可选浏览器 QA | `review_router` |
 | **05-learn** | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
 | **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
 | **08-help** | Phase 1 skill 说明与使用指南 | — |
 
-### Subagent 工具命名空间
+### 可选：外部 subagent 委托
 
-Super Pi 内置 CE 专用工具 `ce_subagent` 和 `ce_parallel_subagent`。它们刻意使用命名空间前缀，因此可以与兼容的第三方 `pi-subagents` 扩展共存，不会发生工具名冲突。
+如需通用子 agent 委托（后台任务、并行审计、scout/worker/oracle agents），可单独安装社区扩展 `pi-subagents`。Super Pi 不依赖它。
 
-这些工具只是辅助能力，不是核心 workflow。默认使用 inline execution；仅在任务有明确边界、无需交互、容易验证时使用 CE subagents。不要用它们调用主流程 skill（`01-brainstorm` 到 `05-learn`）；这些阶段应直接通过 `/skill:<stage>` 执行。
+```bash
+pi install npm:pi-subagents
+```
+
+Super Pi 专注于 inline workflow 执行。仅在需要真正的进程隔离或后台运行时才使用 subagents。
 
 ### 模型与思考深度路由
 

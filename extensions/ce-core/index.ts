@@ -4,11 +4,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool } from "./tools/ask-user-question"
-import { createSubagentTool } from "./tools/subagent"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
-import { createParallelSubagentTool } from "./tools/parallel-subagent"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
@@ -19,11 +17,6 @@ import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
-import { createJsonRunner, type JsonRunConfig } from "./tools/subagent-json-runner"
-import { getFinalOutput, isFailedResult, type SingleResult } from "./tools/subagent-events"
-import { renderSubagentCall, renderSubagentResult } from "./tools/subagent-renderer"
-import type { SubagentLiveRunner, SubagentLiveExecOptions, SubagentLiveDetails } from "./tools/subagent"
-import type { ParallelSubagentLiveDetails } from "./tools/parallel-subagent"
 
 const PIPELINE_STAGE_KEYS = new Set([
   "01-brainstorm",
@@ -116,34 +109,6 @@ function parseModelRef(
   }
 }
 
-/**
- * Create a spawn-based subagent runner that uses pi --mode json
- * with per-process env (no global process.env mutation).
- */
-function createSubagentRunner(
-  pi: ExtensionAPI,
-  signal?: AbortSignal,
-): SubagentLiveRunner {
-  const jsonRunner = createJsonRunner()
-  return async (prompt: string, options?: SubagentLiveExecOptions) => {
-    const config: JsonRunConfig = {
-      prompt,
-      agent: "",
-      task: "",
-      cwd: (pi as any).cwd ?? process.cwd(),
-      extraFlags: options?.extraFlags,
-      extraEnv: options?.extraEnv,
-      signal,
-      onUpdate: options?.onUpdate,
-    }
-    const result = await jsonRunner.run(config)
-    if (isFailedResult(result) || result.exitCode !== 0) {
-      throw new Error(result.errorMessage || result.stderr || `Subagent failed for prompt: ${prompt}`)
-    }
-    return result
-  }
-}
-
 const artifactHelperParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root where workflow artifacts should be created" }),
   artifactType: Type.Union([
@@ -166,18 +131,6 @@ const askUserQuestionParams = Type.Object({
   allowCustom: Type.Optional(Type.Boolean({ description: "Allow a custom answer when options are present" })),
 })
 
-const subagentTaskSchema = Type.Object({
-  agent: Type.String({ description: "Skill name to invoke via /skill:<name>" }),
-  task: Type.String({ description: "Task text passed to the subagent" }),
-})
-
-const subagentParams = Type.Object({
-  agent: Type.Optional(Type.String({ description: "Single subagent skill name" })),
-  task: Type.Optional(Type.String({ description: "Single subagent task" })),
-  chain: Type.Optional(Type.Array(subagentTaskSchema, { description: "Serial subagent chain with optional {previous} placeholder" })),
-  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether the subagent should inherit skills. Default: true" })),
-})
-
 const workflowStateParams = Type.Object({
   repoRoot: Type.String({ description: "Repository root to scan for workflow artifacts" }),
 })
@@ -198,19 +151,6 @@ const reviewRouterParams = Type.Object({
   filesChanged: Type.Array(Type.String(), { description: "List of file paths changed in the diff" }),
   insertions: Type.Number({ description: "Number of lines added" }),
   deletions: Type.Number({ description: "Number of lines removed" }),
-})
-
-const parallelSubagentTaskSchema = Type.Object({
-  agent: Type.String({ description: "Skill name to invoke via /skill:<name>" }),
-  task: Type.String({ description: "Task text passed to the subagent" }),
-})
-
-const parallelSubagentParams = Type.Object({
-  tasks: Type.Union([
-    Type.Array(parallelSubagentTaskSchema),
-    Type.String({ description: "JSON stringified array of tasks" }),
-  ], { description: "Array of independent tasks to run concurrently (can be a JSON string)" }),
-  inheritSkills: Type.Optional(Type.Boolean({ description: "Whether subagents should inherit skills. Default: true" })),
 })
 
 const sessionCheckpointParams = Type.Object({
@@ -346,9 +286,18 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return { action: "continue" as const }
     }
 
+    // Skip model/thinking switching during streaming steers — these are
+    // mid-stream interrupts, not new pipeline invocations.
+    if (event.streamingBehavior === "steer") {
+      return { action: "continue" as const }
+    }
+
     const settings = await readSettings(ctx.cwd)
     const modelStrategy = settings?.modelStrategy
     const thinkingStrategy = settings?.thinkingStrategy
+    // Notification guard: only notify in interactive (TUI) or RPC modes.
+    // For interactive input capability checks (askUserQuestion), use ctx.hasUI directly.
+    const shouldNotify = ctx.mode === "tui" || ctx.mode === "rpc"
 
     // Model switching
     if (modelStrategy) {
@@ -362,19 +311,19 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
             if (model) {
               const switched = await pi.setModel(model)
               if (switched) {
-                if (ctx.hasUI) {
+                if (shouldNotify) {
                   ctx.ui.notify(`Switched model for ${stageKey}: ${model.provider}/${model.id}`, "info")
                 }
               } else {
-                if (ctx.hasUI) {
+                if (shouldNotify) {
                   ctx.ui.notify(`No API key for ${stageKey}: ${model.provider}/${model.id}`, "warning")
                 }
               }
-            } else if (ctx.hasUI) {
+            } else if (shouldNotify) {
               ctx.ui.notify(`Model not found for ${stageKey}: ${targetModelRef}`, "warning")
             }
           }
-        } else if (ctx.hasUI) {
+        } else if (shouldNotify) {
           ctx.ui.notify(`Invalid modelStrategy for ${stageKey}: ${targetModelRef}`, "warning")
         }
       }
@@ -399,7 +348,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         const currentLevel = pi.getThinkingLevel()
         if (currentLevel !== normalized) {
           pi.setThinkingLevel(normalized)
-          if (ctx.hasUI) {
+          if (shouldNotify) {
             ctx.ui.notify(`Switched thinking level for ${stageKey}: ${normalized}`, "info")
           }
         }
@@ -411,11 +360,9 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
   const artifactHelper = createArtifactHelperTool()
   const askUserQuestion = createAskUserQuestionTool()
-  const subagent = createSubagentTool()
   const workflowState = createWorkflowStateTool()
   const worktreeManager = createWorktreeManagerTool()
   const reviewRouter = createReviewRouterTool()
-  const parallelSubagent = createParallelSubagentTool()
   const sessionCheckpoint = createSessionCheckpointTool()
   const taskSplitter = createTaskSplitterTool()
   const brainstormDialog = createBrainstormDialogTool()
@@ -490,45 +437,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   })
 
   pi.registerTool({
-    name: subagent.name,
-    label: "CE Subagent",
-    description: "Run a single CE skill-based subagent or a serial chain in an isolated Pi process.",
-    parameters: subagentParams,
-    async execute(_toolCallId, params, signal, onUpdate, ctx) {
-      const result = await subagent.execute(
-        {
-          agent: params.agent,
-          task: params.task,
-          chain: params.chain,
-          inheritSkills: params.inheritSkills,
-        },
-        createSubagentRunner(pi, signal),
-        { onUpdate: onUpdate ? (details) => onUpdate({ content: [], details }) : undefined },
-      )
-
-      // Build final content from results
-      const lastResult = result.results[result.results.length - 1]
-      const finalText = lastResult ? getFinalOutput(lastResult.messages) : ""
-      const isError = lastResult ? isFailedResult(lastResult) : false
-
-      return {
-        content: [{ type: "text", text: finalText || "(no output)" }],
-        details: result,
-        isError: isError || undefined,
-      }
-    },
-    renderCall(args, theme, _context) {
-      return renderSubagentCall(args, theme)
-    },
-    renderResult(result, renderContext, theme, _context) {
-      // Handle partial updates where data is at top level (from onUpdate)
-      // rather than nested in .details (from final result return value)
-      const data = (result.details || result) as SubagentLiveDetails
-      return renderSubagentResult(data, renderContext, theme)
-    },
-  })
-
-  pi.registerTool({
     name: workflowState.name,
     label: "Workflow State",
     description: "Scan repo-local Compound Engineering artifacts and return structured workflow state.",
@@ -596,73 +504,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
       }
-    },
-  })
-
-  pi.registerTool({
-    name: parallelSubagent.name,
-    label: "CE Parallel Subagent",
-    description: "Run multiple CE skill-based subagent tasks concurrently. IMPORTANT: Provide 'tasks' as a clean JSON array object. If the environment forces a string, provide a valid JSON array string.",
-    parameters: parallelSubagentParams,
-    async execute(_toolCallId, params, signal, onUpdate) {
-      let tasks: any[]
-      if (typeof params.tasks === "string") {
-        try {
-          const cleaned = params.tasks.replace(/^```json\s*|```$/g, "").trim()
-          tasks = JSON.parse(cleaned)
-        } catch (e) {
-          throw new Error(`Failed to parse tasks string as JSON: ${e instanceof Error ? e.message : String(e)}`)
-        }
-      } else {
-        tasks = params.tasks
-      }
-
-      const result = await parallelSubagent.execute(
-        {
-          tasks,
-          inheritSkills: params.inheritSkills,
-        },
-        createSubagentRunner(pi, signal),
-        { onUpdate: onUpdate ? (details) => onUpdate({ content: [], details }) : undefined },
-      )
-
-      // Build compact summary content for LLM consumption
-      const successCount = result.results.filter(r => r.exitCode === 0).length
-      const failCount = result.results.filter(r => isFailedResult(r)).length
-      const summaries = result.results.map((r, i) => {
-        const icon = isFailedResult(r) ? "✗" : "✓"
-        const output = getFinalOutput(r.messages) || r.errorMessage || r.stderr || "(no output)"
-        // Compact: first non-empty line, stripped of markdown formatting
-        const summaryLine = output.split("\n").find((l: string) => l.trim().length > 0) || ""
-        const cleaned = summaryLine.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim()
-        const oneLine = cleaned.length > 200 ? cleaned.slice(0, 199) + "…" : cleaned
-        return `${i + 1}. ${icon} ${r.agent} — ${oneLine}`
-      })
-
-      // Full outputs available in details for expanded view
-      const fullOutputs = result.results.map(r => {
-        const output = getFinalOutput(r.messages) || ""
-        return output
-      })
-
-      return {
-        content: [{
-          type: "text",
-          text: `Parallel: ${successCount}/${result.results.length} succeeded${failCount > 0 ? `, ${failCount} failed` : ""}\n${summaries.join("\n")}`,
-        }],
-        details: result,
-      }
-    },
-    renderCall(args, theme, _context) {
-      return renderSubagentCall({
-        tasks: typeof args.tasks === "string" ? [] : args.tasks,
-      }, theme)
-    },
-    renderResult(result, renderContext, theme, _context) {
-      // Handle partial updates where data is at top level (from onUpdate)
-      // rather than nested in .details (from final result return value)
-      const data = (result.details || result) as ParallelSubagentLiveDetails
-      return renderSubagentResult(data, renderContext, theme)
     },
   })
 
@@ -909,31 +750,9 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
 
 export { createArtifactHelperTool } from "./tools/artifact-helper"
 export { createAskUserQuestionTool } from "./tools/ask-user-question"
-export { createSubagentTool } from "./tools/subagent"
-export { checkSubagentDepth, getChildDepthEnv, DEFAULT_MAX_SUBAGENT_DEPTH } from "./tools/subagent-depth-guard"
-export { AsyncMutex } from "./tools/async-mutex"
-export { createJsonRunner } from "./tools/subagent-json-runner"
-export {
-  parseJsonEvent,
-  applyEventToResult,
-  type SingleResult as SingleResultType,
-  type UsageStats,
-  type ParsedEvent,
-  isFailedResult as isFailedSingleResult,
-  formatUsageStats,
-  makeInitialResult,
-  getFinalOutput as getFinalOutputFromMessages,
-  getDisplayItems,
-} from "./tools/subagent-events"
-export {
-  formatToolCall,
-  renderSubagentCall,
-  renderSubagentResult,
-} from "./tools/subagent-renderer"
 export { createWorkflowStateTool } from "./tools/workflow-state"
 export { createWorktreeManagerTool } from "./tools/worktree-manager"
 export { createReviewRouterTool } from "./tools/review-router"
-export { createParallelSubagentTool } from "./tools/parallel-subagent"
 export { createSessionCheckpointTool } from "./tools/session-checkpoint"
 export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"

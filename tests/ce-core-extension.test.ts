@@ -10,12 +10,9 @@ import {
 } from "../extensions/ce-core/utils/artifact-paths"
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
 import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
-import { createSubagentTool } from "../extensions/ce-core/tools/subagent"
-import { getFinalOutput } from "../extensions/ce-core/tools/subagent-events"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
-import { createParallelSubagentTool } from "../extensions/ce-core/tools/parallel-subagent"
 import { createSessionCheckpointTool } from "../extensions/ce-core/tools/session-checkpoint"
 import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitter"
 import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainstorm-dialog"
@@ -23,11 +20,6 @@ import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
 import { createSessionHistoryTool } from "../extensions/ce-core/tools/session-history"
 import { createPatternExtractorTool } from "../extensions/ce-core/tools/pattern-extractor"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
-import {
-  checkSubagentDepth,
-  getChildDepthEnv,
-  DEFAULT_MAX_SUBAGENT_DEPTH,
-} from "../extensions/ce-core/tools/subagent-depth-guard"
 
 describe("artifact paths", () => {
   const repoRoot = "/tmp/pi-ce-repo"
@@ -186,124 +178,6 @@ describe("ask_user_question", () => {
   })
 })
 
-describe("subagent", () => {
-  test("tool is named ce_subagent", () => {
-    const tool = createSubagentTool()
-    expect(tool.name).toBe("ce_subagent")
-  })
-
-  test("runs a single subagent task", async () => {
-    const calls: string[] = []
-    const tool = createSubagentTool()
-
-    const result = await tool.execute(
-      {
-        agent: "ce-plan",
-        task: "Design the package",
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return "ok"
-      },
-    )
-
-    expect(calls).toEqual(["/skill:ce-plan Design the package"])
-    expect(result.mode).toBe("single")
-    expect(result.outputs).toEqual(["ok"])
-  })
-
-  test("runs a serial chain and substitutes the previous result", async () => {
-    const calls: string[] = []
-    const tool = createSubagentTool()
-
-    const result = await tool.execute(
-      {
-        chain: [
-          { agent: "ce-brainstorm", task: "Scope the feature" },
-          { agent: "ce-plan", task: "Plan using {previous}" },
-        ],
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return prompt.includes("ce-brainstorm") ? "requirements-path" : "plan-path"
-      },
-    )
-
-    expect(calls).toEqual([
-      "/skill:ce-brainstorm Scope the feature",
-      "/skill:ce-plan Plan using requirements-path",
-    ])
-    expect(result.mode).toBe("chain")
-    expect(result.outputs).toEqual(["requirements-path", "plan-path"])
-  })
-
-  test("rejects mixed execution modes", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        {
-          agent: "ce-plan",
-          task: "Design the package",
-          chain: [{ agent: "ce-brainstorm", task: "Scope the feature" }],
-        },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("Provide exactly one mode")
-  })
-
-  test("rejects empty agent in single mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { agent: "", task: "Design the package" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow()
-  })
-
-  test("rejects empty task in single mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { agent: "ce-plan", task: "" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow()
-  })
-
-  test("rejects empty chain array", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute({ chain: [] }, async () => "ok"),
-    ).rejects.toThrow("Provide exactly one mode")
-  })
-
-  test("rejects pipeline-stage skills in single mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { agent: "02-plan", task: "Create a plan" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("Pipeline-stage skill \"02-plan\" cannot run through ce_subagent")
-  })
-
-  test("rejects pipeline-stage skills in chain mode", async () => {
-    const tool = createSubagentTool()
-
-    await expect(
-      tool.execute(
-        { chain: [{ agent: "01-brainstorm", task: "Discover requirements" }] },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("Pipeline-stage skill \"01-brainstorm\" cannot run through ce_subagent")
-  })
-})
 
 describe("workflow_state", () => {
   test("reports empty state when no artifacts exist", async () => {
@@ -668,367 +542,7 @@ describe("review_router", () => {
   })
 })
 
-describe("parallel_subagent", () => {
-  test("tool is named ce_parallel_subagent", () => {
-    const tool = createParallelSubagentTool()
-    expect(tool.name).toBe("ce_parallel_subagent")
-  })
 
-  test("runs multiple tasks concurrently and returns all outputs", async () => {
-    const calls: string[] = []
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-brainstorm", task: "Scope feature A" },
-          { agent: "ce-brainstorm", task: "Scope feature B" },
-          { agent: "ce-plan", task: "Plan feature C" },
-        ],
-      },
-      async (prompt: string) => {
-        calls.push(prompt)
-        return `result-${calls.length}`
-      },
-    )
-
-    expect(result.results.length).toBe(3)
-    expect(result.results.every(r => r.exitCode === 0)).toBe(true)
-    // Legacy runner returns string, wrapped as message text
-    expect(result.results[0].messages[0]).toBeDefined()
-    expect(result.results[1].messages[0]).toBeDefined()
-    expect(result.results[2].messages[0]).toBeDefined()
-  })
-
-  test("handles individual task failures gracefully", async () => {
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-brainstorm", task: "Good task" },
-          { agent: "ce-plan", task: "Fail task" },
-          { agent: "ce-work", task: "Another good task" },
-        ],
-      },
-      async (prompt: string) => {
-        if (prompt.includes("Fail")) throw new Error("Task failed")
-        return "ok"
-      },
-    )
-
-    expect(result.results.length).toBe(3)
-    expect(result.results[0].exitCode).toBe(0)
-    expect(result.results[1].exitCode).not.toBe(0)
-    expect(result.results[1].errorMessage).toContain("Task failed")
-    expect(result.results[2].exitCode).toBe(0)
-  })
-
-  test("rejects empty task array", async () => {
-    const tool = createParallelSubagentTool()
-
-    await expect(
-      tool.execute({ tasks: [] }, async () => ""),
-    ).rejects.toThrow("at least one task")
-  })
-
-  test("returns results in the same order as input tasks", async () => {
-    const tool = createParallelSubagentTool()
-
-    const result = await tool.execute(
-      {
-        tasks: [
-          { agent: "ce-work", task: "Slow task" },
-          { agent: "ce-plan", task: "Fast task" },
-        ],
-      },
-      async (prompt: string) => {
-        if (prompt.includes("Slow")) {
-          await new Promise(r => setTimeout(r, 50))
-          return "slow-done"
-        }
-        return "fast-done"
-      },
-    )
-
-    expect(result.results[0].exitCode).toBe(0)
-    expect(result.results[1].exitCode).toBe(0)
-    // Order preserved: first is slow, second is fast
-    expect(getFinalOutput(result.results[0].messages)).toBe("slow-done")
-    expect(getFinalOutput(result.results[1].messages)).toBe("fast-done")
-  })
-
-  test("rejects pipeline-stage skills before spawning parallel tasks", async () => {
-    const tool = createParallelSubagentTool()
-    const calls: string[] = []
-
-    await expect(
-      tool.execute(
-        { tasks: [{ agent: "04-review", task: "Review changes" }] },
-        async (prompt: string) => {
-          calls.push(prompt)
-          return "ok"
-        },
-      ),
-    ).rejects.toThrow("Pipeline-stage skill \"04-review\" cannot run through ce_parallel_subagent")
-
-    expect(calls).toEqual([])
-  })
-})
-
-describe("subagent_depth_guard", () => {
-  const originalDepth = process.env.PI_SUBAGENT_DEPTH
-  const originalMax = process.env.PI_SUBAGENT_MAX_DEPTH
-
-  const cleanup = () => {
-    if (originalDepth === undefined) {
-      delete process.env.PI_SUBAGENT_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_DEPTH = originalDepth
-    }
-    if (originalMax === undefined) {
-      delete process.env.PI_SUBAGENT_MAX_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_MAX_DEPTH = originalMax
-    }
-  }
-
-  test("defaults to depth=0, max=2 when env vars unset", () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(true)
-    expect(result.depth).toBe(0)
-    expect(result.max).toBe(DEFAULT_MAX_SUBAGENT_DEPTH)
-
-    cleanup()
-  })
-
-  test("allows execution at depth < max", () => {
-    process.env.PI_SUBAGENT_DEPTH = "1"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "3"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(true)
-    expect(result.depth).toBe(1)
-    expect(result.max).toBe(3)
-
-    cleanup()
-  })
-
-  test("blocks execution at depth >= max", () => {
-    process.env.PI_SUBAGENT_DEPTH = "2"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(false)
-    expect(result.reason).toContain("depth limit reached")
-
-    cleanup()
-  })
-
-  test("blocks execution at depth > max", () => {
-    process.env.PI_SUBAGENT_DEPTH = "5"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(false)
-
-    cleanup()
-  })
-
-  test("depth=0, max=0 disables subagent entirely", () => {
-    process.env.PI_SUBAGENT_DEPTH = "0"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "0"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(false)
-    expect(result.reason).toContain("depth limit reached")
-
-    cleanup()
-  })
-
-  test("handles invalid depth as 0", () => {
-    process.env.PI_SUBAGENT_DEPTH = "not-a-number"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(true)
-    expect(result.depth).toBe(0)
-
-    cleanup()
-  })
-
-  test("handles invalid max as default", () => {
-    process.env.PI_SUBAGENT_DEPTH = "0"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "not-a-number"
-
-    const result = checkSubagentDepth()
-    expect(result.allowed).toBe(true)
-    expect(result.max).toBe(DEFAULT_MAX_SUBAGENT_DEPTH)
-
-    cleanup()
-  })
-
-  test("getChildDepthEnv increments depth and preserves max", () => {
-    process.env.PI_SUBAGENT_DEPTH = "1"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "3"
-
-    const env = getChildDepthEnv()
-    expect(env.PI_SUBAGENT_DEPTH).toBe("2")
-    expect(env.PI_SUBAGENT_MAX_DEPTH).toBe("3")
-
-    cleanup()
-  })
-
-  test("getChildDepthEnv accepts custom maxDepth override", () => {
-    process.env.PI_SUBAGENT_DEPTH = "0"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const env = getChildDepthEnv({ maxDepth: 1 })
-    expect(env.PI_SUBAGENT_DEPTH).toBe("1")
-    expect(env.PI_SUBAGENT_MAX_DEPTH).toBe("1")
-
-    cleanup()
-  })
-
-  test("subagent tool blocks execution when depth exceeded", async () => {
-    process.env.PI_SUBAGENT_DEPTH = "2"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const tool = createSubagentTool()
-    await expect(
-      tool.execute(
-        { agent: "ce-plan", task: "test" },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("depth limit reached")
-
-    cleanup()
-  })
-
-  test("parallel_subagent tool blocks execution when depth exceeded", async () => {
-    process.env.PI_SUBAGENT_DEPTH = "2"
-    process.env.PI_SUBAGENT_MAX_DEPTH = "2"
-
-    const tool = createParallelSubagentTool()
-    await expect(
-      tool.execute(
-        { tasks: [{ agent: "ce-plan", task: "test" }] },
-        async () => "ok",
-      ),
-    ).rejects.toThrow("depth limit reached")
-
-    cleanup()
-  })
-
-  test("subagent tool passes execOptions with depth env", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
-    const tool = createSubagentTool()
-
-    await tool.execute(
-      { agent: "ce-plan", task: "test" },
-      async (_prompt, options) => {
-        capturedOptions.push(options ?? {})
-        return "ok"
-      },
-    )
-
-    expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraEnv?.PI_SUBAGENT_DEPTH).toBe("1")
-    expect(capturedOptions[0].extraEnv?.PI_SUBAGENT_MAX_DEPTH).toBe(String(DEFAULT_MAX_SUBAGENT_DEPTH))
-
-    cleanup()
-  })
-
-  test("subagent with inheritSkills=false passes --no-skills", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
-    const tool = createSubagentTool()
-
-    await tool.execute(
-      { agent: "ce-plan", task: "test", inheritSkills: false },
-      async (_prompt, options) => {
-        capturedOptions.push(options ?? {})
-        return "ok"
-      },
-    )
-
-    expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraFlags).toContain("--no-skills")
-
-    cleanup()
-  })
-
-  test("subagent with inheritSkills=true does not pass --no-skills", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
-    const tool = createSubagentTool()
-
-    await tool.execute(
-      { agent: "ce-plan", task: "test", inheritSkills: true },
-      async (_prompt, options) => {
-        capturedOptions.push(options ?? {})
-        return "ok"
-      },
-    )
-
-    expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraFlags).toBeUndefined()
-
-    cleanup()
-  })
-
-  test("parallel_subagent defaults to inheritSkills=true (inherits skills)", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
-    const tool = createParallelSubagentTool()
-
-    await tool.execute(
-      { tasks: [{ agent: "ce-plan", task: "test" }] },
-      async (_prompt, options) => {
-        capturedOptions.push(options ?? {})
-        return "ok"
-      },
-    )
-
-    expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraFlags).toBeUndefined()
-
-    cleanup()
-  })
-
-  test("parallel_subagent with inheritSkills=true keeps skills", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const capturedOptions: import("../extensions/ce-core/tools/subagent").SubagentExecOptions[] = []
-    const tool = createParallelSubagentTool()
-
-    await tool.execute(
-      { tasks: [{ agent: "ce-plan", task: "test" }], inheritSkills: true },
-      async (_prompt, options) => {
-        capturedOptions.push(options ?? {})
-        return "ok"
-      },
-    )
-
-    expect(capturedOptions.length).toBe(1)
-    expect(capturedOptions[0].extraFlags).toBeUndefined()
-
-    cleanup()
-  })
-})
 
 describe("session_checkpoint", () => {
   test("save creates a checkpoint file", async () => {
@@ -1693,163 +1207,9 @@ describe("pattern_extractor", () => {
   })
 })
 
-describe("async_mutex", () => {
-  test("serializes concurrent access", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-    const order: string[] = []
-
-    const task = async (label: string, delay: number) => {
-      const release = await mutex.acquire()
-      order.push(`${label}-start`)
-      await new Promise(r => setTimeout(r, delay))
-      order.push(`${label}-end`)
-      release()
-    }
-
-    await Promise.all([task("A", 20), task("B", 10), task("C", 5)])
-
-    // Each task must complete before the next starts
-    expect(order).toEqual([
-      "A-start", "A-end",
-      "B-start", "B-end",
-      "C-start", "C-end",
-    ])
-  })
-
-  test("releases on error", async () => {
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const failing = async () => {
-      const release = await mutex.acquire()
-      try {
-        throw new Error("boom")
-      } finally {
-        release()
-      }
-    }
-
-    await expect(failing()).rejects.toThrow("boom")
-
-    // Should still be able to acquire
-    const release = await mutex.acquire()
-    release()
-  })
-})
-
-describe("parallel_subagent env isolation", () => {
-  const originalDepth = process.env.PI_SUBAGENT_DEPTH
-  const originalMax = process.env.PI_SUBAGENT_MAX_DEPTH
-
-  const cleanup = () => {
-    if (originalDepth === undefined) {
-      delete process.env.PI_SUBAGENT_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_DEPTH = originalDepth
-    }
-    if (originalMax === undefined) {
-      delete process.env.PI_SUBAGENT_MAX_DEPTH
-    } else {
-      process.env.PI_SUBAGENT_MAX_DEPTH = originalMax
-    }
-  }
-
-  test("env is clean after parallel execution", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    // Simulate the env-save/set/exec/restore pattern with a mutex
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
-      const extraEnv = options?.extraEnv ?? {}
-      const release = await mutex.acquire()
-      const saved: Record<string, string | undefined> = {}
-      for (const [key, value] of Object.entries(extraEnv)) {
-        saved[key] = process.env[key]
-        process.env[key] = value
-      }
-      try {
-        await new Promise(r => setTimeout(r, Math.random() * 10))
-        return "ok"
-      } finally {
-        for (const [key, oldValue] of Object.entries(saved)) {
-          if (oldValue === undefined) {
-            delete process.env[key]
-          } else {
-            process.env[key] = oldValue
-          }
-        }
-        release()
-      }
-    }
-
-    const tool = createParallelSubagentTool()
-    await tool.execute(
-      { tasks: [
-        { agent: "a", task: "t1" },
-        { agent: "b", task: "t2" },
-        { agent: "c", task: "t3" },
-      ]},
-      simulateRunner,
-    )
-
-    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
-    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
-
-    cleanup()
-  })
-
-  test("env is clean after serial chain execution", async () => {
-    delete process.env.PI_SUBAGENT_DEPTH
-    delete process.env.PI_SUBAGENT_MAX_DEPTH
-
-    const { AsyncMutex } = require("../extensions/ce-core/tools/async-mutex")
-    const mutex = new AsyncMutex()
-
-    const simulateRunner = async (_prompt: string, options?: import("../extensions/ce-core/tools/subagent").SubagentExecOptions) => {
-      const extraEnv = options?.extraEnv ?? {}
-      const release = await mutex.acquire()
-      const saved: Record<string, string | undefined> = {}
-      for (const [key, value] of Object.entries(extraEnv)) {
-        saved[key] = process.env[key]
-        process.env[key] = value
-      }
-      try {
-        await new Promise(r => setTimeout(r, 5))
-        return "ok"
-      } finally {
-        for (const [key, oldValue] of Object.entries(saved)) {
-          if (oldValue === undefined) {
-            delete process.env[key]
-          } else {
-            process.env[key] = oldValue
-          }
-        }
-        release()
-      }
-    }
-
-    const tool = createSubagentTool()
-    await tool.execute(
-      { chain: [
-        { agent: "a", task: "t1" },
-        { agent: "b", task: "t2" },
-      ]},
-      simulateRunner,
-    )
-
-    expect(process.env.PI_SUBAGENT_DEPTH).toBeUndefined()
-    expect(process.env.PI_SUBAGENT_MAX_DEPTH).toBeUndefined()
-
-    cleanup()
-  })
-})
 
 describe("ce-core extension runtime registration", () => {
-  test("registers artifact_helper, ask_user_question, and subagent tools", () => {
+  test("registers 12 workflow control tools (no subagent tools)", () => {
     const registeredNames: string[] = []
     const eventHandlers = new Map<string, any[]>()
     const pi = {
@@ -1871,11 +1231,9 @@ describe("ce-core extension runtime registration", () => {
     expect(registeredNames).toEqual([
       "artifact_helper",
       "ask_user_question",
-      "ce_subagent",
       "workflow_state",
       "worktree_manager",
       "review_router",
-      "ce_parallel_subagent",
       "session_checkpoint",
       "task_splitter",
       "brainstorm_dialog",
@@ -1898,8 +1256,11 @@ describe("ce-core extension runtime registration", () => {
 
     ceCoreExtension(pi as never)
 
+    // Subagent tools removed (Unit 1 guard)
     expect(registeredNames).not.toContain("subagent")
     expect(registeredNames).not.toContain("parallel_subagent")
+    expect(registeredNames).not.toContain("ce_subagent")
+    expect(registeredNames).not.toContain("ce_parallel_subagent")
   })
 
   test("brainstorm_dialog does not terminate the agent turn", async () => {
@@ -2034,6 +1395,7 @@ describe("ce-core extension runtime registration", () => {
       {
         cwd: repoRoot,
         hasUI: true,
+        mode: "tui",
         model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
         modelRegistry: {
           find(provider: string, id: string) {
@@ -2161,6 +1523,7 @@ describe("ce-core extension runtime registration", () => {
       {
         cwd: repoRoot,
         hasUI: true,
+        mode: "tui",
         model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
         modelRegistry: {
           find(provider: string, id: string) {
@@ -2184,6 +1547,109 @@ describe("ce-core extension runtime registration", () => {
       },
     ])
   })
+  test("input hook skips model switch during streaming steer", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-steer-guard-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({ modelStrategy: { "02-plan": "anthropic/claude-opus-4-1" } }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+      async setModel() { setModelCalls.push("called") ; return true },
+    }
+
+    ceCoreExtension(pi as never)
+    const inputHandlers = eventHandlers.get("input") ?? []
+
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo.md", source: "interactive", streamingBehavior: "steer" },
+      { cwd: repoRoot, hasUI: true, model: { provider: "anthropic", id: "sonnet" }, modelRegistry: { find: (p: string, i: string) => ({ provider: p, id: i }) }, ui: { notify() {} } },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(setModelCalls).toEqual([])
+  })
+
+  test("input hook proceeds with model switch during followUp", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-followup-guard-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({ modelStrategy: { "02-plan": "anthropic/claude-opus-4-1" } }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+      async setModel() { setModelCalls.push("called") ; return true },
+    }
+
+    ceCoreExtension(pi as never)
+    const inputHandlers = eventHandlers.get("input") ?? []
+
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo.md", source: "interactive", streamingBehavior: "followUp" },
+      { cwd: repoRoot, hasUI: true, mode: "tui", model: { provider: "anthropic", id: "sonnet" }, modelRegistry: { find: (p: string, i: string) => ({ provider: p, id: i }) }, ui: { notify() {} } },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(setModelCalls).toEqual(["called"])
+  })
+
+  test("input hook skips UI notifications in non-interactive modes", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const notifications: string[] = []
+    const repoRoot = `/tmp/pi-ce-mode-guard-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({ thinkingStrategy: { "02-plan": "high" } }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+      getThinkingLevel() { return "medium" },
+      setThinkingLevel() {},
+    }
+
+    ceCoreExtension(pi as never)
+    const inputHandlers = eventHandlers.get("input") ?? []
+
+    // JSON mode — should not notify
+    await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo.md", source: "rpc" },
+      { cwd: repoRoot, mode: "json", hasUI: false, model: { provider: "anthropic", id: "sonnet" }, modelRegistry: { find: () => ({ provider: "anthropic", id: "opus" }) }, ui: { notify(msg: string) { notifications.push(msg) } } },
+    )
+
+    expect(notifications).toEqual([])
+  })
+
   test("context_handoff wrapper passes structured runtime-memory fields through", async () => {
     const definitions = new Map<string, any>()
     const pi = {
@@ -2277,11 +1743,9 @@ describe("public exports", () => {
     const expectedExports = [
       "createArtifactHelperTool",
       "createAskUserQuestionTool",
-      "createSubagentTool",
       "createWorkflowStateTool",
       "createWorktreeManagerTool",
       "createReviewRouterTool",
-      "createParallelSubagentTool",
       "createSessionCheckpointTool",
       "createTaskSplitterTool",
       "createBrainstormDialogTool",
@@ -2297,21 +1761,6 @@ describe("public exports", () => {
       "filterBashOutput",
       "filterReadOutput",
       "COMPACTION_FOCUS_INSTRUCTIONS",
-      "checkSubagentDepth",
-      "getChildDepthEnv",
-      "DEFAULT_MAX_SUBAGENT_DEPTH",
-      "AsyncMutex",
-      "createJsonRunner",
-      "parseJsonEvent",
-      "applyEventToResult",
-      "isFailedSingleResult",
-      "formatUsageStats",
-      "makeInitialResult",
-      "getFinalOutputFromMessages",
-      "getDisplayItems",
-      "formatToolCall",
-      "renderSubagentCall",
-      "renderSubagentResult",
     ]
 
     expect(exportNames.sort()).toEqual(expectedExports.sort())
