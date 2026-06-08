@@ -3,7 +3,8 @@
 ### 0.24.0 — 移除内置 subagent 工具，适配 pi 0.78.x ctx.mode/streamingBehavior
 - **Breaking**：移除 `ce_subagent` 和 `ce_parallel_subagent` 工具及全部 subagent 基础设施（runner、events、renderer、depth guard、6 个工具模块、5 个测试文件）。净减 3,660 行。
 - **Pi 0.78.x 适配**：`ctx.mode` 替代 `ctx.hasUI` 做通知守卫；`streamingBehavior === "steer"` 跳过流式中断期间的模型/思考切换。
-- **文档**：`03-work` 回归 inline-first；README/README_CN 将 `pi-subagents` 定位为可选外部扩展。
+- **Breaking**：移除 `08-help` skill（README 已覆盖相同信息）。管线 skill 从 8 个减至 7 个。
+- **文档**：`03-work` 回归 inline-first；README/README_CN 中所有 `pi-subagents` 引用已移除（极简主义）。
 - **移除的导出**：`createSubagentTool`、`createParallelSubagentTool`、`createJsonRunner`、`checkSubagentDepth`、`getChildDepthEnv`、`DEFAULT_MAX_SUBAGENT_DEPTH`、`AsyncMutex`、`renderSubagentCall`、`renderSubagentResult`、`formatToolCall`、事件解析类型。
 
 ### 0.23.13 — 修复并行 subagent inheritSkills 默认值与 ce_subagent 不一致

@@ -8,7 +8,7 @@
 
 **Turn your AI coding agent into a reliable engineer.**
 
-Super Pi is a Pi-native engineering workflow layer: it adds stage discipline, durable artifacts, TDD gates, checkpoints, review, and learning loops on top of your coding agent. It is not a general-purpose multi-agent executor; subagents are optional helpers for bounded leaf tasks.
+Super Pi is a Pi-native engineering workflow layer: it adds stage discipline, durable artifacts, TDD gates, checkpoints, review, and learning loops on top of your coding agent.
 
 Install, describe what you want to build, then keep saying "continue." Super Pi drives the full loop:
 
@@ -25,10 +25,9 @@ pi install npm:@leing2021/super-pi
 - **Five-step loop** — brainstorm → plan → work → review → learn, with automatic skill routing
 - **Checkpoint resume** — interrupted? Resume from the exact unit you left off
 - **TDD enforcement** — every unit follows RED → GREEN → REFACTOR with hard gates
-- **Controlled subagents** — inline execution by default; subagents are limited to bounded, non-interactive leaf tasks
 - **Evidence-first review** — auto-assigned reviewers across five axes, autofix loop
 - **Knowledge compounding** — solved problems become searchable solution artifacts
-- **Token-efficient** — ~2,600 tokens new-conversation overhead; progressive loading
+- **Token-efficient** — ~4,200 tokens new-conversation overhead; progressive loading
 
 ---
 
@@ -45,7 +44,7 @@ You: I want to build a CLI tool that helps indie devs find early users
 
 → 01-brainstorm: structured discovery → requirements artifact
 → 02-plan: TDD-gated implementation units → plan artifact
-→ 03-work: inline-first execution, bounded subagents, checkpoint resume
+→ 03-work: inline execution, checkpoint resume
 → 04-review: five-axis findings, autofix loop
 → 05-learn: knowledge compounding
 
@@ -73,22 +72,11 @@ You: /skill:03-work docs/plans/plan.md
 |-------|-------------|-----------|
 | **01-brainstorm** | Structured multi-round discovery, domain vocabulary persistence | `brainstorm_dialog` |
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
-| **03-work** | Inline-first execution, checkpoint resume, strict TDD, stop-the-line | `session_checkpoint`, `task_splitter` |
+| **03-work** | Inline execution, checkpoint resume, strict TDD, stop-the-line | `session_checkpoint`, `task_splitter` |
 | **04-review** | Auto-assigned reviewers, five-axis findings, autofix loop | `review_router` |
 | **05-learn** | Pattern extraction → searchable solution artifacts | `pattern_extractor` |
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
 | **07-worktree** | Isolated git worktree development | `worktree_manager` |
-| **08-help** | Phase 1 skill explainer | — |
-
-### Optional: External subagent delegation
-
-For generic child agent delegation (background jobs, parallel audits, scout/worker/oracle agents), install the community extension `pi-subagents` separately. Super Pi does not require it.
-
-```bash
-pi install npm:pi-subagents
-```
-
-Super Pi focuses on inline workflow execution. Use subagents only when you need true process isolation or background runs.
 
 ### Model & Thinking Routing
 
@@ -121,7 +109,7 @@ Super Pi is not a fork or wrapper. It extracts useful methods from the projects 
 | Project | What Super Pi adopted |
 |---------|------------------------|
 | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | "Use when" skill trigger conditions, source-driven verification, stop-the-line hard gate, anti-rationalization, and the five-axis review baseline. Adopted as embedded micro-patterns only — no new skills, tools, commands, or agents. |
-| [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | Parallel subagent orchestration, checkpoint resume, continuous learning loops, and token-conscious agent workflow design. |
+| [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | Checkpoint resume, continuous learning loops, and token-conscious agent workflow design. |
 | [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents) | Context window ownership, compacting resolved errors, retry caps, and pre-fetching obvious prerequisites. Adopted as lightweight context hygiene rules inside the existing Phase 1 pipeline. |
 | [superpowers](https://github.com/obra/superpowers) | Strict TDD gates, design checklists, review discipline, and the idea that agents need hard gates instead of gentle suggestions. |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | The five-step think → plan → build → review → learn loop and the knowledge-compounding backbone. |
@@ -157,13 +145,13 @@ All reviewers evaluate changes across: **correctness, readability, architecture,
 
 ## Token Cost
 
-New conversation overhead: **~2,600 tokens** (1.3% of 200K context).
+New conversation overhead: **~4,130 tokens** (2.1% of 200K context).
 
 | Component | Tokens |
 |-----------|--------|
-| 8 skill registrations | ~490 |
-| System prompt | ~1,400 |
-| Skill inlining (per invocation) | ~500-800 |
+| 17 skill registrations | ~1,710 |
+| 22 tool schemas | ~2,420 |
+| Skill inlining (per invocation) | ~300–1,200 |
 
 Progressive loading: only needed skills loaded on-demand.
 
@@ -195,11 +183,11 @@ Commit everything to git — these files are the project's traceable memory.
 
 | Component | Count |
 |-----------|------:|
-| Skills | 8 |
-| Tools | 19 |
-| Rules | 79 |
-| TypeScript lines | ~4,400 |
-| Tests | 209 (786 assertions) |
+| Skills | 7 |
+| Tools | 12 CE + 10 Pi built-in |
+| Rules | 78 |
+| TypeScript lines | ~4,100 |
+| Tests | 180 (727 assertions) |
 
 Rules in `rules/` cover 11 common topics + language-specific sets (TypeScript, Rust, Go, Python, Java, Kotlin, C++, C#, Dart, Swift, Perl, PHP). Project-level overrides take priority.
 

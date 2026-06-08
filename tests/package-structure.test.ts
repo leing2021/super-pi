@@ -44,19 +44,13 @@ describe("package bootstrap structure", () => {
     expect(readme).toContain("03-work")
     expect(readme).toContain("04-review")
     expect(readme).toContain("05-learn")
-    expect(readme).toContain("08-help")
-    expect(readme).toContain("06-next")
+    expect(readme).toContain("07-worktree")
   })
 
-  test("README documents optional pi-subagents extension", () => {
+  test("README does not reference removed CE subagent tools", () => {
     const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8")
     const readmeCn = readFileSync(path.join(repoRoot, "README_CN.md"), "utf8")
 
-    // Both READMEs should mention pi-subagents as an optional extension
-    expect(readme.toLowerCase()).toContain("pi-subagents")
-    expect(readmeCn.toLowerCase()).toContain("pi-subagents")
-
-    // Neither should reference removed CE subagent tools
     expect(readme).not.toContain("ce_subagent")
     expect(readme).not.toContain("ce_parallel_subagent")
     expect(readmeCn).not.toContain("ce_subagent")
