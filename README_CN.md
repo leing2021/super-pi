@@ -12,7 +12,7 @@
 
 **让 AI 编程 agent 从「写代码的工具」变成「靠谱的工程师」。**
 
-Super Pi 是 Pi-native 的工程 workflow 层：它给 coding agent 加上阶段纪律、持久化 artifacts、TDD gates、checkpoint、review 和学习闭环。它不是通用 multi-agent 执行器；subagents 只是用于有明确边界的叶子任务的可选辅助。
+Super Pi 是 Pi-native 的工程 workflow 层：它给 coding agent 加上阶段纪律、持久化 artifacts、TDD gates、checkpoint、review 和学习闭环。
 
 安装后,告诉 Pi 你想做什么,然后不断说「继续」——它会自己走完 
 
@@ -35,22 +35,11 @@ pi install npm:@leing2021/super-pi
 |-------|------|----------|
 | **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE),领域词汇持久化 | `brainstorm_dialog` |
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
-| **03-work** | inline 优先,断点续传,严格 TDD | `session_checkpoint`, `task_splitter` |
+| **03-work** | inline 执行,断点续传,严格 TDD | `session_checkpoint`, `task_splitter` |
 | **04-review** | 自动分配评审,结构化发现,可选浏览器 QA | `review_router` |
 | **05-learn** | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
 | **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
-| **08-help** | Phase 1 skill 说明与使用指南 | — |
-
-### 可选：外部 subagent 委托
-
-如需通用子 agent 委托（后台任务、并行审计、scout/worker/oracle agents），可单独安装社区扩展 `pi-subagents`。Super Pi 不依赖它。
-
-```bash
-pi install npm:pi-subagents
-```
-
-Super Pi 专注于 inline workflow 执行。仅在需要真正的进程隔离或后台运行时才使用 subagents。
 
 ### 模型与思考深度路由
 
@@ -83,7 +72,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 | 项目 | Super Pi 借鉴的核心内容 |
 |------|--------------------------|
 | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | “Use when” 技能触发条件、source-driven verification、stop-the-line hard gate、anti-rationalization、五轴 review baseline。仅作为嵌入式微模式吸收，不新增 skills/tools/commands/agents。 |
-| [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | 并行 subagent 编排、checkpoint 断点续传、持续学习循环、token-conscious agent workflow 设计。 |
+| [everything-claude-code](https://github.com/affaan-m/everything-claude-code) | Checkpoint 断点续传、持续学习循环、token-conscious agent workflow 设计。 |
 | [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents) | context window ownership、压缩已解决错误、限制重复重试、预取明显前置数据。作为轻量上下文卫生规则吸收到现有 Phase 1 pipeline 中。 |
 | [superpowers](https://github.com/obra/superpowers) | 严格 TDD gates、设计检查清单、review discipline，以及“agent 需要硬门禁而不是温和建议”的理念。 |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | think → plan → build → review → learn 五步循环，以及 knowledge compounding 的骨架。 |
@@ -99,7 +88,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 
 → 01-brainstorm: YC 风格追问 → docs/brainstorms/requirements.md
 → 02-plan: RED→GREEN→REFACTOR 单元 → docs/plans/plan.md
-→ 03-work: 并行执行,断点续传
+→ 03-work: inline 执行,断点续传
 → 04-review: 结构化发现,可选浏览器 QA
 → 05-learn: 知识沉淀
 
@@ -117,13 +106,13 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 
 ## Token 消耗
 
-新对话开销: **~2,600 tokens** (200K 上下文的 1.3%)。
+新对话开销: **~4,130 tokens** (200K 上下文的 2.1%)。
 
 | 组件 | Tokens |
 |------|--------|
-| 8 个 skill 注册 | ~490 |
-| System prompt (skills) | ~1,400 |
-| Skill 内联 (每次调用) | ~500-800 |
+| 17 个 skill 注册 | ~1,710 |
+| 22 个 tool schemas | ~2,420 |
+| Skill 内联 (每次调用) | ~300–1,200 |
 
 按需加载:只加载当前需要的 skills。
 
@@ -153,9 +142,9 @@ your-project/
 
 ## 技术架构
 
-- **8 个 skills** 配专用工具
-- **14 个工具** + 2 个辅助
-- **~2800 行** TypeScript, **175 个测试**
+- **7 个 skills** 配专用工具
+- **12 CE + 10 Pi 内置工具**
+- **~4,100 行** TypeScript, **180 个测试** (727 assertions)
 - **渐进式规则加载** ——只加载当前任务需要的
 
 规则放在 `rules/` (11 个通用 + 语言特定)。项目级规则优先。
@@ -171,9 +160,4 @@ your-project/
 - **GitHub**: https://github.com/leing2021/super-pi
 - **npm**: https://www.npmjs.com/package/@leing2021/super-pi
 
-## 开发
 
-```bash
-bun test
-npm publish --dry-run
-```

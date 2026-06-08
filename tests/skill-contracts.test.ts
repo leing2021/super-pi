@@ -12,7 +12,6 @@ const skillNames = [
   "05-learn",
   "06-next",
   "07-worktree",
-  "08-help",
 ]
 
 describe("skill package contracts", () => {
@@ -49,16 +48,6 @@ describe("skill package contracts", () => {
     expect(existsSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"))).toBe(true)
   })
 
-  test("08-help explains when to use each Phase 1 skill", () => {
-    const content = readFileSync(path.join(repoRoot, "skills", "08-help", "SKILL.md"), "utf8")
-
-    expect(content).toContain("01-brainstorm")
-    expect(content).toContain("02-plan")
-    expect(content).toContain("03-work")
-    expect(content).toContain("04-review")
-    expect(content).toContain("05-learn")
-    expect(content).toContain("06-next")
-  })
 
   test("06-next provides both next-step recommendation and full status report", () => {
     const content = readFileSync(path.join(repoRoot, "skills", "06-next", "SKILL.md"), "utf8")

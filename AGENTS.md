@@ -24,7 +24,7 @@ bun run lint          # Lint (if configured)
 ## Architecture
 
 ```
-skills/          # 8 pipeline skills (01-brainstorm through 08-help)
+skills/          # 7 pipeline skills (01-brainstorm through 07-worktree)
   references/    # Shared templates and schemas
   rules/         # Coding standards (common + language-specific)
 extensions/      # Optional Pi extensions

@@ -2,8 +2,9 @@
 
 ### 0.24.0 — remove built-in subagent tools, adopt pi 0.78.x ctx.mode/streamingBehavior
 - **Breaking**: Remove `ce_subagent` and `ce_parallel_subagent` tools and all subagent infrastructure (runner, events, renderer, depth guard, 6 tool modules, 5 test files). Net -3,660 lines.
+- **Breaking**: Remove `08-help` skill (README covers the same information). Pipeline skills reduced from 8 to 7.
 - **Pi 0.78.x adaptation**: `ctx.mode` replaces `ctx.hasUI` for notification guards; `streamingBehavior === "steer"` skips model/thinking switching during mid-stream interrupts.
-- **Documentation**: `03-work` returns to inline-first; `pi-subagents` positioned as optional external extension in README/README_CN.
+- **Documentation**: `03-work` returns to inline-first; all `pi-subagents` references removed from README/README_CN (极简主义).
 - **Exports removed**: `createSubagentTool`, `createParallelSubagentTool`, `createJsonRunner`, `checkSubagentDepth`, `getChildDepthEnv`, `DEFAULT_MAX_SUBAGENT_DEPTH`, `AsyncMutex`, `renderSubagentCall`, `renderSubagentResult`, `formatToolCall`, event parser types.
 
 ### 0.23.13 — fix parallel subagent inheritSkills default mismatch with ce_subagent
