@@ -1,78 +1,78 @@
-# Super Pi Token 开销评估
+# Super Pi Token Cost Evaluation
 
-> 评估日期：2026-06-08
-> 版本基准：0.24.0（17 skills, 22 tools, 78 rule files）
+> Evaluated: 2026-06-08
+> Version baseline: 0.24.0 (17 skills, 22 tools, 78 rule files)
 
-## 结论
+## Summary
 
-新开对话固定成本 **~4,130 tokens**，占 Claude Sonnet 4 (200K) 的 **2.1%**。首次 Bash 输出过滤即可回本。
+New-conversation fixed cost: **~4,130 tokens**, or **2.1%** of Claude Sonnet 4 (200K). A single Bash output filter pays for itself.
 
-相比 v0.23.13 的 ~4,350 tokens，下降主要来自移除 `ce_subagent` 和 `ce_parallel_subagent` 两个大型 CE 工具（净减 -3,660 行代码）。Skills 和 Rules 数量不变。
+Down from ~4,350 tokens in v0.23.13, mainly due to removing `ce_subagent` and `ce_parallel_subagent` (net -3,660 lines). Skill and rule counts unchanged.
 
 ---
 
-## 一、固定成本明细（每次新开对话）
+## 1. Fixed Cost Breakdown (per new conversation)
 
-### Skill 注册注入（17 skills）
+### Skill Registration (17 skills)
 
-| 来源 | 数量 | 说明 |
-|------|------|------|
-| super-pi 管线 skill | 7 | 01-brainstorm ~ 07-worktree |
-| 全局通用 skill | 9 | agent-browser, caveman, cli-tool, context7, git, handoff, html-write, skill-write, … |
-| 项目本地 skill | 1 | github-commit-super-pi |
-| 外部 npm skill | 1 | super-cli |
-| **合计** | **18** | |
+| Source | Count | Notes |
+|--------|-------|-------|
+| Pipeline skills | 7 | 01-brainstorm through 07-worktree |
+| Global skills | 9 | agent-browser, caveman, cli-tool, context7, git, handoff, html-write, skill-write, playwright |
+| Project-local skill | 1 | github-commit-super-pi |
+| External npm skill | 1 | super-cli |
+| **Total** | **18** | |
 
-| 项目 | tokens |
+| Item | Tokens |
 |------|--------|
-| 17 个 skill description 内容 | ~870 |
-| 17 个 skill name | ~41 |
-| 17 个 skill location 路径 | ~300 |
-| 17 个 skill XML 标签包装 | ~350 |
-| XML 标签包装 + 分隔符 + 包装开销 | ~149 |
-| **小计** | **~1,710** |
+| 17 skill descriptions | ~870 |
+| 17 skill names | ~41 |
+| 17 location paths | ~300 |
+| 17 XML tag wrappers | ~350 |
+| Wrapper + separator + envelope overhead | ~149 |
+| **Subtotal** | **~1,710** |
 
-### Tool 注册注入（22 tools）
+### Tool Registration (22 tools)
 
-| 来源 | 数量 | 说明 |
-|------|------|------|
-| CE 扩展工具 | 12 | artifact_helper, ask_user_question, workflow_state, worktree_manager, review_router, session_checkpoint, task_splitter, brainstorm_dialog, plan_diff, session_history, pattern_extractor, context_handoff |
-| Pi 内置工具 | 10 | read, bash, edit, write, generate_image, sandbox_exec, search, web_search, web_fetch, research_search |
-| **合计** | **22** | |
+| Source | Count | Notes |
+|--------|-------|-------|
+| CE extension tools | 12 | artifact_helper, ask_user_question, workflow_state, worktree_manager, review_router, session_checkpoint, task_splitter, brainstorm_dialog, plan_diff, session_history, pattern_extractor, context_handoff |
+| Pi built-in tools | 10 | read, bash, edit, write, generate_image, sandbox_exec, search, web_search, web_fetch, research_search |
+| **Total** | **22** | |
 
-| 项目 | tokens |
+| Item | Tokens |
 |------|--------|
-| 22 个 tool description | ~920 |
-| 82 个参数 description | ~990 |
-| JSON Schema 结构开销 | ~350 |
-| 参数名称 | ~165 |
-| tool name + label | ~96 |
-| **小计** | **~2,421** |
+| 22 tool descriptions | ~920 |
+| 82 parameter descriptions | ~990 |
+| JSON Schema structural overhead | ~350 |
+| Parameter names | ~165 |
+| Tool name + label | ~96 |
+| **Subtotal** | **~2,421** |
 
-### Hooks / Filter
+### Hooks / Filters
 
-| 项目 | tokens | 说明 |
-|------|--------|------|
-| bash-output-filter | 0 | 运行时拦截 |
-| read-output-filter | 0 | 运行时拦截 |
+| Item | Tokens | Notes |
+|------|--------|-------|
+| bash-output-filter | 0 | Runtime interception |
+| read-output-filter | 0 | Runtime interception |
 | compaction-optimizer | 0 | session_before_tree hook |
-| input stage-routing (model/thinking) + streamingBehavior guard | 0 | input hook，按管线阶段自动切换；流式中断时跳过切换 |
-| **小计** | **0** | |
+| input stage-routing (model/thinking) + streamingBehavior guard | 0 | Auto-switch per pipeline stage; skip during mid-stream interrupts |
+| **Subtotal** | **0** | |
 
-### 总固定成本
+### Total Fixed Cost
 
 ```
-Skill 注入  ~1,710
-Tool 注入   ~2,421
-Hooks       ~0
+Skills      ~1,710
+Tools       ~2,421
+Hooks           ~0
 ────────────────
-总计        ~4,131 tokens
+Total       ~4,131 tokens
 ```
 
-### 各模型占比
+### Context Usage by Model
 
-| 模型 | Context 长度 | 占比 |
-|------|-------------|------|
+| Model | Context Length | Usage |
+|-------|---------------|-------|
 | Claude Sonnet 4 | 200,000 | 2.101% |
 | Claude Opus 4 | 200,000 | 2.101% |
 | GPT-4o | 128,000 | 3.283% |
@@ -80,104 +80,104 @@ Hooks       ~0
 
 ---
 
-## 二、运行时按需加载（不占固定成本）
+## 2. Runtime On-Demand Loading (not counted in fixed cost)
 
-| 场景 | tokens |
-|------|--------|
-| SKILL.md 全量加载（7 个管线 skill 全触发，~20 KB） | ~5,000 |
-| 典型单次 skill 触发 | ~300–1,200 |
-| Rules 最小必读（common 2 文件，~2.9 KB） | ~750 |
-| Rules + 语言层（common + TypeScript，7 文件，~10 KB） | ~2,700 |
-| Rules 全量（78 文件，极端情况，不会发生） | ~36,000 |
+| Scenario | Tokens |
+|----------|--------|
+| Full SKILL.md load (all 7 pipeline skills, ~20 KB) | ~5,000 |
+| Typical single skill invocation | ~300–1,200 |
+| Rules minimum (common, 2 files, ~2.9 KB) | ~750 |
+| Rules + language layer (common + TypeScript, 7 files, ~10 KB) | ~2,700 |
+| Rules full load (78 files, extreme, never happens) | ~36,000 |
 
-> **v0.24.0 变化**: `03-work` 改回 inline-first 策略（不再引用 subagent），SKILL.md 更紧凑。子代理功能移至外部扩展 `pi-subagents`。
-
----
-
-## 三、Token 节省（vs 裸 Pi）
-
-| 机制 | 典型节省 |
-|------|----------|
-| Bash 输出过滤 | 2,000–40,000 tokens / 次 |
-| Read 输出过滤 | 1,000–10,000 tokens / 次 |
-| 避免返工（TDD 门控） | 5,000–50,000 tokens / 次 |
-| Compaction 优化 | 每次压缩提升摘要质量 ~30% |
-| 管线阶段模型路由 | 复杂阶段自动切强模型，节省轻量阶段 token |
-| streamingBehavior guard | 流式中断时跳过模型/思考级别切换，避免状态错乱 |
+> **v0.24.0 change**: `03-work` reverted to inline-first strategy (no subagent references). SKILL.md is more compact. Subagent functionality moved to external extension `pi-subagents`.
 
 ---
 
-## 四、对比分析
+## 3. Token Savings (vs bare Pi)
 
-| 维度 | 裸 Pi | + 全局规则文件 | + super-pi |
-|------|-------|--------------|------------|
-| 规则加载 | 无 | 全量注入 | 按需渐进 |
-| 输出过滤 | 无 | 无 | 自动压缩 |
-| TDD 门控 | 靠 prompt | 靠 prompt | 结构化 hard gate |
-| 新对话固定成本 | 0 | ~5,000–36,000 | ~4,350 |
-| Skill 自动路由 | 无 | 无 | 触发词 + 阶段模型切换 |
-| 长期 ROI | 基准 | 取决于规则质量 | **10x+** |
+| Mechanism | Typical Savings |
+|-----------|----------------|
+| Bash output filtering | 2,000–40,000 tokens / invocation |
+| Read output filtering | 1,000–10,000 tokens / invocation |
+| Rework avoidance (TDD gate) | 5,000–50,000 tokens / invocation |
+| Compaction optimization | ~30% summary quality improvement per compression |
+| Pipeline stage model routing | Auto-switch to cheaper models for lightweight stages |
+| streamingBehavior guard | Skip model/thinking level switch during mid-stream interrupts |
 
 ---
 
-## 五、v0.23.13 → v0.24.0 变化摘要
+## 4. Comparison
 
-| 维度 | v0.23.13 | v0.24.0 | 变化 |
-|------|----------|---------|------|
+| Dimension | Bare Pi | + Global Rules | + super-pi |
+|-----------|---------|---------------|------------|
+| Rule loading | None | Full injection | Progressive on-demand |
+| Output filtering | None | None | Auto-compression |
+| TDD gating | By prompt | By prompt | Structured hard gate |
+| New-conversation fixed cost | 0 | ~5,000–36,000 | ~4,130 |
+| Skill auto-routing | None | None | Trigger words + stage model switching |
+| Long-term ROI | Baseline | Depends on rule quality | **10x+** |
+
+---
+
+## 5. v0.23.13 → v0.24.0 Changelog
+
+| Dimension | v0.23.13 | v0.24.0 | Change |
+|-----------|----------|---------|--------|
 | Skills | 18 | 17 | -08-help |
 | CE Tools | 14 | 12 | -ce_subagent, -ce_parallel_subagent |
-| Pi 内置 Tools | 10 | 10 | 持平 |
-| 总 Tools | 24 | 22 | -2 |
-| Rules | 78 | 78 | 持平 |
-| Hooks | 5 | 4 | 合并为 input stage-routing + streamingBehavior |
-| 固定成本 | ~4,345 | ~4,131 | -214（-4.9%） |
-| SKILL.md 单次加载 | ~300–1,200 | ~300–1,200 | 持平 |
-| 子代理架构 | 内置（2 tools + runner/renderer/events） | 移除，外部扩展 pi-subagents | -3,660 行 |
-| Pi API 适配 | ctx.hasUI | ctx.mode + streamingBehavior | pi 0.78.x |
+| Pi Built-in Tools | 10 | 10 | Unchanged |
+| Total Tools | 24 | 22 | -2 |
+| Rules | 78 | 78 | Unchanged |
+| Hooks | 5 | 4 | Merged into input stage-routing + streamingBehavior |
+| Fixed cost | ~4,345 | ~4,131 | -214 (-4.9%) |
+| SKILL.md per invocation | ~300–1,200 | ~300–1,200 | Unchanged |
+| Subagent architecture | Built-in (2 tools + runner/renderer/events) | Removed, external pi-subagents | -3,660 lines |
+| Pi API adaptation | ctx.hasUI | ctx.mode + streamingBehavior | pi 0.78.x |
 
 ---
 
-### 历史版本对比
+### Historical Comparison
 
-| 维度 | v0.18.0 | v0.23.13 | v0.24.0 |
-|------|---------|----------|---------|
-| Skills（统计口径） | 10（仅 super-pi） | 18（全部） | 17 |
+| Dimension | v0.18.0 | v0.23.13 | v0.24.0 |
+|-----------|---------|----------|---------|
+| Skills (scope) | 10 (super-pi only) | 18 (all) | 17 |
 | CE Tools | 13 | 14 | 12 |
-| 总 Tools | 13 | 24 | 22 |
-| 固定成本 | ~2,500 | ~4,345 | ~4,131 |
-| SKILL.md 单次加载 | ~1,000–4,000 | ~300–1,200 | ~300–1,200 |
-| 阶段模型路由 | 无 | input hook | input hook + streamingBehavior guard |
+| Total Tools | 13 | 24 | 22 |
+| Fixed cost | ~2,500 | ~4,345 | ~4,131 |
+| SKILL.md per invocation | ~1,000–4,000 | ~300–1,200 | ~300–1,200 |
+| Stage model routing | None | input hook | input hook + streamingBehavior guard |
 
 ---
 
-## 六、项目优势点
+## 6. Strengths
 
-### 1. 投入产出比极高
+### 1. Exceptional ROI
 
-固定投入 ~4,130 tokens / 对话，单次 Bash 输出过滤就能省 2,000–40,000 tokens。一次避免返工的 TDD 门控省 5,000–50,000 tokens。ROI > 10x，第一次 `npm install` 输出的过滤就能回本。
+Fixed investment of ~4,130 tokens per conversation. A single Bash output filter saves 2,000–40,000 tokens. One TDD gate that prevents rework saves 5,000–50,000 tokens. ROI > 10x — the first `npm install` filter pays for everything.
 
-### 2. Hooks 是「免费的超能力」
+### 2. Hooks are "Free Superpowers"
 
-bash-output-filter、read-output-filter、compaction-optimizer、input stage-routing 都是运行时/事件驱动，零 system prompt 占用。它们在工具返回结果时压缩内容，越长的输出省得越多。input hook 在管线阶段切换时自动调整模型和思考级别，对 agent 完全透明。v0.24.0 新增 `streamingBehavior` guard，在流式中断时跳过切换，避免状态错乱。
+bash-output-filter, read-output-filter, compaction-optimizer, and input stage-routing are all runtime/event-driven with zero system prompt footprint. They compress tool output at return time — the longer the output, the more they save. The input hook auto-adjusts model and thinking level on pipeline stage transitions, transparent to the agent. v0.24.0 adds `streamingBehavior` guard to skip switching during mid-stream interrupts.
 
-### 3. 渐进式加载 = 零浪费
+### 3. Progressive Loading = Zero Waste
 
-Rules 78 个文件（~36K tokens）永远不会全量加载。典型工作流只读 2–7 个规则文件（~750–2,700 tokens）。比任何「全局注入规则」的方案省 90%+。
+78 rule files (~36K tokens) are never fully loaded. A typical workflow reads only 2–7 rule files (~750–2,700 tokens), saving 90%+ vs any global-injection approach.
 
-SKILL.md 同样精简：共享指令提取到 `pipeline-config.md`，skill 单文件从 ~1,000–4,000 tokens 压缩到 ~300–1,200 tokens。7 个管线 skill 总量仅 ~20 KB。
+SKILL.md is similarly lean: shared instructions extracted to `pipeline-config.md`, per-skill files compressed from ~1,000–4,000 to ~300–1,200 tokens. All 7 pipeline skills total only ~20 KB.
 
-### 4. 规则与代码的分层解耦
+### 4. Layered Decoupling of Rules and Code
 
-- `rules/` 是纯 Markdown，用户可直接编辑（78 文件，14 语言层）
-- `skills/` 是行为策略（8 个管线阶段 + 共享 references）
-- `extensions/ce-core/` 是能力单元（14 工具 + 5 hooks）
-- 三者独立演化，互不影响
+- `rules/` — pure Markdown, user-editable (78 files, 14 language layers)
+- `skills/` — behavioral strategies (7 pipeline stages + shared references)
+- `extensions/ce-core/` — capability units (12 tools + 4 hooks)
+- All three evolve independently without cross-contamination
 
-### 5. 防御性设计减少 token 浪费
+### 5. Defensive Design Reduces Token Waste
 
-- **TDD hard gate**：在 plan 阶段就拦截「先写代码再补测试」的冲动，避免整个 unit 返工
-- **Checkpoint resume**：中断恢复不重跑已完成的 unit，节省整个断点前的 token
-- **plan_diff 增量更新**：需求变更时不重写整个计划，只 patch 差异部分
-- **Solution 检索**：grep-first 策略只读 frontmatter（前 15 行），不全量加载所有 solution 文件
-- **阶段模型路由**：轻量阶段（brainstorm/learn）自动用便宜模型，重量阶段（work/review）自动切强模型，按需分配 token 预算
-- **子代理外置**：v0.24.0 移除内置 subagent 工具，改为可选外部扩展 `pi-subagents`，不使用子代理的项目不再承担其固定 token 开销
+- **TDD hard gate**: intercepts "write code first, add tests later" impulse at plan stage, preventing full-unit rework
+- **Checkpoint resume**: interrupted recovery skips completed units, saving all pre-checkpoint tokens
+- **plan_diff incremental updates**: requirement changes patch the diff, not rewrite the entire plan
+- **Solution retrieval**: grep-first strategy reads only frontmatter (first 15 lines), never loads all solution files
+- **Stage model routing**: lightweight stages (brainstorm/learn) auto-use cheaper models, heavy stages (work/review) auto-switch to stronger models
+- **Externalized subagents**: v0.24.0 removes built-in subagent tools to optional external extension `pi-subagents`; projects that don't use subagents no longer bear their fixed token cost
