@@ -9,7 +9,7 @@ import {
   getRunArtifactPath,
 } from "../extensions/ce-core/utils/artifact-paths"
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
-import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
+import { createAskUserQuestionTool, normalizeQuestionOptions } from "../extensions/ce-core/tools/ask-user-question"
 import { AskUserQuestionSelector, createAskUserQuestionCustomFactory } from "../extensions/ce-core/tools/ask-user-question-ui"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
@@ -261,6 +261,25 @@ describe("ask_user_question", () => {
 
     expect(result.answer).toBe("my custom text")
     expect(result.mode).toBe("custom")
+  })
+
+  test("normalizeQuestionOptions keeps iterating until labels are unique even when option text already ends in (#n)", () => {
+    // Pathological input: the second option's own text already matches the
+    // disambiguation suffix the first pass would generate. A single-retry
+    // guard would let the fourth "X" reuse a label and hide an option.
+    const options = ["X", "X (#2)", "X (#2) (#2)", "X"]
+    const labelToOriginal = normalizeQuestionOptions(options)
+
+    // Every label must be unique.
+    const labels = [...labelToOriginal.keys()]
+    expect(new Set(labels).size).toBe(labels.length)
+
+    // Every original option must be reachable from exactly one label.
+    const originals = [...labelToOriginal.values()]
+    expect(originals.sort()).toEqual([...options].sort())
+
+    // No display label may collide with an unrelated original's suffix form.
+    expect(labels.filter((l) => l === "X (#2)").length).toBe(1)
   })
 })
 

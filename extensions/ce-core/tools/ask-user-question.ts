@@ -58,10 +58,16 @@ export function normalizeQuestionOptions(options: string[]): Map<string, string>
     const count = (labelCounts.get(baseLabel) ?? 0) + 1
     labelCounts.set(baseLabel, count)
 
-    const label = count === 1 ? baseLabel : `${baseLabel} (#${count})`
-    // Guard against the extremely unlikely suffix collision by re-checking.
-    const finalLabel = labelToOriginal.has(label) ? `${label} (#${count})` : label
-    labelToOriginal.set(finalLabel, original)
+    // Start from the count-based suffix, then keep appending (#n) until we find
+    // a label that is truly unused. This handles pathological inputs where an
+    // option's own text already ends in `(#k)` and would otherwise collide.
+    let label = count === 1 ? baseLabel : `${baseLabel} (#${count})`
+    let dedup = count
+    while (labelToOriginal.has(label)) {
+      dedup += 1
+      label = `${baseLabel} (#${dedup})`
+    }
+    labelToOriginal.set(label, original)
   }
 
   return labelToOriginal
