@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.25.0 — ask_user_question hardening: serialized prompts, option normalization, scrollable TUI, prompt metadata
+- **Bug fix (parallel silent failure)**: `ask_user_question` now serializes interactive UI calls via a module-level promise queue (`runAskUserQuestionExclusive`), preventing the Pi singleton-selector race that caused parallel `ask_user_question` calls to silently return `No result provided`. See `docs/bug/ask-user-question-parallel-call-silent-failure.md`.
+- **Bug fix (long option truncation)**: Options are normalized to single-line short display labels (`normalizeQuestionOptions`) while the full original option is still returned to the agent. Duplicate labels are disambiguated with `(#n)` suffixes; the `Other` custom sentinel never collides with a user option. See `docs/bug/ask-user-question-long-options-truncated.md`.
+- **Feature (scrollable TUI)**: In `tui` mode with `ctx.ui.custom` available, `ask_user_question` now renders a scrollable custom selector (`AskUserQuestionSelector`) that wraps long questions and scrolls long option lists. Falls back to `ctx.ui.select()` otherwise. See `docs/bug/ask-user-question-long-text-not-scrollable.md`.
+- **Prompt metadata**: Registered `ask_user_question` with `promptSnippet` and `promptGuidelines` that explicitly warn against parallel calls.
+- **Docs**: Updated all four bug statuses; `ceo-review-mode.md` notes one-at-a-time `ask_user_question`.
+- 191 tests passing (+12), 0 regressions.
+
 ### 0.24.0 — remove built-in subagent tools, adopt pi 0.78.x ctx.mode/streamingBehavior
 - **Breaking**: Remove `ce_subagent` and `ce_parallel_subagent` tools and all subagent infrastructure (runner, events, renderer, depth guard, 6 tool modules, 5 test files). Net -3,660 lines.
 - **Breaking**: Remove `08-help` skill (README covers the same information). Pipeline skills reduced from 8 to 7.

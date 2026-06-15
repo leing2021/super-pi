@@ -23,7 +23,7 @@ Re-examine the plan's assumptions:
 - What is the actual user/business outcome? Is the plan the most direct path?
 - What happens if we do nothing? Real pain or hypothetical?
 
-Present findings as premises the user must agree with. Use `ask_user_question` for each.
+Present findings as premises the user must agree with. Use `ask_user_question` for each — **one at a time, sequentially** (never two `ask_user_question` calls in the same assistant message; Pi selectors are serialized and parallel calls silently fail).
 
 ### 2. Dream State Mapping
 

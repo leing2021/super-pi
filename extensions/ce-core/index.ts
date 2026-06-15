@@ -3,7 +3,8 @@ import path from "node:path"
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
-import { createAskUserQuestionTool } from "./tools/ask-user-question"
+import { createAskUserQuestionTool, CUSTOM_SENTINEL } from "./tools/ask-user-question"
+import { createAskUserQuestionCustomFactory } from "./tools/ask-user-question-ui"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
@@ -25,6 +26,70 @@ const PIPELINE_STAGE_KEYS = new Set([
   "04-review",
   "05-learn",
 ])
+
+/**
+ * Module-level promise chain that serializes interactive `ask_user_question`
+ * UI calls within a single Pi process.
+ *
+ * Why: `@earendil-works/pi-coding-agent` renders extension selectors via a
+ * singleton field (`extensionSelector` / `extensionInput` in
+ * `interactive-mode.js`). When two selector calls overlap, the second
+ * overwrites the first, and the first promise never resolves — surfacing to
+ * the agent as a silent `No result provided`. See
+ * `docs/bug/ask-user-question-parallel-call-silent-failure.md`.
+ *
+ * This guard ensures at most one selector/input is on screen at a time.
+ */
+let askUserQuestionExclusiveChain: Promise<unknown> = Promise.resolve()
+
+function runAskUserQuestionExclusive<T>(task: () => Promise<T>): Promise<T> {
+  const run = askUserQuestionExclusiveChain.then(task, task)
+  // Keep the chain robust: a rejected run must not poison subsequent calls.
+  askUserQuestionExclusiveChain = run.then(
+    () => undefined,
+    () => undefined,
+  )
+  return run
+}
+
+/**
+ * Build the UI adapter for `ask_user_question`.
+ *
+ * In interactive TUI mode with `ctx.ui.custom` available, route `select`
+ * through the scrollable custom dialog so long questions/options stay readable
+ * (see `docs/bug/ask-user-question-long-text-not-scrollable.md`). Otherwise
+ * fall back to the built-in `ctx.ui.select()`.
+ */
+function buildAskUserQuestionUi(ctx: any): import("./tools/ask-user-question").AskUserQuestionUi {
+  const useCustom = ctx?.mode === "tui" && typeof ctx?.ui?.custom === "function"
+  const input = async (question: string) => (await ctx.ui.input(question)) ?? null
+  const selectFallback = async (question: string, options: string[]) =>
+    (await ctx.ui.select(question, options)) ?? null
+
+  if (!useCustom) {
+    return { input, select: selectFallback }
+  }
+
+  const select = async (question: string, options: string[]): Promise<string | null> => {
+    // The custom sentinel is appended last (if present) and matches
+    // `CUSTOM_SENTINEL` or a `CUSTOM_SENTINEL (#n)` disambiguation suffix.
+    const last = options.length > 0 ? options[options.length - 1] : null
+    const customLabel = last !== null
+      && (last === CUSTOM_SENTINEL || last.startsWith(`${CUSTOM_SENTINEL} (#`))
+      ? last
+      : null
+    const factory = createAskUserQuestionCustomFactory({
+      question,
+      displayOptions: options,
+      customLabel,
+    })
+    const selection = (await ctx.ui.custom(factory)) as
+      { selectedLabel: string | null } | null | undefined
+    return selection?.selectedLabel ?? null
+  }
+
+  return { input, select }
+}
 
 interface StrategySettings {
   modelStrategy?: Record<string, string>
@@ -399,6 +464,11 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     name: askUserQuestion.name,
     label: "Ask User Question",
     description: "Ask the user a structured question with optional choices and custom answers.",
+    promptSnippet: "Ask the user a structured question with optional choices and custom answers",
+    promptGuidelines: [
+      "Call ask_user_question one at a time, never two or more in the same assistant message: Pi renders selectors on a shared singleton, so parallel ask_user_question calls silently fail with 'No result provided'.",
+      "For ask_user_question, keep the question concise and put long analysis in prior text or a file first; ask_user_question normalizes long options to short labels but the full answer is still returned to you.",
+    ],
     parameters: askUserQuestionParams,
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (!ctx.hasUI) {
@@ -409,17 +479,14 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         }
       }
 
-      const result = await askUserQuestion.execute(
+      const result = await runAskUserQuestionExclusive(() => askUserQuestion.execute(
         {
           question: params.question,
           options: params.options,
           allowCustom: params.allowCustom,
         },
-        {
-          input: async (question) => (await ctx.ui.input(question)) ?? null,
-          select: async (question, options) => (await ctx.ui.select(question, options)) ?? null,
-        },
-      )
+        buildAskUserQuestionUi(ctx),
+      ))
 
       const contentText = result.answer === null
         ? "User cancelled."
