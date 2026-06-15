@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.25.0 — ask_user_question 加固：串行化提问、选项归一化、可滚动 TUI、prompt 元数据
+- **Bug 修复（并行静默失败）**：`ask_user_question` 通过 module-level Promise 队列（`runAskUserQuestionExclusive`）串行化交互 UI 调用，避免 Pi 单例 selector 竞态导致并行 `ask_user_question` 静默返回 `No result provided`。详见 `docs/bug/ask-user-question-parallel-call-silent-failure.md`。
+- **Bug 修复（长选项截断）**：选项归一化为单行短 label（`normalizeQuestionOptions`），返回给 agent 的仍是完整原始 option。重复 label 以 `(#n)` 后缀去重；`Other` 自定义哨兵永不与用户选项冲突。详见 `docs/bug/ask-user-question-long-options-truncated.md`。
+- **新功能（可滚动 TUI）**：`tui` 模式且 `ctx.ui.custom` 可用时，`ask_user_question` 渲染可滚动的自定义 selector（`AskUserQuestionSelector`），长问题换行 + 长选项列表滚动。否则 fallback 到 `ctx.ui.select()`。详见 `docs/bug/ask-user-question-long-text-not-scrollable.md`。
+- **Prompt 元数据**：为 `ask_user_question` 注册 `promptSnippet` 和 `promptGuidelines`，明确警告不要并行调用。
+- **文档**：更新全部 4 个 bug 状态；`ceo-review-mode.md` 补充一次一个 `ask_user_question` 的提示。
+- 192 个测试通过（+13），0 回归。
+
 ### 0.24.0 — 移除内置 subagent 工具，适配 pi 0.78.x ctx.mode/streamingBehavior
 - **Breaking**：移除 `ce_subagent` 和 `ce_parallel_subagent` 工具及全部 subagent 基础设施（runner、events、renderer、depth guard、6 个工具模块、5 个测试文件）。净减 3,660 行。
 - **Pi 0.78.x 适配**：`ctx.mode` 替代 `ctx.hasUI` 做通知守卫；`streamingBehavior === "steer"` 跳过流式中断期间的模型/思考切换。

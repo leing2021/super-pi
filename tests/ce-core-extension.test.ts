@@ -10,6 +10,7 @@ import {
 } from "../extensions/ce-core/utils/artifact-paths"
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
 import { createAskUserQuestionTool } from "../extensions/ce-core/tools/ask-user-question"
+import { AskUserQuestionSelector, createAskUserQuestionCustomFactory } from "../extensions/ce-core/tools/ask-user-question-ui"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
 import { createReviewRouterTool } from "../extensions/ce-core/tools/review-router"
@@ -174,6 +175,91 @@ describe("ask_user_question", () => {
     )
 
     expect(result.answer).toBe("compound")
+    expect(result.mode).toBe("custom")
+  })
+
+  test("normalizes long multi-line option to a single short display label", async () => {
+    const tool = createAskUserQuestionTool()
+    const longOption = "Option A: DashScope text-embedding-v3\nThis is a very long description that explains tradeoffs."
+    const seenOptions: string[] = []
+
+    const result = await tool.execute(
+      { question: "Pick embedding model", options: [longOption, "plan"], allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, options) => {
+          seenOptions.push(...options)
+          return options[0]
+        },
+      },
+    )
+
+    expect(seenOptions[0]).toBe("Option A: DashScope text-embedding-v3")
+    expect(seenOptions.every((o) => !o.includes("\n"))).toBe(true)
+    expect(result.answer).toBe(longOption)
+    expect(result.mode).toBe("select")
+  })
+
+  test("preserves original full option when display label is truncated", async () => {
+    const tool = createAskUserQuestionTool()
+    const longSingleLine = "A".repeat(200)
+
+    const result = await tool.execute(
+      { question: "Pick", options: [longSingleLine], allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, options) => options[0],
+      },
+    )
+
+    expect(result.answer).toBe(longSingleLine)
+  })
+
+  test("disambiguates duplicate display labels without losing original answer", async () => {
+    const tool = createAskUserQuestionTool()
+    const options = [
+      "Same prefix\nfirst detail",
+      "Same prefix\nsecond detail",
+      "Same prefix\nthird detail",
+    ]
+    let pickedLabel: string | null = null
+
+    const result = await tool.execute(
+      { question: "Pick", options, allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, displayOptions) => {
+          pickedLabel = displayOptions[2]
+          return displayOptions[2]
+        },
+      },
+    )
+
+    // The chosen display label maps back to the third original option.
+    expect(result.answer).toBe(options[2])
+    // Display labels must be unique so the selector is unambiguous.
+    expect(pickedLabel).not.toBeNull()
+  })
+
+  test("does not collide when a user option textually equals the custom sentinel", async () => {
+    const tool = createAskUserQuestionTool()
+
+    const result = await tool.execute(
+      { question: "Pick", options: ["Other"], allowCustom: true },
+      {
+        input: async () => "my custom text",
+        select: async (_q, displayOptions) => {
+          // The custom sentinel must remain distinguishable from the user's "Other" option.
+          expect(displayOptions.filter((o) => o === "Other").length).toBe(1)
+          // The appended custom option must not equal the bare sentinel.
+          const customEntry = displayOptions[displayOptions.length - 1]
+          expect(customEntry).not.toBe("Other")
+          return customEntry
+        },
+      },
+    )
+
+    expect(result.answer).toBe("my custom text")
     expect(result.mode).toBe("custom")
   })
 })
@@ -1263,6 +1349,28 @@ describe("ce-core extension runtime registration", () => {
     expect(registeredNames).not.toContain("ce_parallel_subagent")
   })
 
+  test("ask_user_question carries prompt metadata warning against parallel calls", () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on() {},
+      registerCommand() {},
+    }
+
+    ceCoreExtension(pi as never)
+
+    const def = definitions.get("ask_user_question")
+    expect(typeof def.promptSnippet).toBe("string")
+    expect(def.promptSnippet.length).toBeGreaterThan(0)
+    expect(Array.isArray(def.promptGuidelines)).toBe(true)
+    expect(def.promptGuidelines.length).toBeGreaterThan(0)
+    const joined = def.promptGuidelines.join("\n")
+    expect(joined).toContain("ask_user_question")
+    expect(joined.toLowerCase()).toContain("parallel")
+  })
+
   test("brainstorm_dialog does not terminate the agent turn", async () => {
     const definitions = new Map<string, any>()
     const pi = {
@@ -1732,6 +1840,208 @@ describe("ce-core extension runtime registration", () => {
     expect(result.details.checks).toBeDefined()
     expect(result.details.checks.length).toBeGreaterThan(0)
     expect(result.details.recommendedAction).toBe("continue")
+  })
+})
+
+describe("ask_user_question custom selector component", () => {
+  const noopTheme = { fg: (_c: string, t: string) => t }
+
+  test("renders question and all options without throwing", () => {
+    const selector = new AskUserQuestionSelector(
+      { question: "Pick\nwith detail", displayOptions: ["A", "B", "Other (#2)"], customLabel: "Other (#2)" },
+      noopTheme,
+      () => {},
+    )
+    const lines = selector.render(60)
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.join("\n")).toContain("Pick")
+    expect(lines.join("\n")).toContain("A")
+  })
+
+  test("scrolls down and selects the correct index on Enter", () => {
+    const displayOptions = Array.from({ length: 15 }, (_, i) => `opt-${i}`)
+    let captured: { selectedLabel: string | null } | null = null
+    const selector = new AskUserQuestionSelector(
+      { question: "q", displayOptions, customLabel: null },
+      noopTheme,
+      (result) => { captured = result },
+    )
+    // Move down past the visible window to trigger scrolling.
+    for (let i = 0; i < 12; i++) selector.handleInput("\u001b[B") // down
+    selector.handleInput("\r") // enter
+
+    expect(captured).not.toBeNull()
+    expect(captured!.selectedLabel).toBe("opt-12")
+  })
+
+  test("cancel returns null selection", () => {
+    let captured: { selectedLabel: string | null } | null = null
+    const selector = new AskUserQuestionSelector(
+      { question: "q", displayOptions: ["A"], customLabel: null },
+      noopTheme,
+      (result) => { captured = result },
+    )
+    selector.handleInput("\u001b") // escape
+    expect(captured).not.toBeNull()
+    expect(captured!.selectedLabel).toBeNull()
+  })
+
+  test("Enter via newline (\\n) also commits and is idempotent", () => {
+    let captured: { selectedLabel: string | null } | null = null
+    const selector = new AskUserQuestionSelector(
+      { question: "q", displayOptions: ["A", "B"], customLabel: null },
+      noopTheme,
+      (result) => { captured = result },
+    )
+    selector.handleInput("\n") // newline commit
+    const first = captured!
+    // A second input must not re-resolve (double-done guard).
+    selector.handleInput("\u001b")
+    expect(first.selectedLabel).toBe("A")
+    expect(captured).toBe(first)
+  })
+})
+
+describe("ask_user_question registration serialization", () => {
+  function registerOnlyAskUserQuestion() {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {},
+      registerCommand(_name: string, _def: any) {},
+    }
+    ceCoreExtension(pi as never)
+    return definitions.get("ask_user_question")
+  }
+
+  test("serializes concurrent ask_user_question UI calls (no parallel selectors)", async () => {
+    const askUserQuestion = registerOnlyAskUserQuestion()
+    let inFlight = 0
+    let maxInFlight = 0
+    const order: string[] = []
+
+    const ctx: any = {
+      hasUI: true,
+      ui: {
+        async input() { return null },
+        async select(_question: string, options: string[]) {
+          inFlight += 1
+          maxInFlight = Math.max(maxInFlight, inFlight)
+          order.push(`start-${options[0]}`)
+          await new Promise((r) => setTimeout(r, 20))
+          order.push(`end-${options[0]}`)
+          inFlight -= 1
+          return options[0]
+        },
+      },
+    }
+
+    await Promise.all([
+      askUserQuestion.execute("id1", { question: "q1", options: ["A"], allowCustom: false }, undefined, undefined, ctx),
+      askUserQuestion.execute("id2", { question: "q2", options: ["B"], allowCustom: false }, undefined, undefined, ctx),
+    ])
+
+    // Only one selector should run at a time.
+    expect(maxInFlight).toBe(1)
+    // Calls must be fully ordered (no interleaving).
+    expect(order.join(" -> ")).toMatch(/start-.* -> end-.* -> start-.* -> end-.*/)
+  })
+
+  test("releases the queue after an error so the next question still runs", async () => {
+    const askUserQuestion = registerOnlyAskUserQuestion()
+    const order: string[] = []
+
+    const ctx: any = {
+      hasUI: true,
+      ui: {
+        async input() { return null },
+        async select(_question: string, options: string[]) {
+          order.push(`select-${options[0]}`)
+          if (options[0] === "A") {
+            throw new Error("boom")
+          }
+          return options[0]
+        },
+      },
+    }
+
+    const results = await Promise.allSettled([
+      askUserQuestion.execute("id1", { question: "q1", options: ["A"], allowCustom: false }, undefined, undefined, ctx),
+      askUserQuestion.execute("id2", { question: "q2", options: ["B"], allowCustom: false }, undefined, undefined, ctx),
+    ])
+
+    // First rejects, second resolves despite the earlier failure.
+    expect(results[0].status).toBe("rejected")
+    expect(results[1].status).toBe("fulfilled")
+    expect(order).toEqual(["select-A", "select-B"])
+  })
+
+  test("uses ctx.ui.custom scrollable UI in tui mode when available", async () => {
+    const askUserQuestion = registerOnlyAskUserQuestion()
+    const longOption = "Option A: DashScope\nlong description body"
+    const selectCalls: string[] = []
+    let customFactory: any = null
+
+    const ctx: any = {
+      hasUI: true,
+      mode: "tui",
+      ui: {
+        async input() { return null },
+        async select() { selectCalls.push("called"); return null },
+        async custom<T>(factory: any): Promise<T> {
+          customFactory = factory
+          const result: { value: T | null } = { value: null }
+          const component = await factory(
+            {},
+            { fg: (_c: string, t: string) => t },
+            {},
+            (selection: T) => { result.value = selection },
+          )
+          // Drive the component to select the first option (Enter).
+          component.handleInput("\r")
+          return result.value as T
+        },
+      },
+    }
+
+    const result = await askUserQuestion.execute(
+      "id1",
+      { question: "Pick embedding model", options: [longOption, "plan"], allowCustom: false },
+      undefined, undefined, ctx,
+    )
+
+    // custom was attempted and select fallback was NOT used.
+    expect(selectCalls).toEqual([])
+    expect(customFactory).not.toBeNull()
+    // The full original option is returned to the agent.
+    expect(result.details.answer).toBe(longOption)
+    expect(result.details.mode).toBe("select")
+  })
+
+  test("falls back to ctx.ui.select when custom is unavailable even in tui mode", async () => {
+    const askUserQuestion = registerOnlyAskUserQuestion()
+    let selectCalled = false
+
+    const ctx: any = {
+      hasUI: true,
+      mode: "tui",
+      ui: {
+        async input() { return null },
+        async select(_q: string, options: string[]) { selectCalled = true; return options[0] },
+        // No custom method.
+      },
+    }
+
+    const result = await askUserQuestion.execute(
+      "id1",
+      { question: "Pick", options: ["A", "B"], allowCustom: false },
+      undefined, undefined, ctx,
+    )
+
+    expect(selectCalled).toBe(true)
+    expect(result.details.answer).toBe("A")
   })
 })
 
