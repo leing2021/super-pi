@@ -101,7 +101,7 @@ export class AskUserQuestionSelector extends Container {
 
   render(width: number): string[] {
     const lines: string[] = []
-    const fg = this.theme.fg
+    const fg = this.theme.fg.bind(this.theme)
     const innerWidth = Math.max(20, width - 2)
 
     lines.push(truncateToWidth(fg("accent", "─".repeat(width)), width))

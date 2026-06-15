@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.25.1 — fix ask_user_question crash: bind fg to this.theme
+- **Bug fix**: `AskUserQuestionSelector.render()` extracted `this.theme.fg` as a bare function, losing `this` binding. Calling `fg("accent", ...)` threw `TypeError: Cannot read properties of undefined (reading 'fgColors')`, crashing Pi on `ask_user_question` invoke. Fixed by adding `.bind(this.theme)`.
+- 193 tests passing, 0 regressions.
+
 ### 0.25.0 — ask_user_question hardening: serialized prompts, option normalization, scrollable TUI, prompt metadata
 - **Bug fix (parallel silent failure)**: `ask_user_question` now serializes interactive UI calls via a module-level promise queue (`runAskUserQuestionExclusive`), preventing the Pi singleton-selector race that caused parallel `ask_user_question` calls to silently return `No result provided`. See `docs/bug/ask-user-question-parallel-call-silent-failure.md`.
 - **Bug fix (long option truncation)**: Options are normalized to single-line short display labels (`normalizeQuestionOptions`) while the full original option is still returned to the agent. Duplicate labels are disambiguated with `(#n)` suffixes; the `Other` custom sentinel never collides with a user option. See `docs/bug/ask-user-question-long-options-truncated.md`.

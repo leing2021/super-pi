@@ -1,5 +1,9 @@
 # 更新日志
 
+### 0.25.1 — 修复 ask_user_question 崩溃：绑定 fg 到 this.theme
+- **Bug 修复**：`AskUserQuestionSelector.render()` 将 `this.theme.fg` 提取为裸函数，丢失 `this` 绑定。调用 `fg("accent", ...)` 时抛出 `TypeError: Cannot read properties of undefined (reading 'fgColors')`，导致 `ask_user_question` 触发 Pi 崩溃。修复方式：添加 `.bind(this.theme)`。
+- 193 个测试通过，0 回归。
+
 ### 0.25.0 — ask_user_question 加固：串行化提问、选项归一化、可滚动 TUI、prompt 元数据
 - **Bug 修复（并行静默失败）**：`ask_user_question` 通过 module-level Promise 队列（`runAskUserQuestionExclusive`）串行化交互 UI 调用，避免 Pi 单例 selector 竞态导致并行 `ask_user_question` 静默返回 `No result provided`。详见 `docs/bug/ask-user-question-parallel-call-silent-failure.md`。
 - **Bug 修复（长选项截断）**：选项归一化为单行短 label（`normalizeQuestionOptions`），返回给 agent 的仍是完整原始 option。重复 label 以 `(#n)` 后缀去重；`Other` 自定义哨兵永不与用户选项冲突。详见 `docs/bug/ask-user-question-long-options-truncated.md`。
