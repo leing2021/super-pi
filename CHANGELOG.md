@@ -1,5 +1,8 @@
 # Changelog
 
+### 0.25.2 — ask_user_question option label length guideline
+- Add `Tool Usage Constraints` to `rules/common/development-workflow.md`: keep `ask_user_question` option labels under 30 chars to avoid pi TUI `truncateToWidth` clipping.
+
 ### 0.25.1 — fix ask_user_question crash: bind fg to this.theme
 - **Bug fix**: `AskUserQuestionSelector.render()` extracted `this.theme.fg` as a bare function, losing `this` binding. Calling `fg("accent", ...)` threw `TypeError: Cannot read properties of undefined (reading 'fgColors')`, crashing Pi on `ask_user_question` invoke. Fixed by adding `.bind(this.theme)`.
 - 193 tests passing, 0 regressions.

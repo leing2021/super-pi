@@ -4,6 +4,10 @@
 
 The Feature Implementation Workflow describes the development pipeline: research, planning, TDD, code review, and then committing to git.
 
+## Tool Usage Constraints
+
+- **`ask_user_question` option labels**: Keep each option under 30 characters. The pi TUI truncates longer labels with "..." and does not word-wrap. Put verbose context in the question text or a preceding message instead.
+
 ## Feature Implementation Workflow
 
 0. **Research & Reuse** _(mandatory before any new implementation)_

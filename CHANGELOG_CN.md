@@ -1,5 +1,8 @@
 # 更新日志
 
+### 0.25.2 — ask_user_question 选项长度规范
+- `rules/common/development-workflow.md` 新增 `Tool Usage Constraints`：`ask_user_question` 选项 label 控制在 30 字符内，避免 pi TUI `truncateToWidth` 截断。
+
 ### 0.25.1 — 修复 ask_user_question 崩溃：绑定 fg 到 this.theme
 - **Bug 修复**：`AskUserQuestionSelector.render()` 将 `this.theme.fg` 提取为裸函数，丢失 `this` 绑定。调用 `fg("accent", ...)` 时抛出 `TypeError: Cannot read properties of undefined (reading 'fgColors')`，导致 `ask_user_question` 触发 Pi 崩溃。修复方式：添加 `.bind(this.theme)`。
 - 193 个测试通过，0 回归。
