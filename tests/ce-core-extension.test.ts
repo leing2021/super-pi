@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { mkdir, writeFile } from "node:fs/promises"
-import ceCoreExtension from "../extensions/ce-core/index"
+import ceCoreExtension, { COMPACTION_FOCUS_INSTRUCTIONS } from "../extensions/ce-core/index"
 import {
   getBrainstormArtifactPath,
   getPlanArtifactPath,
@@ -2061,6 +2061,54 @@ describe("ask_user_question registration serialization", () => {
 
     expect(selectCalled).toBe(true)
     expect(result.details.answer).toBe("A")
+  })
+})
+
+describe("compaction hooks", () => {
+  function registerAndGetHandlers() {
+    const eventHandlers = new Map<string, any[]>()
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+    }
+    ceCoreExtension(pi as never)
+    return eventHandlers
+  }
+
+  test("session_before_tree appends focus instructions to branch summaries prompt", async () => {
+    const handlers = registerAndGetHandlers()
+    const treeHandlers = handlers.get("session_before_tree") ?? []
+    expect(treeHandlers.length).toBe(1)
+
+    const result = await treeHandlers[0]({
+      type: "session_before_tree",
+      preparation: {
+        targetId: "entry-2",
+        oldLeafId: "entry-1",
+        commonAncestorId: null,
+        entriesToSummarize: [],
+        userWantsSummary: true,
+      },
+      signal: new AbortController().signal,
+    })
+
+    expect(result.customInstructions).toBe(COMPACTION_FOCUS_INSTRUCTIONS)
+    // Append, not replace — keep pi's default branch-summary prompt
+    expect(result.replaceInstructions).toBe(false)
+  })
+
+  test("does not register a session_before_compact handler (no prompt-only injection possible)", () => {
+    // pi's SessionBeforeCompactResult only accepts `cancel` or a full
+    // `compaction` replacement — there is no prompt-only injection field.
+    // Registering a no-op handler would add emit() overhead on every
+    // compaction with zero benefit, so super-pi deliberately omits it.
+    const handlers = registerAndGetHandlers()
+    expect(handlers.has("session_before_compact")).toBe(false)
   })
 })
 

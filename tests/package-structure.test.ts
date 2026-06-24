@@ -35,6 +35,15 @@ describe("package bootstrap structure", () => {
     expect(packageJson).toContain('"typebox"')
   })
 
+  test("peer dependency floor matches APIs used by the extension", () => {
+    // CONFIG_DIR_NAME export (0.79.7) + session_before_compact reason/willRetry (0.79.10)
+    const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
+      peerDependencies: Record<string, string>
+    }
+    const floor = pkg.peerDependencies["@earendil-works/pi-coding-agent"]
+    expect(floor).toMatch(/>=0\.79\.10/)
+  })
+
   test("README documents installation and the Phase 1 commands", () => {
     const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8")
 

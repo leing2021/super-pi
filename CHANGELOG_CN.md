@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.25.3 — 跟进 pi 0.79–0.80：CONFIG_DIR_NAME、修正 compaction hook 文档、peerDep 下限
+- **pi 适配**：`readSettings` 改用 pi 导出的 `CONFIG_DIR_NAME`（默认 `.pi`，pi 0.79.7 起可用户自定义）替代硬编码 `.pi` 路径，当项目配置目录被自定义时也能正确读取 `settings.json`。
+- **修复（死代码 + 注释误导）**：`compaction-optimizer` 此前注释声称 hook `session_before_compact`，实际 hook 的是 `session_before_tree`。注释现准确描述哪个 hook 消费 `COMPACTION_FOCUS_INSTRUCTIONS`（`session_before_tree`，其 `customInstructions` 返回值在 `/tree` 导航时被 pi 消费），以及为何常规上下文压缩未覆盖（pi 的 `SessionBeforeCompactResult` 只接受 `cancel` 或完整 `compaction` 替换——无 prompt-only 注入字段）。移除了一个无效的 `session_before_compact` handler（徒增 `emit()` 开销却零收益）。
+- **peer 依赖**：下限从 `>=0.74.0` 提升至 `>=0.79.10`，匹配实际用到的 API（`CONFIG_DIR_NAME` + `session_before_compact` 的 `reason`/`willRetry`）。devDependencies 升至 `^0.80.0`。
+- **文档**：README / README_CN 新增 project-trust 说明（pi 0.79+），提示首次运行需批准项目信任，非交互运行用 `pi --approve`。
+- 196 个测试通过，0 回归。
+
 ### 0.25.2 — ask_user_question 选项长度规范
 - `rules/common/development-workflow.md` 新增 `Tool Usage Constraints`：`ask_user_question` 选项 label 控制在 30 字符内，避免 pi TUI `truncateToWidth` 截断。
 

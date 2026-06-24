@@ -2,11 +2,23 @@
 // Compaction Prompt Optimizer
 // ============================================================================
 //
-// Hooks into `session_before_compact` to inject custom instructions that make
-// compaction summaries more focused and useful for coding agent context.
+// Focus instructions injected into pi's branch-summary prompts so summaries
+// stay useful for coding-agent continuation.
 //
-// This is a "prompt-only" optimization — it doesn't replace pi's compaction
-// flow, just adds focus instructions to the summarization prompt.
+// Consumed by the `session_before_tree` hook in `index.ts`, which returns
+// `{ customInstructions, replaceInstructions }`. This return shape IS
+// supported by pi (consumed in `agent-session.js` navigateTree →
+// SessionBeforeTreeResult) and appends focus instructions to summaries
+// generated on `/tree` navigation.
+//
+// Regular context compaction (manual `/compact`, threshold, overflow) is
+// NOT covered: pi's `SessionBeforeCompactResult` only accepts `cancel` or a
+// full `compaction` replacement — there is no prompt-only injection field
+// (`customInstructions` is an event *input*, not a return value). Appending
+// focus instructions there would require replacing pi's entire summarizer,
+// so we deliberately do not hook it.
+//
+// This is a "prompt-only" optimization; it does not replace pi's flows.
 
 /**
  * Custom instructions appended to compaction summarization prompts.

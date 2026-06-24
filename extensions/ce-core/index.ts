@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
+import { CONFIG_DIR_NAME } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool, CUSTOM_SENTINEL } from "./tools/ask-user-question"
@@ -97,15 +98,17 @@ interface StrategySettings {
 }
 
 /**
- * Read settings from two locations:
- * 1. Project-level: {cwd}/.pi/settings.json (highest priority)
- * 2. Global-level: ~/.pi/agent/settings.json (fallback)
+ * Read settings from two locations (config dir honors pi's `CONFIG_DIR_NAME`,
+ * which defaults to `.pi` but is user-configurable since pi 0.79.7):
+ * 1. Project-level: {cwd}/{CONFIG_DIR_NAME}/settings.json (highest priority)
+ * 2. Global-level: ~/{CONFIG_DIR_NAME}/agent/settings.json (fallback)
  *
  * Project-level takes precedence; global-level is used as fallback.
  */
 async function readSettings(cwd: string): Promise<StrategySettings | null> {
+  const agentHome = process.env.HOME || "~"
   // Try project-level first
-  const projectPath = path.join(cwd, ".pi", "settings.json")
+  const projectPath = path.join(cwd, CONFIG_DIR_NAME, "settings.json")
   try {
     const content = await readFile(projectPath, "utf8")
     const projectSettings = JSON.parse(content) as StrategySettings
@@ -118,7 +121,7 @@ async function readSettings(cwd: string): Promise<StrategySettings | null> {
   }
 
   // Fallback to global-level
-  const globalPath = path.join(process.env.HOME || "~", ".pi", "agent", "settings.json")
+  const globalPath = path.join(agentHome, CONFIG_DIR_NAME, "agent", "settings.json")
   try {
     const content = await readFile(globalPath, "utf8")
     return JSON.parse(content) as StrategySettings
@@ -126,8 +129,8 @@ async function readSettings(cwd: string): Promise<StrategySettings | null> {
     // Global settings not found either
   }
 
-  // Try ~/.pi/settings.json as another fallback
-  const altGlobalPath = path.join(process.env.HOME || "~", ".pi", "settings.json")
+  // Try ~/{CONFIG_DIR_NAME}/settings.json as another fallback
+  const altGlobalPath = path.join(agentHome, CONFIG_DIR_NAME, "settings.json")
   try {
     const content = await readFile(altGlobalPath, "utf8")
     return JSON.parse(content) as StrategySettings
@@ -805,7 +808,19 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     }
   })
 
-  // Tree summary prompt optimizer — keeps branch summaries focused
+  // Branch summary prompt optimizer — appends focus instructions to `/tree`
+  // navigation summaries. `SessionBeforeTreeResult.customInstructions` is
+  // consumed by pi (agent-session.js navigateTree), so this return shape is
+  // effective for branch summaries.
+  //
+  // NOTE on regular context compaction (manual `/compact`, threshold,
+  // overflow): pi's `session_before_compact` result only accepts `cancel` or
+  // a full `compaction` replacement — there is NO prompt-only injection
+  // field (`customInstructions` is an event *input*, not a return value).
+  // So we cannot append focus instructions to regular compaction summaries
+  // without replacing pi's entire summarizer. We deliberately do not hook
+  // `session_before_compact` to avoid dead handlers and needless emit()
+  // overhead on every compaction.
   pi.on("session_before_tree", async (_event, _ctx) => {
     return {
       customInstructions: COMPACTION_FOCUS_INSTRUCTIONS,
