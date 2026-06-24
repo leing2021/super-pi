@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.25.3 — align with pi 0.79–0.80: CONFIG_DIR_NAME, accurate compaction hook docs, peerDep floor
+- **pi adaptation**: `readSettings` now uses pi's exported `CONFIG_DIR_NAME` (default `.pi`, user-configurable since pi 0.79.7) instead of hardcoded `.pi` paths, so super-pi reads `settings.json` correctly when the project config directory is customized.
+- **Fix (dead code + misleading comments)**: The `compaction-optimizer` previously claimed to hook `session_before_compact` but actually hooked `session_before_tree`. Comments now accurately describe which hook consumes `COMPACTION_FOCUS_INSTRUCTIONS` (`session_before_tree`, whose `customInstructions` return value pi consumes on `/tree` navigation) and why regular context compaction is NOT covered (pi's `SessionBeforeCompactResult` only accepts `cancel` or a full `compaction` replacement — no prompt-only injection field). Removed a no-op `session_before_compact` handler that added `emit()` overhead with zero benefit.
+- **Peer dependencies**: Floor raised from `>=0.74.0` to `>=0.79.10` to match the APIs now in use (`CONFIG_DIR_NAME` + `session_before_compact` `reason`/`willRetry`). devDependencies bumped to `^0.80.0`.
+- **Docs**: README / README_CN add a project-trust note (pi 0.79+) for first-run approval and `pi --approve` non-interactive runs.
+- 196 tests passing, 0 regressions.
+
 ### 0.25.2 — ask_user_question option label length guideline
 - Add `Tool Usage Constraints` to `rules/common/development-workflow.md`: keep `ask_user_question` option labels under 30 chars to avoid pi TUI `truncateToWidth` clipping.
 

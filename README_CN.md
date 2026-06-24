@@ -22,7 +22,7 @@ Super Pi 是 Pi-native 的工程 workflow 层：它给 coding agent 加上阶段
 pi install npm:@leing2021/super-pi
 ```
 
----
+> **项目信任 (pi ≥ 0.79)：** Pi 加载项目本地 settings、resources 和 packages 前会询问。首次使用时批准项目信任提示，让 Super Pi 能读取 `.pi/settings.json` 并加载其 skills/extensions。非交互运行用 `pi --approve`。
 
 ## 五步核心循环
 

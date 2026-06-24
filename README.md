@@ -18,7 +18,7 @@ Install, describe what you want to build, then keep saying "continue." Super Pi 
 pi install npm:@leing2021/super-pi
 ```
 
----
+> **Project trust (pi ≥ 0.79):** Pi asks before loading project-local settings, resources, and packages. On first use, approve the project trust prompt so Super Pi can read `.pi/settings.json` and load its skills/extensions. Use `pi --approve` for non-interactive runs.
 
 ## Highlights
 
