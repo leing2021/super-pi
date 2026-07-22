@@ -24,3 +24,4 @@ All reviewers evaluate changes across five axes: correctness, readability, archi
 - **performance-reviewer**: Triggered when query, cache, database, or streaming files change. Reviews for N+1, unnecessary allocation, missing indexes.
 - **integration-reviewer**: Triggered when CI/CD, Docker, package.json, or config files change. Reviews for dependency conflicts, build breakage, deployment issues.
 - **thoroughness-reviewer**: Triggered for large diffs (5+ files or 300+ lines). Reviews for incomplete refactors, missed callers, inconsistent changes.
+- **spec-reviewer**: Triggered when a plan artifact exists. Reviews the diff against the plan — reports **missing** requirements, **scope creep** (behaviour in the diff not asked for), and **wrong implementation** (requirements that look done but aren't). Skip when no plan artifact is found.

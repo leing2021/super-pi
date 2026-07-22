@@ -21,6 +21,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
   - **Project-specific** → `{project-root}/docs/solutions/` (only relevant to current project)
   - **Cross-project (global)** → `~/.pi/agent/docs/solutions/` (applicable to any project)
   - Default to **global** when uncertain.
+- **Out-of-scope branch:** if the request was rejected or already implemented, write to `docs/out-of-scope/` (template: `assets/out-of-scope-template.md`, convention: `../../docs/out-of-scope/README.md`) instead of `docs/solutions/`.
 - Make the result useful to future `02-plan` and `04-review` runs via the search strategy in `references/solution-search-strategy.md`.
 
 ## Workflow

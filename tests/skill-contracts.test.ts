@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 
 const repoRoot = path.resolve(import.meta.dir, "..")
@@ -279,5 +279,129 @@ describe("skill package contracts", () => {
     expect(strategy).toContain("tags")
     // Must define two-level search: project-level + global-level
     expect(strategy).toContain("~/.pi/agent/docs/solutions")
+  })
+
+  test("03-work debug-discipline covers the full diagnosis loop", () => {
+    const debug = readFileSync(
+      path.join(repoRoot, "skills", "03-work", "references", "debug-discipline.md"),
+      "utf8",
+    )
+
+    // Phase 1: tight loop construction + completion criterion
+    expect(debug).toContain("tight loop")
+    expect(debug).toContain("red-capable")
+    expect(debug).toContain("non-deterministic")
+    // Phase 2: minimise
+    expect(debug).toContain("minimise")
+    // Phase 6: post-mortem handoff to 05-learn
+    expect(debug).toContain("post-mortem")
+    expect(debug).toContain("05-learn")
+  })
+
+  test("skill-write reference inlines the skill-design vocabulary (self-contained)", () => {
+    const skillWrite = readFileSync(
+      path.join(repoRoot, "skills", "references", "skill-write.md"),
+      "utf8",
+    )
+
+    expect(skillWrite).toContain("Predictability")
+    expect(skillWrite).toContain("Need Test")
+    expect(skillWrite).toContain("Leading Word")
+    expect(skillWrite).toContain("Information Hierarchy")
+    expect(skillWrite).toContain("Completion Criterion")
+    // Failure modes
+    expect(skillWrite).toContain("Premature Completion")
+    expect(skillWrite).toContain("Duplication")
+    expect(skillWrite).toContain("Sediment")
+    expect(skillWrite).toContain("Sprawl")
+    expect(skillWrite).toContain("No-op")
+  })
+
+  test("references files are self-contained — no external skill paths", () => {
+    // Scans every .md under skills/references/ for external path leaks.
+    // super-pi must not depend on ~/.pi or absolute user paths.
+    const refsDir = path.join(repoRoot, "skills", "references")
+    const files = readdirSync(refsDir).filter((f) => f.endsWith(".md"))
+    expect(files.length).toBeGreaterThan(0)
+
+    const bannedPatterns = ["~/.pi", "/Users/jasonle"]
+    for (const file of files) {
+      const content = readFileSync(path.join(refsDir, file), "utf8")
+      for (const pattern of bannedPatterns) {
+        expect(content).not.toContain(pattern)
+      }
+    }
+  })
+
+  test("domain-language reference defines the CONTEXT.md + ADR consumption contract", () => {
+    const domain = readFileSync(
+      path.join(repoRoot, "skills", "references", "domain-language.md"),
+      "utf8",
+    )
+
+    expect(domain).toContain("CONTEXT.md")
+    expect(domain).toContain("ADR")
+    // ADR three-condition threshold
+    expect(domain).toContain("hard to reverse")
+    // Consumption rule
+    expect(domain).toContain("CONTEXT-MAP.md")
+  })
+
+  test("every SKILL.md stays under 100 lines", () => {
+    for (const skillName of skillNames) {
+      const skillFile = path.join(repoRoot, "skills", skillName, "SKILL.md")
+      const content = readFileSync(skillFile, "utf8")
+      const lineCount = content.split("\n").length
+      expect(lineCount).toBeLessThanOrEqual(100)
+    }
+  })
+
+  test("module-design reference inlines the deep-module vocabulary", () => {
+    const moduleDesign = readFileSync(
+      path.join(repoRoot, "skills", "references", "module-design.md"),
+      "utf8",
+    )
+
+    // Seven core terms
+    expect(moduleDesign).toContain("module")
+    expect(moduleDesign).toContain("interface")
+    expect(moduleDesign).toContain("depth")
+    expect(moduleDesign).toContain("seam")
+    expect(moduleDesign).toContain("adapter")
+    expect(moduleDesign).toContain("Leverage")
+    expect(moduleDesign).toContain("Locality")
+    // Key principles
+    expect(moduleDesign).toContain("deletion test")
+    expect(moduleDesign).toContain("test surface")
+  })
+
+  test("04-review runs a Spec axis against the originating plan when present", () => {
+    const content = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
+    const reviewerSelection = readFileSync(
+      path.join(repoRoot, "skills", "04-review", "references", "reviewer-selection.md"),
+      "utf8",
+    )
+
+    // SKILL.md declares the Spec axis
+    expect(content).toContain("Spec")
+    expect(content).toContain("missing")
+    expect(content).toContain("scope creep")
+    // reviewer-selection.md documents the spec-reviewer persona
+    expect(reviewerSelection).toContain("spec-reviewer")
+    expect(reviewerSelection).toContain("plan artifact")
+  })
+
+  test("out-of-scope knowledge base records rejected/already-built requests", () => {
+    const outOfScopeReadme = readFileSync(
+      path.join(repoRoot, "docs", "out-of-scope", "README.md"),
+      "utf8",
+    )
+    const learnContent = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
+
+    // README defines the KB convention
+    expect(outOfScopeReadme).toContain("rejected")
+    expect(outOfScopeReadme).toContain("already")
+    // 05-learn writes to out-of-scope when appropriate
+    expect(learnContent).toContain("out-of-scope")
   })
 })

@@ -39,14 +39,15 @@ Every unit follows **RED → GREEN → REFACTOR**:
 
 ## Planning flow
 
-1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles` and `blocker` as starting point. If not found, proceed normally (new project).
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles` and `blocker` as starting point. If not found, proceed normally (new project). Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Read relevant brainstorm from `docs/brainstorms/`
 3. Run solution search (keywords → grep frontmatter → read top 3)
-4. Gather repository context
-5. **Source-driven check:** For each unit that involves framework/library APIs, add a note: "Verify against official docs before implementing."
-6. If plan exists: use `plan_diff` `compare` → review with user → `patch`
-6. If no plan: write new plan under `docs/plans/` using `references/plan-template.md`
-7. Structure work using `references/implementation-unit-template.md`
+4. Grep `docs/out-of-scope/` for prior rejections of features in this plan
+5. Gather repository context
+6. **Source-driven check:** For each unit that involves framework/library APIs, add a note: "Verify against official docs before implementing."
+7. If plan exists: use `plan_diff` `compare` → review with user → `patch`
+8. If no plan: write new plan under `docs/plans/` using `references/plan-template.md`
+9. Structure work using `references/implementation-unit-template.md`
 8. Verify every unit follows TDD gates
 
 ## Optional: CEO Review

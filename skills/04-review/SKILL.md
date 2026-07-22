@@ -24,8 +24,9 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates
-7. Produce structured findings using `references/findings-schema.md`
-8. **Autofixable findings:** apply and re-review (max 3 iterations)
+7. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Skip if no plan.
+8. Produce structured findings using `references/findings-schema.md`
+9. **Autofixable findings:** apply and re-review (max 3 iterations)
 
 ## Review discipline
 
@@ -35,6 +36,7 @@ Code review is **technical evaluation**, not social performance:
 - **No performative agreement:** verify before concurring
 - **Push back** with reasoning when findings are incorrect
 - **Evidence before assertions:** cite specific code, not principles
+- **Architecture axis:** audit module depth and seams using `../references/module-design.md`
 
 ## Handling findings
 
@@ -46,7 +48,7 @@ Code review is **technical evaluation**, not social performance:
 
 ## Workflow
 
-1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally.
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Determine diff scope from branch or explicit target
 3. Collect stats (files, insertions, deletions) → call `review_router`
 4. Read matching plan artifact
