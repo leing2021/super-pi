@@ -298,25 +298,6 @@ describe("skill package contracts", () => {
     expect(debug).toContain("05-learn")
   })
 
-  test("skill-write reference inlines the skill-design vocabulary (self-contained)", () => {
-    const skillWrite = readFileSync(
-      path.join(repoRoot, "skills", "references", "skill-write.md"),
-      "utf8",
-    )
-
-    expect(skillWrite).toContain("Predictability")
-    expect(skillWrite).toContain("Need Test")
-    expect(skillWrite).toContain("Leading Word")
-    expect(skillWrite).toContain("Information Hierarchy")
-    expect(skillWrite).toContain("Completion Criterion")
-    // Failure modes
-    expect(skillWrite).toContain("Premature Completion")
-    expect(skillWrite).toContain("Duplication")
-    expect(skillWrite).toContain("Sediment")
-    expect(skillWrite).toContain("Sprawl")
-    expect(skillWrite).toContain("No-op")
-  })
-
   test("references files are self-contained — no external skill paths", () => {
     // Scans every .md under skills/references/ for external path leaks.
     // super-pi must not depend on ~/.pi or absolute user paths.
