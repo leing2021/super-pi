@@ -24,6 +24,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 7. Use **`task_splitter`** to analyze dependencies before execution
 8. If in **worktree** (via `07-worktree`), execute inside it
 9. End by recommending `04-review`
+10. When designing/restructuring modules, use the deep-module vocabulary (`../references/module-design.md`) — evaluate depth and seam placement.
 
 > **Advanced:** If you need external child agent delegation (background runs, parallel audits), install `pi-subagents` separately. Super Pi does not require it.
 
@@ -69,7 +70,7 @@ If the same tool, command, or implementation unit fails 3 consecutive times, sto
 
 ## Workflow
 
-1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point. If not found, proceed normally.
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Detect input type (plan path vs bare prompt)
 3. Read implementation units if plan path
 4. Load `session_checkpoint` to skip completed units

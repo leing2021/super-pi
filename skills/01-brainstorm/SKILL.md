@@ -63,14 +63,14 @@ Before summarizing, ensure the design answers:
 
 After mode-specific questions, check if the project has a `CONTEXT.md` at root.
 If not, and the brainstorm reveals 3+ domain-specific terms with ambiguous meanings,
-offer to create one using `references/context-glossary.md`. Update it inline during
-the session — don't batch. If it exists, cross-reference and flag conflicts:
+offer to create one using `references/context-glossary.md` (contract: `../references/domain-language.md`).
+Update it inline during the session — don't batch. If it exists, cross-reference and flag conflicts:
 
 > "Your CONTEXT.md defines 'cancellation' as X, but you seem to mean Y — which is it?"
 
 ## Stop conditions
 
-Stop and ask instead of guessing when: requirements conflict, success criteria unclear, task spans multiple systems, or user hasn't approved design.
+Stop and ask instead of guessing when: requirements conflict, success criteria unclear, task spans multiple systems, or user hasn't approved design. Before fleshing out an idea, grep `docs/out-of-scope/` for prior rejections — surface matches before proceeding.
 
 ## Approval gate
 
