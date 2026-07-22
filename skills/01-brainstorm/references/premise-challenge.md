@@ -8,6 +8,11 @@ Before proposing solutions, challenge the premises. Run this after the diagnosti
 2. **What happens if we do nothing?** Real pain point or hypothetical one?
 3. **What existing code already partially solves this?** Map existing patterns, utilities, and flows that could be reused.
 4. **If the deliverable is a new artifact** (CLI binary, library, package, container image, mobile app): **how will users get it?** Code without distribution is code nobody can use.
+5. **External resource signal — verify intent before scope.** When the user mentions an existing resource ("I already have X", "I wrote a skill for Y", "we use Z elsewhere"), do not assume it means "include X in this project." It may mean the opposite: the problem is already solved and should be excluded. Reverse-verify with one question: "You mentioned X — do you want it incorporated here, or is it noting that X already handles this so we don't need to?" A wrong assumption here propagates through every downstream stage (plan, work, review) and surfaces only at merge — three gates that all trust the upstream.
+
+## Failure mode
+
+Skipping this check when the user references an external resource leads to scope creep in the opposite direction assumed: incorporating something the user considered already-handled. The later it surfaces, the costlier the rollback.
 
 ## Output format
 
