@@ -73,7 +73,7 @@ You: /skill:03-work docs/plans/plan.md
 | **01-brainstorm** | Structured multi-round discovery, domain vocabulary persistence | `brainstorm_dialog` |
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
 | **03-work** | Inline execution, checkpoint resume, strict TDD, stop-the-line | `session_checkpoint`, `task_splitter` |
-| **04-review** | Auto-assigned reviewers, five-axis findings, autofix loop | `review_router` |
+| **04-review** | Auto-assigned reviewers, six-axis findings (Standards + Spec), autofix loop | `review_router` |
 | **05-learn** | Pattern extraction → searchable solution artifacts | `pattern_extractor` |
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
 | **07-worktree** | Isolated git worktree development | `worktree_manager` |
@@ -114,7 +114,7 @@ Super Pi is not a fork or wrapper. It extracts useful methods from the projects 
 | [superpowers](https://github.com/obra/superpowers) | Strict TDD gates, design checklists, review discipline, and the idea that agents need hard gates instead of gentle suggestions. |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | The five-step think → plan → build → review → learn loop and the knowledge-compounding backbone. |
 | [gstack](https://github.com/garrytan/gstack) | YC-style forcing questions, CEO Review cognitive frameworks, browser QA patterns, failure maps, and evidence-first validation. |
-| [mattpocock/skills](https://github.com/mattpocock/skills) | Context glossary (`CONTEXT.md`) for cross-session term persistence, lightweight ADR with three-condition threshold, and feedback-loop-first debug discipline. Adopted as reference templates embedded into existing skills — no new skills or tools. |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | Context glossary (`CONTEXT.md`) for cross-session term persistence, lightweight ADR with three-condition threshold, feedback-loop-first debug discipline (full diagnosis loop with completion criteria and post-mortem handoff), deep-module vocabulary, the review Spec axis (plan-vs-diff with traceback to original wording), and the out-of-scope knowledge base. Adopted as self-contained `skills/references/` — no external path deps, no issue-tracker deps. |
 
 ---
 

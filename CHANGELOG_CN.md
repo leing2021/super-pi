@@ -1,5 +1,17 @@
 # 更新日志
 
+### 0.26.0 — 吸纳 Matt Pocock skills 方法论 + 外部资源核实门禁
+- **方法论吸纳**：以四过滤器（自包含 / artifact-driven / SKILL.md 行数预算 / 可测试性）评估 [Matt Pocock skills](https://github.com/mattpocock/skills)，6 项通过、3 项排除（wayfinder、tracer-bullet ticket 化、triage——均依赖 issue tracker）。
+- **新增共享 references**（均自包含，无外部路径依赖）：
+  - `skills/references/domain-language.md` — `CONTEXT.md` 词汇表 + ADR 三条件门槛 + 单/多 context 消费契约。
+  - `skills/references/module-design.md` — deep-module 词汇表（module / interface / depth / seam / adapter / leverage / locality）+ 删除测试 + interface-is-test-surface。
+- **调试纪律强化**（`03-work/references/debug-discipline.md`，53→123 行）：完整诊断环，含 10 种反馈环构造策略、Phase 1 完成标准（red-capable / deterministic / fast / agent-runnable）、非确定性 bug 复现率策略、minimise 步骤、Phase 6 post-mortem 闭环交接 `05-learn`。
+- **Review Spec 轴**：`04-review` 新增第六轴——spec-reviewer persona 对比 diff 与原始 plan（missing / scope creep / wrong implementation），并回溯用户原始措辞（brainstorm scope）以捕获 plan 自身编码的方向性误解。
+- **Out-of-scope 知识库**：`05-learn` 可记录被拒或已实现需求到 `docs/out-of-scope/`，供 `01-brainstorm` 和 `02-plan` 消费以防重复提出。模板位于 `skills/05-learn/assets/out-of-scope-template.md`；约定 README 纳入版本控制（静态），运行时实例 gitignore。
+- **外部资源核实门禁**（`01-brainstorm/references/premise-challenge.md` rule 5）：用户提及已有资源时，scoping 前反向核实意图（纳入 vs 已解决）。防止误解信号贯穿全部 pipeline 阶段、仅在 merge 时暴露的失败模式。
+- **测试**：196 → 204（+8 内容契约测试，含自包含路径扫描与 SKILL.md 行数守护）。
+- **gitignore**：`docs/` 排除细化为 `docs/*` + 显式例外，使静态约定文档（out-of-scope/README）可追踪，运行时 artifact 仍忽略。
+
 ### 0.25.3 — 跟进 pi 0.79–0.80：CONFIG_DIR_NAME、修正 compaction hook 文档、peerDep 下限
 - **pi 适配**：`readSettings` 改用 pi 导出的 `CONFIG_DIR_NAME`（默认 `.pi`，pi 0.79.7 起可用户自定义）替代硬编码 `.pi` 路径，当项目配置目录被自定义时也能正确读取 `settings.json`。
 - **修复（死代码 + 注释误导）**：`compaction-optimizer` 此前注释声称 hook `session_before_compact`，实际 hook 的是 `session_before_tree`。注释现准确描述哪个 hook 消费 `COMPACTION_FOCUS_INSTRUCTIONS`（`session_before_tree`，其 `customInstructions` 返回值在 `/tree` 导航时被 pi 消费），以及为何常规上下文压缩未覆盖（pi 的 `SessionBeforeCompactResult` 只接受 `cancel` 或完整 `compaction` 替换——无 prompt-only 注入字段）。移除了一个无效的 `session_before_compact` handler（徒增 `emit()` 开销却零收益）。
