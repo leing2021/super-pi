@@ -1,5 +1,17 @@
 # Changelog
 
+### 0.26.0 — absorb Matt Pocock skills methodology + external-resource verification gates
+- **Skill methodology absorbed**: Evaluated [Matt Pocock skills](https://github.com/mattpocock/skills) against super-pi's self-contained + artifact-driven constraints via a four-filter test (self-contained / artifact-driven / SKILL.md line-budget / testability). Six concepts passed, three deferred (wayfinder, tracer-bullet tickets, triage — all depend on issue trackers).
+- **New shared references** (all self-contained, no external path deps):
+  - `skills/references/domain-language.md` — `CONTEXT.md` glossary + ADR three-condition threshold + single/multi-context consumption contract.
+  - `skills/references/module-design.md` — deep-module vocabulary (module / interface / depth / seam / adapter / leverage / locality) + deletion test + interface-is-test-surface.
+- **Debug discipline strengthened** (`03-work/references/debug-discipline.md`, 53→123 lines): full diagnosis loop with 10 feedback-loop construction strategies, Phase 1 completion criterion (red-capable / deterministic / fast / agent-runnable), non-deterministic bug reproduction-rate strategy, minimise step, Phase 6 post-mortem handoff to `05-learn`.
+- **Review Spec axis**: `04-review` gains a sixth axis — spec-reviewer persona compares the diff against the originating plan (missing requirements / scope creep / wrong implementation) and traces back to the user's original brainstorm wording to catch directional misunderstandings the plan itself encoded.
+- **Out-of-scope knowledge base**: `05-learn` can now record rejected or already-implemented requests to `docs/out-of-scope/`, consumed by `01-brainstorm` and `02-plan` to prevent re-proposing settled work. Template at `skills/05-learn/assets/out-of-scope-template.md`; convention README tracked (static), runtime instances gitignored.
+- **External-resource verification gate** (`01-brainstorm/references/premise-challenge.md` rule 5): when the user references an existing resource, reverse-verify intent (incorporate vs already-handled) before scoping. Prevents the failure mode where a misunderstood signal propagates through all pipeline stages and surfaces only at merge.
+- **Tests**: 196 → 204 (+8 content-contract tests including a self-contained path scan and SKILL.md line-count guard).
+- **gitignore**: `docs/` exclusion refined to `docs/*` + explicit exceptions so static convention docs (out-of-scope/README) are tracked while runtime artifacts stay ignored.
+
 ### 0.25.3 — align with pi 0.79–0.80: CONFIG_DIR_NAME, accurate compaction hook docs, peerDep floor
 - **pi adaptation**: `readSettings` now uses pi's exported `CONFIG_DIR_NAME` (default `.pi`, user-configurable since pi 0.79.7) instead of hardcoded `.pi` paths, so super-pi reads `settings.json` correctly when the project config directory is customized.
 - **Fix (dead code + misleading comments)**: The `compaction-optimizer` previously claimed to hook `session_before_compact` but actually hooked `session_before_tree`. Comments now accurately describe which hook consumes `COMPACTION_FOCUS_INSTRUCTIONS` (`session_before_tree`, whose `customInstructions` return value pi consumes on `/tree` navigation) and why regular context compaction is NOT covered (pi's `SessionBeforeCompactResult` only accepts `cancel` or a full `compaction` replacement — no prompt-only injection field). Removed a no-op `session_before_compact` handler that added `emit()` overhead with zero benefit.
