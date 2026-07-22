@@ -367,9 +367,23 @@ describe("skill package contracts", () => {
     expect(content).toContain("Spec")
     expect(content).toContain("missing")
     expect(content).toContain("scope creep")
+    // Spec axis traces back to original wording, not just plan-vs-diff
+    expect(content).toContain("trace back")
     // reviewer-selection.md documents the spec-reviewer persona
     expect(reviewerSelection).toContain("spec-reviewer")
     expect(reviewerSelection).toContain("plan artifact")
+    expect(reviewerSelection).toContain("directional misunderstanding")
+  })
+
+  test("01-brainstorm premise-challenge verifies external-resource intent", () => {
+    const premise = readFileSync(
+      path.join(repoRoot, "skills", "01-brainstorm", "references", "premise-challenge.md"),
+      "utf8",
+    )
+
+    // External resource signal must be reverse-verified before scoping
+    expect(premise).toContain("External resource signal")
+    expect(premise).toContain("incorporated")
   })
 
   test("out-of-scope knowledge base records rejected/already-built requests", () => {

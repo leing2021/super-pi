@@ -24,7 +24,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates
-7. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Skip if no plan.
+7. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Also **trace back** to the user's original wording (brainstorm scope) to catch directional misunderstandings the plan itself encoded. Skip if no plan.
 8. Produce structured findings using `references/findings-schema.md`
 9. **Autofixable findings:** apply and re-review (max 3 iterations)
 
