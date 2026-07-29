@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.27.0 — precision-over-recall 审查纪律 + learn 必要性门禁
+- **审查哲学**（`rules/common/code-review.md`、`04-review/SKILL.md`）：新增 **Precision Discipline** 节——精度优先于召回，含 5 条门禁规则（先验证再断言、不重复确定性工具已覆盖的问题、上下文不清时保持沉默、区分阻断与非阻断、不盲从最佳实践）。灵感来自 [alibaba/open-code-review](https://github.com/alibaba/open-code-review) 经实战验证的设计。
+- **审查清单**（新文件类型）：`rules/golang/review-checklist.md` 和 `rules/python/review-checklist.md` 收录精确的语言专属缺陷模式，每条均附明确的“不报”边界。与 `patterns.md`（可复用设计模式）职责分离。`rules/README.md` 同步更新文件类型说明。
+- **Learn 必要性门禁**（`05-learn/SKILL.md`）：新增 **Necessity gate** 作为第一道决策——多数已解决的问题不值得沉淀为 artifact。值得沉淀的标准（非平凡 + 可复用 + 未已在别处记录）与一票否决红线（一次性问题、常识、已记录、琐碎重构、无根因洞见）。“沉默可接受，噪音不行。”
+- 204 测试通过，0 回归。
+
 ### 0.26.0 — 吸纳 Matt Pocock skills 方法论 + 外部资源核实门禁
 - **方法论吸纳**：以四过滤器（自包含 / artifact-driven / SKILL.md 行数预算 / 可测试性）评估 [Matt Pocock skills](https://github.com/mattpocock/skills)，6 项通过、3 项排除（wayfinder、tracer-bullet ticket 化、triage——均依赖 issue tracker）。
 - **新增共享 references**（均自包含，无外部路径依赖）：
