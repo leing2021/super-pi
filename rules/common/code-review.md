@@ -4,6 +4,22 @@
 
 Code review ensures quality, security, and maintainability before code is merged. This rule defines when and how to conduct code reviews.
 
+## Precision Discipline
+
+**Favor precision over recall.** Report only defects you are confident are real in the changed code and its reachable context. A false positive costs more reviewer trust than a missed minor issue.
+
+### Gate-keeping rules
+
+1. **Verify before asserting** — Before flagging a non-local claim (race condition, security boundary, resource leak), use `file_read` and `code_search` to establish call sites, ownership, synchronization, and input boundaries. Do not infer concurrent invocation, attacker control, or error contracts from function names or package imports alone.
+
+2. **Do not duplicate deterministic tools** — Do not flag issues that the language compiler, formatter, linter, or type checker already catches reliably, unless the diff shows a concrete user-visible consequence those tools will not express.
+
+3. **Stay silent when context is unclear** — If the surrounding code, ownership, or data flow cannot be determined from available evidence, do not guess. A miss on an unclear code path is acceptable; a false alarm on it damages trust.
+
+4. **Distinguish blocking vs non-blocking** — Treat correctness and security findings as blocking (CRITICAL/HIGH). Style-only, idiom, or naming suggestions are non-blocking (LOW). Explicitly label each finding's severity.
+
+5. **No cargo-cult patterns** — Do not report a pattern just because it is "best practice." Evaluate whether the pattern applies to THIS codebase, THIS data flow, and THIS risk profile. If the code deviates from convention for a deliberate reason visible in context, accept it.
+
 ## When to Review
 
 **MANDATORY review triggers:**
@@ -85,6 +101,7 @@ Use these agents for code review:
 
 ### Security
 
+- **Precision gate:** Before reporting any security issue, confirm the data source and attack surface with `code_search`. A pattern that looks like SQL injection but uses parameterized queries is not a finding.
 - Hardcoded credentials (API keys, passwords, tokens)
 - SQL injection (string concatenation in queries)
 - XSS vulnerabilities (unescaped user input)

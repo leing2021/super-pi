@@ -24,6 +24,7 @@ rules/
 
 - **common/** contains universal principles — no language-specific code examples.
 - **Language directories** extend the common rules with framework-specific patterns, tools, and code examples. Each file references its common counterpart.
+- **`review-checklist.md`** (optional, per language) holds precise, actionable defect patterns for code review — distinct from `patterns.md` which holds reusable design patterns. Currently used by `golang/` and `python/`.
 
 ## Installation
 
@@ -83,6 +84,7 @@ To add support for a new language (e.g., `rust/`):
    - `patterns.md` — language-specific design patterns
    - `hooks.md` — PostToolUse hooks for formatters, linters, type checkers
    - `security.md` — secret management, security scanning tools
+   - `review-checklist.md` — *(optional)* precise defect patterns for code review, used together with `common/code-review.md`
 3. Each file should start with:
    ```
    > This file extends [common/xxx.md](../common/xxx.md) with <Language> specific content.

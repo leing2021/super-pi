@@ -38,6 +38,15 @@ Code review is **technical evaluation**, not social performance:
 - **Evidence before assertions:** cite specific code, not principles
 - **Architecture axis:** audit module depth and seams using `../references/module-design.md`
 
+### Precision gate
+
+**Favor precision over recall.** A false positive costs more trust than a missed minor issue.
+- Before reporting a non-local claim (race condition, security boundary, resource leak), use `file_read` and `code_search` to confirm evidence. Do not infer from names alone.
+- Stay silent when the surrounding context is unclear. A miss on ambiguous code is acceptable; a false alarm is not.
+- Do not flag issues that a compiler, formatter, linter, or type checker already catches, unless the diff shows a concrete user-visible consequence those tools miss.
+- Label each finding with severity. Blocking (CRITICAL/HIGH) for correctness and security; non-blocking (LOW) for style and naming.
+- Apply language-specific rules from `rules/{lang}/review-checklist.md` — they contain precise, actionable defect patterns per language.
+
 ## Handling findings
 
 1. **Read** — complete all findings without reacting

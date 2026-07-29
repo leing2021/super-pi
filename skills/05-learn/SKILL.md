@@ -9,6 +9,29 @@ Use this skill after solving a problem so the repository gains a reusable learni
 
 See [shared pipeline instructions](../references/pipeline-config.md) for model routing and pipeline behavior.
 
+## Necessity gate (decide FIRST)
+
+**Before writing anything, decide whether this learning is worth preserving.** Most solved problems are NOT worth a solution artifact. Silence is acceptable; noise is not.
+
+### Worth preserving (ALL must hold)
+
+1. **Non-trivial** — the solution required real investigation, not a one-glance fix.
+2. **Reusable** — the root cause or fix pattern could recur in this or another project.
+3. **Not already documented** — the knowledge is not trivially findable in framework docs, the codebase, a prior solution artifact, or a commit message.
+
+### Not worth preserving (any ONE is disqualifying)
+
+- **One-off** — a typo, a rename, a personal-environment quirk unlikely to recur.
+- **Common knowledge** — standard framework usage, language basics, or anything a competent practitioner would know or find in official docs in under a minute.
+- **Already captured** — the learning is fully expressed in the code, its tests, a commit message, or an existing `docs/solutions/` artifact.
+- **Trivial refactor** — formatting, import sorting, or mechanical changes with no insight.
+- **No root cause insight** — the fix worked but you cannot explain *why* it worked; without the "why", the artifact will not help future readers.
+
+### Outcome
+
+- If **not worth preserving**: respond concisely (e.g. "No solution artifact needed: <one-line reason>") and stop. Do not create a file.
+- If **worth preserving**: proceed to Core rules below.
+
 ## Core rules
 
 - Every solution MUST include YAML frontmatter per `references/solution-schema.yaml` (title, category, severity, tags, applies_when).

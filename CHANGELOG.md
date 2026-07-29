@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.27.0 — precision-over-recall review discipline + learn necessity gate
+- **Review philosophy** (`rules/common/code-review.md`, `04-review/SKILL.md`): added **Precision Discipline** — favor precision over recall, with 5 gate-keeping rules (verify before asserting, do not duplicate deterministic tools, stay silent when context is unclear, distinguish blocking vs non-blocking, no cargo-cult patterns). Inspired by [alibaba/open-code-review](https://github.com/alibaba/open-code-review)'s battle-tested design.
+- **Review checklists** (new file type): `rules/golang/review-checklist.md` and `rules/python/review-checklist.md` hold precise, language-specific defect patterns with explicit "do not report" boundaries. Distinct from `patterns.md` (reusable design patterns). `rules/README.md` updated to document the new file type.
+- **Learn necessity gate** (`05-learn/SKILL.md`): added **Necessity gate** as the first decision — most solved problems are NOT worth a solution artifact. Worth-preserving criteria (non-trivial + reusable + not already documented) and disqualifying red lines (one-off, common knowledge, already captured, trivial refactor, no root-cause insight). "Silence is acceptable; noise is not."
+- 204 tests passing, 0 regressions.
+
 ### 0.26.0 — absorb Matt Pocock skills methodology + external-resource verification gates
 - **Skill methodology absorbed**: Evaluated [Matt Pocock skills](https://github.com/mattpocock/skills) against super-pi's self-contained + artifact-driven constraints via a four-filter test (self-contained / artifact-driven / SKILL.md line-budget / testability). Six concepts passed, three deferred (wayfinder, tracer-bullet tickets, triage — all depend on issue trackers).
 - **New shared references** (all self-contained, no external path deps):
