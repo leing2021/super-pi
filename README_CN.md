@@ -77,7 +77,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 | [superpowers](https://github.com/obra/superpowers) | 严格 TDD gates、设计检查清单、review discipline，以及“agent 需要硬门禁而不是温和建议”的理念。 |
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | think → plan → build → review → learn 五步循环，以及 knowledge compounding 的骨架。 |
 | [gstack](https://github.com/garrytan/gstack) | YC 式 forcing questions、CEO Review 认知框架、Browser QA 模式、failure maps、evidence-first validation。 |
-| [mattpocock/skills](https://github.com/mattpocock/skills) | 项目领域词汇表（`CONTEXT.md`）跨会话持久化、轻量 ADR 三条件门槛、反馈环优先的调试纪律（含完整诊断环、完成标准、post-mortem 闭环）、deep-module 词汇表、review Spec 轴（plan 对比 diff 并回溯原始措辞）、out-of-scope 知识库。以自包含 `skills/references/` 形式纳入——无外部路径依赖、无 issue tracker 依赖。 |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | 领域词汇表（`CONTEXT.md`）、轻量 ADR（三条件门槛 + "What qualifies" 清单）、反馈环优先调试纪律、deep-module 词汇（含 internal seams/rejected framings）、拷问纪律（事实 vs 决策、一次一问）、review Spec 轴、out-of-scope 知识库。以自包含 `skills/references/` 内容形式吸收——无外部路径依赖、无 issue tracker 依赖，不碎接独立技能（super-pi 现有 01-brainstorm/domain-language/module-design 已覆盖主动纪律）。 |
 
 ---
 

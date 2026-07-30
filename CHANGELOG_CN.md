@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.28.0 — 以极简原则吸收 mattpocock 洞见到 references（不新增技能）
+- **极简原则**：评估了将 mattpocock/skills 碎接为独立技能的方案后**反转**——super-pi 现有 01-brainstorm（brainstorm_dialog + Premise Challenge + ask_user_question）已覆盖 `grilling`；04-review 的 architecture 轴 + module-design.md 已覆盖 `improve-codebase-architecture` 的 diff 场景。不新增 3 个技能，而是把真正的增量吸收进现有 `skills/references/` 内容。
+- **`module-design.md` 补强**：合并 `codebase-design` 词汇——新增 Relationships 段、Rejected framings（驳斥 Ousterhout 行数比、TS `interface` 关键字、"boundary"）、internal seams 概念、测试代码示例。无悬空引用（Going deeper 对 DEEPENING.md/DESIGN-IT-TWICE.md 的引用删除——这两个文件未自包含）。
+- **`domain-language.md` 补强**：ADR 段新增具体模板 + "What qualifies" 清单（架构形状、上下文间集成模式、锁死技术、边界决策、刻意偏离、不可见约束、非显然的拒绝项）。
+- **`premise-challenge.md` 补强**：吸收 grilling 的拷问纪律——事实 vs 决策（事实查环境、决策问用户）、一次一问、逐分支走决策树并给推荐答案、达成共识前不行动。
+- **不碎接（避免技能膨胀）**：`grilling`（01-brainstorm 子集）、`domain-modeling`（主动纪律 prose 合进 domain-language.md；FORMAT 文件与 context-glossary.md 重复）、`improve-codebase-architecture`（项目级周期任务，非流水线环节——独立安装更合适）、`grill-with-docs`（7 行路由壳）、`codebase-design`（合进 module-design.md）。
+- 204 测试通过，0 回归。评估轨迹保留在 `docs/reports/super-pi-vs-mattpocock-evaluation.md` + `docs/integrate-mattpocock-skills-plan.md`（均含 2025-07-30 事实修订说明）。
+
 ### 0.27.0 — precision-over-recall 审查纪律 + learn 必要性门禁
 - **审查哲学**（`rules/common/code-review.md`、`04-review/SKILL.md`）：新增 **Precision Discipline** 节——精度优先于召回，含 5 条门禁规则（先验证再断言、不重复确定性工具已覆盖的问题、上下文不清时保持沉默、区分阻断与非阻断、不盲从最佳实践）。灵感来自 [alibaba/open-code-review](https://github.com/alibaba/open-code-review) 经实战验证的设计。
 - **审查清单**（新文件类型）：`rules/golang/review-checklist.md` 和 `rules/python/review-checklist.md` 收录精确的语言专属缺陷模式，每条均附明确的“不报”边界。与 `patterns.md`（可复用设计模式）职责分离。`rules/README.md` 同步更新文件类型说明。

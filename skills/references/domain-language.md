@@ -39,6 +39,26 @@ Only when **all three** are true:
 
 If any is missing, skip the ADR. Most decisions don't qualify.
 
+### Template
+
+```md
+# {Short title of the decision}
+
+{1-3 sentences: what's the context, what did we decide, and why.}
+```
+
+An ADR can be a single paragraph. The value is in recording *that* a decision was made and *why* — not in filling out sections. Numbered: `0001-slug.md`, increment by scanning `docs/adr/`. Optional sections (Status / Considered Options / Consequences) only when they add genuine value.
+
+### What qualifies
+
+- **Architectural shape** — "write model is event-sourced, read model projected into Postgres."
+- **Integration patterns between contexts** — "Ordering and Billing communicate via domain events, not synchronous HTTP."
+- **Technology choices that carry lock-in** — database, message bus, auth provider. Not every library — just the ones that would take a quarter to swap out.
+- **Boundary and scope decisions** — "Customer data is owned by the Customer context; others reference it by ID only." Explicit no-s are as valuable as yes-s.
+- **Deliberate deviations from the obvious path** — "manual SQL instead of an ORM because X." Stops the next engineer from "fixing" something deliberate.
+- **Constraints not visible in code** — "can't use AWS because of compliance", "response times must be under 200ms."
+- **Rejected alternatives when non-obvious** — considered GraphQL, picked REST for subtle reasons. Otherwise someone suggests GraphQL again in six months.
+
 ## Consumption rules (every skill)
 
 1. **Before broad project reads**, check if `CONTEXT.md` exists at the repo root (or the relevant context in a multi-context repo). If it exists, read it first so you use the project's vocabulary.

@@ -46,16 +46,54 @@ A shared vocabulary for designing module shapes. Use these terms wherever code i
 
 ## Principles
 
-- **Depth is a property of the interface, not the implementation.** A deep module can be internally composed of small, mockable parts — they just aren't part of the interface.
+- **Depth is a property of the interface, not the implementation.** A deep module can be internally composed of small, mockable, swappable parts — they just aren't part of the interface. A module can have **internal seams** (private to its implementation, used by its own tests) as well as the **external seam** at its interface.
 - **The deletion test.** Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
 - **The interface is the test surface.** Callers and tests cross the same seam. If you want to test *past* the interface, the module is probably the wrong shape.
 - **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a seam unless something actually varies across it.
 
 ## Designing for testability
 
-1. **Accept dependencies, don't create them.** `function processOrder(order, paymentGateway)` is testable; `function processOrder(order)` that news up its own gateway is not.
-2. **Return results, don't produce side effects.** `function calculateDiscount(cart): Discount` is testable; `function applyDiscount(cart): void` that mutates is not.
+Good interfaces make testing natural:
+
+1. **Accept dependencies, don't create them.**
+
+   ```typescript
+   // Testable
+   function processOrder(order, paymentGateway) {}
+
+   // Hard to test
+   function processOrder(order) {
+     const gateway = new StripeGateway();
+   }
+   ```
+
+2. **Return results, don't produce side effects.**
+
+   ```typescript
+   // Testable
+   function calculateDiscount(cart): Discount {}
+
+   // Hard to test
+   function applyDiscount(cart): void {
+     cart.total -= discount;
+   }
+   ```
+
 3. **Small surface area.** Fewer methods = fewer tests needed. Fewer params = simpler test setup.
+
+## Relationships
+
+- A **Module** has exactly one **Interface** (the surface it presents to callers and tests).
+- **Depth** is a property of a **Module**, measured against its **Interface**.
+- A **Seam** is where a **Module**'s **Interface** lives.
+- An **Adapter** sits at a **Seam** and satisfies the **Interface**.
+- **Depth** produces **Leverage** for callers and **Locality** for maintainers.
+
+## Rejected framings
+
+- **Depth as ratio of implementation-lines to interface-lines** (Ousterhout): rewards padding the implementation. We use depth-as-leverage instead.
+- **"Interface" as the TypeScript `interface` keyword or a class's public methods**: too narrow — interface here includes every fact a caller must know.
+- **"Boundary"**: overloaded with DDD's bounded context. Say **seam** or **interface**.
 
 ## Where this is used
 
