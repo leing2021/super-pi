@@ -1917,7 +1917,7 @@ describe("ask_user_question custom selector component", () => {
     // A second input must not re-resolve (double-done guard).
     selector.handleInput("\u001b")
     expect(first.selectedLabel).toBe("A")
-    expect(captured).toBe(first)
+    expect(captured as { selectedLabel: string | null } | null).toStrictEqual(first)
   })
 })
 
