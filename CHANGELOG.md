@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.29.0 — Fowler smell baseline for review Standards axis
+- **Review Standards axis baseline** (new `rules/common/code-smells.md`): the 04-review Standards axis previously had a severity ladder (P0/P1/P2) and a precision gate but **no check list** — agents reviewed by vibes. Added a fixed baseline of 12 diff-friendly Fowler code smells (_Refactoring_, ch.3): Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Each entry reads *what it is → how to fix*.
+- **Two binding rules** keep the baseline safe: (1) a documented repo standard overrides the baseline; (2) every smell is a judgement call ("possible Feature Envy"), never a hard violation. Severity maps onto the existing P0/P1/P2 ladder — default P2, escalate when a repo doc endorses it or it harms data flow/testability.
+- **Not a third axis**: deliberately folded into the existing Standards axis (Matt Pocock's design warns against axis sprawl). File-level smells (Long Method, Large Class, Long Parameter List, Dead Code) are excluded from the diff-based review baseline and routed to the architecture axis via `module-design.md` vocabulary (shallow module, missing seam).
+- **04-review wiring**: `SKILL.md` Core rules step 3 now references the baseline; rule-loading step loads both `code-review.md` and `code-smells.md`; fixed a step-numbering collision.
+- **tsc hygiene**: resolved a pre-existing `tsc --noEmit` error in `ce-core-extension.test.ts` (control-flow narrowing of a closure-assigned variable) — `bunx tsc --noEmit` is now clean.
+- 204 tests passing, 0 regressions.
+
 ### 0.28.0 — absorb mattpocock insights into references (minimalism: no new skills)
 - **Minimalism principle**: evaluated mattpocock/skills for grafting as standalone skills, then **reversed** — super-pi's existing 01-brainstorm (brainstorm_dialog + Premise Challenge + ask_user_question) already covers `grilling`; 04-review's architecture axis + module-design.md already covers `improve-codebase-architecture`'s diff-time use. Instead of adding 3 skills, absorbed the genuine deltas into existing `skills/references/` content.
 - **`module-design.md` strengthened**: merged `codebase-design` vocabulary — added Relationships section, Rejected framings (Ousterhout depth-as-lines, TS `interface` keyword, "boundary"), internal seams concept, and testability code examples. No dangling refs (Going deeper refs to DEEPENING.md/DESIGN-IT-TWICE.md dropped — those files weren't self-contained).

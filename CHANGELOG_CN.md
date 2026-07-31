@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.29.0 — 为 review Standards 轴新增 Fowler smell baseline
+- **审查 Standards 轴 baseline**（新文件 `rules/common/code-smells.md`）：04-review 的 Standards 轴此前只有严重度阶梯（P0/P1/P2）和 precision gate，却**没有检查清单**——agent 全凭模型常识 review。新增 12 条 diff-friendly Fowler code smell（《Refactoring》第 3 章）作为固定 baseline：Mysterious Name、Duplicated Code、Feature Envy、Data Clumps、Primitive Obsession、Repeated Switches、Shotgun Surgery、Divergent Change、Speculative Generality、Message Chains、Middle Man、Refused Bequest。每条按 *是什么 → 怎么修* 编写。
+- **两条约束规则**保证 baseline 安全：(1) 仓库文档标准 override baseline；(2) 每条 smell 都是 judgement call（"possible Feature Envy"），绝不作为硬性违规。严重度映射到既有 P0/P1/P2 阶梯——默认 P2，仓库文档认可或损害数据流/可测性时升级。
+- **不新增第三轴**：刻意折叠进既有 Standards 轴（Matt Pocock 的设计警告轴膨胀）。文件级 smell（Long Method、Large Class、Long Parameter List、Dead Code）排除在 diff 视角的 review baseline 之外，改走 architecture 轴，用 `module-design.md` 词汇（shallow module、missing seam）表达。
+- **04-review 接线**：`SKILL.md` Core rules 第 3 条引用 baseline；规则加载步骤同时加载 `code-review.md` 与 `code-smells.md`；修复了步骤编号冲突。
+- **tsc 卫生**：修复 `ce-core-extension.test.ts` 中一个预存的 `tsc --noEmit` 错误（闭包赋值变量的控制流窄化）——`bunx tsc --noEmit` 现已干净。
+- 204 测试通过，0 回归。
+
 ### 0.28.0 — 以极简原则吸收 mattpocock 洞见到 references（不新增技能）
 - **极简原则**：评估了将 mattpocock/skills 碎接为独立技能的方案后**反转**——super-pi 现有 01-brainstorm（brainstorm_dialog + Premise Challenge + ask_user_question）已覆盖 `grilling`；04-review 的 architecture 轴 + module-design.md 已覆盖 `improve-codebase-architecture` 的 diff 场景。不新增 3 个技能，而是把真正的增量吸收进现有 `skills/references/` 内容。
 - **`module-design.md` 补强**：合并 `codebase-design` 词汇——新增 Relationships 段、Rejected framings（驳斥 Ousterhout 行数比、TS `interface` 关键字、"boundary"）、internal seams 概念、测试代码示例。无悬空引用（Going deeper 对 DEEPENING.md/DESIGN-IT-TWICE.md 的引用删除——这两个文件未自包含）。
