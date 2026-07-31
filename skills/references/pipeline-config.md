@@ -109,6 +109,10 @@ When a stage produces or updates handoff-lite, use this evidence-first structure
 ## Recently Accessed Files
 - files recently read or edited
 
+## Git Context
+- branch: <current branch or N/A>
+- base: <diff base ref, e.g. main / N/A>
+
 ## Artifacts
 - requirements: <path or N/A>
 - plan: <path or N/A>

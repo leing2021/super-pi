@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.30.0 — 04-review Spec 轴 issue-ref 探测 + handoff Git Context
+- **04-review Spec 轴来源链**（`skills/04-review/SKILL.md`）：Spec 轴此前只对照 plan artifact，无 plan 时直接 skip。在单独调用场景（无 brainstorm、无 plan）下 Spec 轴完全失效。新增四级 spec 来源探测：(a) plan artifact → (b) brainstorm artifact（回溯原始表述）→ (c) commit message 里的 issue 引用，用 `git log <base>..HEAD --oneline` 扫描 `#123` / `Closes #45` / `!67`——识别后**询问用户**是否作为 spec 来源，**不自动拉取** → (d) 都没有则 skip。
+- **坚守 artifact-driven**：issue-ref 探测只用本地 `git log`（无 `gh issue view`、无网络、不把 tracker 当 source of truth）——与 solution `2026-07-22-absorbing-external-skill-repos` 的四过滤器一致。是否采纳 ref 作为 spec 由用户决定。
+- **Workflow 接线**：第 2 步（diff scope）优先读 handoff 的 `branch`/`base`，其次显式 target，最后问用户；第 4 步（读 plan）在无 plan artifact 时回落到 commit-issue-ref 探测。
+- **Handoff schema 扩展**（`skills/references/pipeline-config.md`）：handoff-lite 模板新增 `## Git Context` 区块（`branch` + `base`），让 diff scope 跨 stage 传递而无需重新推导。可选字段，`N/A` 兑底——向后兼容。
+- **测试覆盖**（`tests/context-handoff.test.ts`）：handoff-lite 模板测试新增对 `## Git Context` 和 `- branch:` 的契约断言，锁住新字段防静默删除。
+- 204 测试通过，0 回归。
+
 ### 0.29.0 — 为 review Standards 轴新增 Fowler smell baseline
 - **审查 Standards 轴 baseline**（新文件 `rules/common/code-smells.md`）：04-review 的 Standards 轴此前只有严重度阶梯（P0/P1/P2）和 precision gate，却**没有检查清单**——agent 全凭模型常识 review。新增 12 条 diff-friendly Fowler code smell（《Refactoring》第 3 章）作为固定 baseline：Mysterious Name、Duplicated Code、Feature Envy、Data Clumps、Primitive Obsession、Repeated Switches、Shotgun Surgery、Divergent Change、Speculative Generality、Message Chains、Middle Man、Refused Bequest。每条按 *是什么 → 怎么修* 编写。
 - **两条约束规则**保证 baseline 安全：(1) 仓库文档标准 override baseline；(2) 每条 smell 都是 judgement call（"possible Feature Envy"），绝不作为硬性违规。严重度映射到既有 P0/P1/P2 阶梯——默认 P2，仓库文档认可或损害数据流/可测性时升级。

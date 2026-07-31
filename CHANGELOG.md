@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.30.0 — 04-review Spec axis issue-ref detection + handoff Git Context
+- **04-review Spec axis source chain** (`skills/04-review/SKILL.md`): the Spec axis previously only compared the diff against a plan artifact and skipped when none existed. In standalone-invocation scenarios (no brainstorm, no plan), this left the Spec axis inert. Added a four-level spec-source probe: (a) plan artifact → (b) brainstorm artifact (trace back to original wording) → (c) issue references in commit messages via `git log <base>..HEAD --oneline` (scan for `#123` / `Closes #45` / `!67`) — identify the ref and **ask the user** whether to treat it as spec source, do **not** auto-fetch → (d) skip if none.
+- **Artifact-driven preserved**: the issue-ref probe deliberately uses only local `git log` (no `gh issue view`, no network, no tracker as source of truth) — consistent with the four-filter evaluation in solution `2026-07-22-absorbing-external-skill-repos`. The decision to adopt a ref as spec stays with the user.
+- **Workflow wiring**: step 2 (diff scope) now prefers `branch`/`base` from the latest handoff before falling back to explicit target or asking; step 4 (read plan) falls through to the commit-issue-ref probe when no plan artifact is present.
+- **Handoff schema extension** (`skills/references/pipeline-config.md`): the handoff-lite template gains a `## Git Context` section (`branch` + `base`) so diff scope can flow across stages without re-derivation. Optional field with `N/A` fallback — backward compatible.
+- **Test coverage** (`tests/context-handoff.test.ts`): added contract assertions for `## Git Context` and `- branch:` in the handoff-lite template test, guarding the new field against silent removal.
+- 204 tests passing, 0 regressions.
+
 ### 0.29.0 — Fowler smell baseline for review Standards axis
 - **Review Standards axis baseline** (new `rules/common/code-smells.md`): the 04-review Standards axis previously had a severity ladder (P0/P1/P2) and a precision gate but **no check list** — agents reviewed by vibes. Added a fixed baseline of 12 diff-friendly Fowler code smells (_Refactoring_, ch.3): Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Each entry reads *what it is → how to fix*.
 - **Two binding rules** keep the baseline safe: (1) a documented repo standard overrides the baseline; (2) every smell is a judgement call ("possible Feature Envy"), never a hard violation. Severity maps onto the existing P0/P1/P2 ladder — default P2, escalate when a repo doc endorses it or it harms data flow/testability.

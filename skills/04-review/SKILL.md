@@ -25,7 +25,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates
-8. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Also **trace back** to the user's original wording (brainstorm scope) to catch directional misunderstandings the plan itself encoded. Skip if no plan.
+8. **Spec axis:** determine spec source in priority order — (a) plan artifact; (b) brainstorm artifact (trace back to original wording to catch directional misunderstandings the plan encoded); (c) issue references in commit messages (`git log <base>..HEAD --oneline`, scan for `#123` / `Closes #45` / `!67`) — identify the ref and ask the user whether to treat it as spec source, do **not** auto-fetch; (d) skip if none. Against the chosen spec, report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't).
 9. Produce structured findings using `references/findings-schema.md`
 10. **Autofixable findings:** apply and re-review (max 3 iterations)
 
@@ -59,9 +59,9 @@ Code review is **technical evaluation**, not social performance:
 ## Workflow
 
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
-2. Determine diff scope from branch or explicit target
+2. Determine diff scope — prefer `branch`/`base` from latest handoff if present; else from explicit target; else ask user
 3. Collect stats (files, insertions, deletions) → call `review_router`
-4. Read matching plan artifact
+4. Read matching plan artifact. If absent, scan commit messages for issue refs (`git log <base>..HEAD --oneline`) and ask user whether to use as spec source — do not auto-fetch
 5. Run solution search
 6. Apply each reviewer persona from `review_router`
 7. Merge into structured findings
