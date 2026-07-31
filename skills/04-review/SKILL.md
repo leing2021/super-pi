@@ -12,21 +12,22 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 ## Core rules
 
 1. Load project rules (4 steps):
-   - Load `rules/common/code-review.md`
+   - Load `../../rules/common/code-review.md` and `../../rules/common/code-smells.md`
    - Detect language from changed files via [language detection](../references/language-detection.md)
    - Load matching language-specific rules (e.g., `rules/typescript/`)
    - If frontend/browser changes, also load `rules/web/` files
 2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
-3. Determine **diff scope** before selecting reviewers
-4. Use **`review_router`** tool to select reviewer personas based on diff metadata
-5. Read relevant **plan** artifact when exists
-6. Run solution search (see `references/solution-search.md`):
+3. **Standards axis baseline:** apply [`../../rules/common/code-smells.md`](../../rules/common/code-smells.md) (Fowler smell baseline). Two binding rules: a documented repo standard overrides the baseline; every smell is a judgement call (report as "possible Feature Envy"), never a hard violation. Map severity via P0/P1/P2 — default P2, escalate when a repo doc endorses it or it harms data flow/testability.
+4. Determine **diff scope** before selecting reviewers
+5. Use **`review_router`** tool to select reviewer personas based on diff metadata
+6. Read relevant **plan** artifact when exists
+7. Run solution search (see `references/solution-search.md`):
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates
-7. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Also **trace back** to the user's original wording (brainstorm scope) to catch directional misunderstandings the plan itself encoded. Skip if no plan.
-8. Produce structured findings using `references/findings-schema.md`
-9. **Autofixable findings:** apply and re-review (max 3 iterations)
+8. **Spec axis:** when a plan artifact exists, compare diff against it — report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't). Also **trace back** to the user's original wording (brainstorm scope) to catch directional misunderstandings the plan itself encoded. Skip if no plan.
+9. Produce structured findings using `references/findings-schema.md`
+10. **Autofixable findings:** apply and re-review (max 3 iterations)
 
 ## Review discipline
 
