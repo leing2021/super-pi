@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.30.2 — skill 级 reference 的 self-contained 回归网
+- **填补测试缺口（P2）**：现有 self-contained 扫描只覆盖顶层 `skills/references/`。各 skill 自己的 references/ 与 assets/ 没有回归网，未来混入 `~/.pi/...` 外部路径或 `/Users/...` 绝对路径会静默通过。
+- **新增契约测试**（`tests/skill-contracts.test.ts`）：扫描每个 skill 的 references/ 与 assets/ 下的所有 `.md`。采用**白名单**而非一律禁止——允许 `~/.pi/agent/docs/solutions/`（全局 solution 库约定，4 个 solution-search 文件合法使用），其他任何 `~/.pi` 路径或 `/Users/` 绝对路径均判违规。失败信息精确定位到文件。
+- **反向验证**：注入一个非白名单的 `~/.pi` 路径，确认测试能捕获并报出精确的 `non-whitelisted ~/.pi path` 信息，随后删除注入。回归网不是摆设。
+- 206 测试通过，0 回归。
+
 ### 0.30.1 — 将 Spec 轴探测链抽到 spec-source-detection reference
 - **重构（P2）**：四级 spec 来源探测链（plan → brainstorm → commit issue ref → skip）此前以内联密集单行写在 `skills/04-review/SKILL.md` Core rule 第 8 条，并与 Workflow step 4 重复。抽取为 `skills/04-review/references/spec-source-detection.md`（35 行）：含完整探测顺序、artifact-driven 守卫（不自动拉取的理由）、单独调用场景覆盖说明、以及 Spec 轴三类输出（missing / scope creep / wrong implementation）。
 - **SKILL.md 瘦身**：Core rule 第 8 条与 Workflow step 4 现均以单行链接指向该 reference，消除重复。SKILL.md 仍 87 行（远低于 100 行预算）。行为不变。

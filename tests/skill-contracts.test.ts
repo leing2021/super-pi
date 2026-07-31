@@ -314,6 +314,46 @@ describe("skill package contracts", () => {
     }
   })
 
+  test("skill-level references are self-contained — only the solutions whitelist is allowed", () => {
+    // Scans every .md under skills/*/references/ and skills/*/assets/ for
+    // external path leaks. Unlike the top-level references test above, skill
+    // references MAY legitimately reference ~/.pi/agent/docs/solutions/ (the
+    // global solution library convention). Any other ~/.pi path or absolute
+    // /Users/ path is a self-containment violation.
+    const allowedPath = "~/.pi/agent/docs/solutions/"
+    const violations: string[] = []
+
+    for (const skill of skillNames) {
+      const skillDir = path.join(repoRoot, "skills", skill)
+      const subDirs = ["references", "assets"]
+      for (const sub of subDirs) {
+        const dir = path.join(skillDir, sub)
+        if (!existsSync(dir)) continue
+        const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
+        for (const file of files) {
+          const content = readFileSync(path.join(dir, file), "utf8")
+          // Reject any /Users/ absolute path outright.
+          if (content.includes("/Users/")) {
+            violations.push(`${skill}/${sub}/${file}: /Users/ path`)
+          }
+          // For ~/.pi: only the solutions whitelist is permitted.
+          let searchIdx = 0
+          while (true) {
+            const hit = content.indexOf("~/.pi", searchIdx)
+            if (hit === -1) break
+            const window = content.slice(hit, hit + allowedPath.length)
+            if (window !== allowedPath) {
+              violations.push(`${skill}/${sub}/${file}: non-whitelisted ~/.pi path`)
+            }
+            searchIdx = hit + 1
+          }
+        }
+      }
+    }
+
+    expect(violations).toEqual([])
+  })
+
   test("domain-language reference defines the CONTEXT.md + ADR consumption contract", () => {
     const domain = readFileSync(
       path.join(repoRoot, "skills", "references", "domain-language.md"),

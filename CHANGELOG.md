@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.30.2 — self-contained regression net for skill-level references
+- **Test gap closed (P2)**: the existing self-contained scan only covered the top-level `skills/references/` directory. Skill-level references (`skills/*/references/`, `skills/*/assets/`) had no regression net, so a future `~/.pi/...` external-path leak or `/Users/...` absolute path could land silently.
+- **New contract test** (`tests/skill-contracts.test.ts`): scans every `.md` under each skill's `references/` and `assets/` directories. Uses a **whitelist** instead of a flat ban — `~/.pi/agent/docs/solutions/` is permitted (the global solution-library convention, legitimately used by 4 solution-search files), while any other `~/.pi` path or any `/Users/` absolute path is a violation. Failure messages pinpoint the offending file.
+- **Reverse-verified**: injected a non-whitelisted `~/.pi` path and confirmed the test catches it with a precise `non-whitelisted ~/.pi path` message, then removed the injection. The net is not decorative.
+- 206 tests passing, 0 regressions.
+
 ### 0.30.1 — extract Spec axis probe into spec-source-detection reference
 - **Refactor (P2)**: the four-level spec-source probe (plan → brainstorm → commit issue ref → skip) previously lived inline as a dense single line in `skills/04-review/SKILL.md` Core rule 8, and was duplicated in Workflow step 4. Extracted into `skills/04-review/references/spec-source-detection.md` (35 lines): full probe order, artifact-driven guard (no auto-fetch rationale), standalone-invocation coverage explanation, and the three Spec-axis output classes (missing / scope creep / wrong implementation).
 - **SKILL.md slimmed**: Core rule 8 and Workflow step 4 now both point to the reference via a single-line link, removing the duplication. SKILL.md stays at 87 lines (well under the 100-line budget). Behavior unchanged.
