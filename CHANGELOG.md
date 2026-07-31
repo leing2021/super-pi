@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.30.1 — extract Spec axis probe into spec-source-detection reference
+- **Refactor (P2)**: the four-level spec-source probe (plan → brainstorm → commit issue ref → skip) previously lived inline as a dense single line in `skills/04-review/SKILL.md` Core rule 8, and was duplicated in Workflow step 4. Extracted into `skills/04-review/references/spec-source-detection.md` (35 lines): full probe order, artifact-driven guard (no auto-fetch rationale), standalone-invocation coverage explanation, and the three Spec-axis output classes (missing / scope creep / wrong implementation).
+- **SKILL.md slimmed**: Core rule 8 and Workflow step 4 now both point to the reference via a single-line link, removing the duplication. SKILL.md stays at 87 lines (well under the 100-line budget). Behavior unchanged.
+- **Test coverage** (`tests/skill-contracts.test.ts`): new contract test asserts the reference exists with the four probe levels and the no-auto-fetch guard, and that SKILL.md links to it. The pre-existing `trace back` assertion migrated from checking SKILL.md to checking the reference (the wording now lives there).
+- 205 tests passing, 0 regressions.
+
 ### 0.30.0 — 04-review Spec axis issue-ref detection + handoff Git Context
 - **04-review Spec axis source chain** (`skills/04-review/SKILL.md`): the Spec axis previously only compared the diff against a plan artifact and skipped when none existed. In standalone-invocation scenarios (no brainstorm, no plan), this left the Spec axis inert. Added a four-level spec-source probe: (a) plan artifact → (b) brainstorm artifact (trace back to original wording) → (c) issue references in commit messages via `git log <base>..HEAD --oneline` (scan for `#123` / `Closes #45` / `!67`) — identify the ref and **ask the user** whether to treat it as spec source, do **not** auto-fetch → (d) skip if none.
 - **Artifact-driven preserved**: the issue-ref probe deliberately uses only local `git log` (no `gh issue view`, no network, no tracker as source of truth) — consistent with the four-filter evaluation in solution `2026-07-22-absorbing-external-skill-repos`. The decision to adopt a ref as spec stays with the user.

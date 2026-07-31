@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.30.1 — 将 Spec 轴探测链抽到 spec-source-detection reference
+- **重构（P2）**：四级 spec 来源探测链（plan → brainstorm → commit issue ref → skip）此前以内联密集单行写在 `skills/04-review/SKILL.md` Core rule 第 8 条，并与 Workflow step 4 重复。抽取为 `skills/04-review/references/spec-source-detection.md`（35 行）：含完整探测顺序、artifact-driven 守卫（不自动拉取的理由）、单独调用场景覆盖说明、以及 Spec 轴三类输出（missing / scope creep / wrong implementation）。
+- **SKILL.md 瘦身**：Core rule 第 8 条与 Workflow step 4 现均以单行链接指向该 reference，消除重复。SKILL.md 仍 87 行（远低于 100 行预算）。行为不变。
+- **测试覆盖**（`tests/skill-contracts.test.ts`）：新增契约测试断言 reference 存在且含四级探测与 no-auto-fetch 守卫，并断言 SKILL.md 链接到它。既有的 `trace back` 断言从检查 SKILL.md 迁移到检查 reference（该表述现已位于 reference）。
+- 205 测试通过，0 回归。
+
 ### 0.30.0 — 04-review Spec 轴 issue-ref 探测 + handoff Git Context
 - **04-review Spec 轴来源链**（`skills/04-review/SKILL.md`）：Spec 轴此前只对照 plan artifact，无 plan 时直接 skip。在单独调用场景（无 brainstorm、无 plan）下 Spec 轴完全失效。新增四级 spec 来源探测：(a) plan artifact → (b) brainstorm artifact（回溯原始表述）→ (c) commit message 里的 issue 引用，用 `git log <base>..HEAD --oneline` 扫描 `#123` / `Closes #45` / `!67`——识别后**询问用户**是否作为 spec 来源，**不自动拉取** → (d) 都没有则 skip。
 - **坚守 artifact-driven**：issue-ref 探测只用本地 `git log`（无 `gh issue view`、无网络、不把 tracker 当 source of truth）——与 solution `2026-07-22-absorbing-external-skill-repos` 的四过滤器一致。是否采纳 ref 作为 spec 由用户决定。

@@ -363,16 +363,37 @@ describe("skill package contracts", () => {
       "utf8",
     )
 
-    // SKILL.md declares the Spec axis
-    expect(content).toContain("Spec")
+    // Spec axis declares missing / scope creep / wrong implementation
     expect(content).toContain("missing")
     expect(content).toContain("scope creep")
-    // Spec axis traces back to original wording, not just plan-vs-diff
-    expect(content).toContain("trace back")
+    // Spec axis delegates probe detail to spec-source-detection.md, which traces
+    // back to original wording (not just plan-vs-diff)
+    expect(content).toContain("spec-source-detection.md")
+    const specRef = readFileSync(
+      path.join(repoRoot, "skills", "04-review", "references", "spec-source-detection.md"),
+      "utf8",
+    )
+    expect(specRef).toContain("trace back")
     // reviewer-selection.md documents the spec-reviewer persona
     expect(reviewerSelection).toContain("spec-reviewer")
     expect(reviewerSelection).toContain("plan artifact")
     expect(reviewerSelection).toContain("directional misunderstanding")
+  })
+
+  test("04-review spec-source-detection reference documents the four-level probe", () => {
+    const refPath = path.join(repoRoot, "skills", "04-review", "references", "spec-source-detection.md")
+    const ref = readFileSync(refPath, "utf8")
+
+    // Four probe levels in priority order (match the heading case in the reference)
+    expect(ref).toContain("Plan artifact")
+    expect(ref).toContain("Brainstorm artifact")
+    expect(ref).toContain("Issue references")
+    expect(ref).toContain("git log")
+    // Artifact-driven guard: no auto-fetch
+    expect(ref).toContain("auto-fetch")
+    // SKILL.md points to this reference
+    const skill = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
+    expect(skill).toContain("spec-source-detection.md")
   })
 
   test("01-brainstorm premise-challenge verifies external-resource intent", () => {
