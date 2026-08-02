@@ -27,7 +27,7 @@ PREMISES:
 
 Use `ask_user_question` to confirm each premise. **One question at a time** — asking multiple at once is bewildering. If the user disagrees, revise understanding and loop back.
 
-## Interview discipline (from grilling)
+## Interview discipline
 
 - **Distinguish facts from decisions.** If a *fact* can be found by exploring the environment (filesystem, existing code, tools, docs), look it up rather than asking. The *decisions* are the user's — put each one to them and wait.
 - **Walk the decision tree one branch at a time**, resolving dependencies between decisions one by one. For each question, provide your recommended answer so the user can confirm or correct efficiently.

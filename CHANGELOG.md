@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.30.3 — remove stray `grilling` token from premise-challenge
+- **Token hygiene (P2)**: the heading `## Interview discipline (from grilling)` in `skills/01-brainstorm/references/premise-challenge.md` referenced `grilling` — a methodology name that was never an independent skill and has been fully absorbed into the Interview discipline section. The dangling token caused LLMs in non-brainstorm sessions (e.g. `03-work`) to hallucinate "grilling" as a callable skill/action (e.g. "which candidate to grill?"). Removed the `(from grilling)` annotation; the three discipline rules themselves are unchanged.
+- `rg -i grill` across the repo now returns zero hits. No behavior change; no test impact.
+
 ### 0.30.2 — self-contained regression net for skill-level references
 - **Test gap closed (P2)**: the existing self-contained scan only covered the top-level `skills/references/` directory. Skill-level references (`skills/*/references/`, `skills/*/assets/`) had no regression net, so a future `~/.pi/...` external-path leak or `/Users/...` absolute path could land silently.
 - **New contract test** (`tests/skill-contracts.test.ts`): scans every `.md` under each skill's `references/` and `assets/` directories. Uses a **whitelist** instead of a flat ban — `~/.pi/agent/docs/solutions/` is permitted (the global solution-library convention, legitimately used by 4 solution-search files), while any other `~/.pi` path or any `/Users/` absolute path is a violation. Failure messages pinpoint the offending file.

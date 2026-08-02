@@ -1,5 +1,9 @@
 # 更新日志
 
+### 0.30.3 — 移除 premise-challenge 中残留的 `grilling` 词法标记
+- **词法治理（P2）**：`skills/01-brainstorm/references/premise-challenge.md` 的标题 `## Interview discipline (from grilling)` 引用了 `grilling` —— 一个从未作为独立 skill 存在、且已完全吸收进 Interview discipline 小节的方法论名。该残留 token 导致非 brainstorm 会话（如 `03-work`）中的 LLM 把 "grilling" 幻觉为可调用的 skill/动作（如"选哪个走 grilling？"）。移除 `(from grilling)` 注记；三条纪律规则本身不变。
+- 全仓库 `rg -i grill` 现已零命中。无行为变更，无测试影响。
+
 ### 0.30.2 — skill 级 reference 的 self-contained 回归网
 - **填补测试缺口（P2）**：现有 self-contained 扫描只覆盖顶层 `skills/references/`。各 skill 自己的 references/ 与 assets/ 没有回归网，未来混入 `~/.pi/...` 外部路径或 `/Users/...` 绝对路径会静默通过。
 - **新增契约测试**（`tests/skill-contracts.test.ts`）：扫描每个 skill 的 references/ 与 assets/ 下的所有 `.md`。采用**白名单**而非一律禁止——允许 `~/.pi/agent/docs/solutions/`（全局 solution 库约定，4 个 solution-search 文件合法使用），其他任何 `~/.pi` 路径或 `/Users/` 绝对路径均判违规。失败信息精确定位到文件。
