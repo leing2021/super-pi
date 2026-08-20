@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.30.4 — thinkingStrategy `max` 档位修复 + 未知值告警
+- **Bug 修复（中等严重度，静默降级）**：`extensions/ce-core/index.ts`（input hook 思考档切换）里硬编码的 `levelMap` 缺 `max` 键。任何 `"max"` 的 `thinkingStrategy` 值（如 `{"02-plan": "max"}`）都被 `?? "medium"` 兜底静默降为 `medium` —— 无报错无警告。pi 核心完全支持 `max`（`EXTENDED_THINKING_LEVELS` 含之；GLM-5.3 / DeepSeek V4 Pro 复杂 agent 场景官方推荐 `max`），这些模型的用户经 super-pi 始终触达不了目标档位。
+- **未知值改为告警而非静默降级**：拼写错误如 `"ultra"` 仍回落 `medium`（行为保留），但现在会通过 `ctx.ui.notify` 发出 `Unknown thinking level for <stage>: <value>, falling back to medium`（warning 级，仅 TUI/RPC 模式，与现有 notify 守卫一致）。
+- **类型层安全**：`max: "max"` 对 `ReturnType<ExtensionAPI["getThinkingLevel"]>`（即 `ModelThinkingLevel`，含 `max`）合法 —— 映射表漏键是唯一缺口。
+- **测试覆盖**（`tests/ce-core-extension.test.ts`）：新增三个测试 —— (1) `max` 正确映射并 notify `Switched thinking level for 02-plan: max`；(2) 未知值 `"ultra"` 依次产生警告 + medium 回落；(3) 全档位矩阵回归（off/minimal/low/medium/high/xhigh/max + 大小写不敏感 `MAX` + 数字别名 `"0"/"1"/"2"`）。未知值测试的 mock 用 `getThinkingLevel() → "high"`，确保回落切换真实触发（矩阵测试用独立哨兵值验证）。
+- 209 测试通过，0 回归。无 `max` 档的模型（GPT-5.x、Claude）不受影响：pi 核心 `clampThinkingLevel` 照旧把 `max` 向下映射到最近支持档。
+
 ### 0.30.3 — 移除 premise-challenge 中残留的 `grilling` 词法标记
 - **词法治理（P2）**：`skills/01-brainstorm/references/premise-challenge.md` 的标题 `## Interview discipline (from grilling)` 引用了 `grilling` —— 一个从未作为独立 skill 存在、且已完全吸收进 Interview discipline 小节的方法论名。该残留 token 导致非 brainstorm 会话（如 `03-work`）中的 LLM 把 "grilling" 幻觉为可调用的 skill/动作（如"选哪个走 grilling？"）。移除 `(from grilling)` 注记；三条纪律规则本身不变。
 - 全仓库 `rg -i grill` 现已零命中。无行为变更，无测试影响。

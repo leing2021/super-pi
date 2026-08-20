@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.30.4 — thinkingStrategy `max` level fix + unknown-value warning
+- **Bug fix (medium severity, silent downgrade)**: the hardcoded `levelMap` in `extensions/ce-core/index.ts` (input hook thinking-level switching) was missing the `max` key. Any `thinkingStrategy` value of `"max"` (e.g. `{"02-plan": "max"}`) silently fell back to `medium` via the `?? "medium"` catch-all — no error, no warning. Pi core fully supports `max` (`EXTENDED_THINKING_LEVELS` includes it; GLM-5.3 / DeepSeek V4 Pro recommend `max` for complex agent scenarios), so users on those models could never reach the intended level through super-pi.
+- **Unknown values now warn instead of silently downgrading**: a typo like `"ultra"` still falls back to `medium` (behavior preserved) but now emits `Unknown thinking level for <stage>: <value>, falling back to medium` via `ctx.ui.notify` (warning level, TUI/RPC modes only, consistent with the existing notify guard).
+- **Type-level safety**: `max: "max"` is valid against `ReturnType<ExtensionAPI["getThinkingLevel"]>` (= `ModelThinkingLevel`, which includes `max`) — the map key was the only gap.
+- **Test coverage** (`tests/ce-core-extension.test.ts`): three new tests — (1) `max` maps through and notifies `Switched thinking level for 02-plan: max`; (2) unknown value `"ultra"` produces the warning + medium fallback, in that order; (3) full level matrix regression (off/minimal/low/medium/high/xhigh/max + case-insensitivity `MAX` + numeric aliases `"0"/"1"/"2"`). The unknown-value test mock uses `getThinkingLevel() → "high"` so the fallback switch actually fires (verified via a distinct sentinel in the matrix test).
+- 209 tests passing, 0 regressions. Models without a `max` tier (GPT-5.x, Claude) are unaffected: pi core `clampThinkingLevel` maps `max` down to the nearest supported tier as before.
+
 ### 0.30.3 — remove stray `grilling` token from premise-challenge
 - **Token hygiene (P2)**: the heading `## Interview discipline (from grilling)` in `skills/01-brainstorm/references/premise-challenge.md` referenced `grilling` — a methodology name that was never an independent skill and has been fully absorbed into the Interview discipline section. The dangling token caused LLMs in non-brainstorm sessions (e.g. `03-work`) to hallucinate "grilling" as a callable skill/action (e.g. "which candidate to grill?"). Removed the `(from grilling)` annotation; the three discipline rules themselves are unchanged.
 - `rg -i grill` across the repo now returns zero hits. No behavior change; no test impact.
