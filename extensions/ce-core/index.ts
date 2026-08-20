@@ -408,11 +408,17 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           medium: "medium",
           high: "high",
           xhigh: "xhigh",
+          max: "max",
           "0": "low",
           "1": "medium",
           "2": "high",
         }
-        const normalized = levelMap[targetThinking.toLowerCase()] ?? "medium"
+        const rawThinking = targetThinking.toLowerCase()
+        const knownLevel = levelMap[rawThinking]
+        const normalized = knownLevel ?? "medium"
+        if (!knownLevel && shouldNotify) {
+          ctx.ui.notify(`Unknown thinking level for ${stageKey}: ${targetThinking}, falling back to medium`, "warning")
+        }
         const currentLevel = pi.getThinkingLevel()
         if (currentLevel !== normalized) {
           pi.setThinkingLevel(normalized)

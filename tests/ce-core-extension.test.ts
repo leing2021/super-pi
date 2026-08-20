@@ -1674,6 +1674,166 @@ describe("ce-core extension runtime registration", () => {
       },
     ])
   })
+
+  test("input hook maps thinkingStrategy max level without silent downgrade", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const thinkingCalls: string[] = []
+    const notifications: Array<{ message: string, level?: string }> = []
+    const repoRoot = `/tmp/pi-ce-thinking-max-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({ thinkingStrategy: { "02-plan": "max" } }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+      getThinkingLevel() { return "medium" },
+      setThinkingLevel(level: string) { thinkingCalls.push(level) },
+    }
+
+    ceCoreExtension(pi as never)
+    const inputHandlers = eventHandlers.get("input") ?? []
+
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo-plan.md", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        mode: "tui",
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: { find(provider: string, id: string) { return { provider, id } } },
+        ui: { notify(message: string, level?: string) { notifications.push({ message, level }) } },
+      },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(thinkingCalls).toEqual(["max"])
+    expect(notifications).toEqual([
+      {
+        message: "Switched thinking level for 02-plan: max",
+        level: "info",
+      },
+    ])
+  })
+
+  test("input hook warns on unknown thinking level instead of silent medium", async () => {
+    const eventHandlers = new Map<string, any[]>()
+    const thinkingCalls: string[] = []
+    const notifications: Array<{ message: string, level?: string }> = []
+    const repoRoot = `/tmp/pi-ce-thinking-unknown-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({ thinkingStrategy: { "02-plan": "ultra" } }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool() {},
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand() {},
+      getThinkingLevel() { return "high" },
+      setThinkingLevel(level: string) { thinkingCalls.push(level) },
+    }
+
+    ceCoreExtension(pi as never)
+    const inputHandlers = eventHandlers.get("input") ?? []
+
+    const result = await inputHandlers[0](
+      { text: "/skill:02-plan docs/plans/demo-plan.md", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        mode: "tui",
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: { find(provider: string, id: string) { return { provider, id } } },
+        ui: { notify(message: string, level?: string) { notifications.push({ message, level }) } },
+      },
+    )
+
+    expect(result).toEqual({ action: "continue" })
+    expect(thinkingCalls).toEqual(["medium"])
+    expect(notifications).toEqual([
+      {
+        message: "Unknown thinking level for 02-plan: ultra, falling back to medium",
+        level: "warning",
+      },
+      {
+        message: "Switched thinking level for 02-plan: medium",
+        level: "info",
+      },
+    ])
+  })
+
+  test("input hook normalizes all documented thinking levels", async () => {
+    const cases: Array<[string, string]> = [
+      ["off", "off"],
+      ["minimal", "minimal"],
+      ["low", "low"],
+      ["medium", "medium"],
+      ["high", "high"],
+      ["xhigh", "xhigh"],
+      ["max", "max"],
+      ["MAX", "max"],
+      ["0", "low"],
+      ["1", "medium"],
+      ["2", "high"],
+    ]
+
+    for (const [configured, expected] of cases) {
+      const eventHandlers = new Map<string, any[]>()
+      const thinkingCalls: string[] = []
+      const repoRoot = `/tmp/pi-ce-thinking-levels-${Date.now()}-${expected}`
+      await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+      await writeFile(
+        path.join(repoRoot, ".pi", "settings.json"),
+        JSON.stringify({ thinkingStrategy: { "02-plan": configured } }),
+        "utf8",
+      )
+
+      const pi = {
+        registerTool() {},
+        on(event: string, handler: any) {
+          const handlers = eventHandlers.get(event) ?? []
+          handlers.push(handler)
+          eventHandlers.set(event, handlers)
+        },
+        registerCommand() {},
+        getThinkingLevel() { return "__unset__" },
+        setThinkingLevel(level: string) { thinkingCalls.push(level) },
+      }
+
+      ceCoreExtension(pi as never)
+      const inputHandlers = eventHandlers.get("input") ?? []
+
+      await inputHandlers[0](
+        { text: "/skill:02-plan docs/plans/demo-plan.md", source: "interactive" },
+        {
+          cwd: repoRoot,
+          hasUI: true,
+          mode: "tui",
+          model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+          modelRegistry: { find(provider: string, id: string) { return { provider, id } } },
+          ui: { notify() {} },
+        },
+      )
+
+      expect(thinkingCalls).toEqual([expected])
+    }
+  })
+
   test("input hook skips model switch during streaming steer", async () => {
     const eventHandlers = new Map<string, any[]>()
     const setModelCalls: string[] = []
