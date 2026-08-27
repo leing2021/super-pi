@@ -481,6 +481,33 @@ describe("skill package contracts", () => {
     expect(codeSmells).toContain("judgement call")
   })
 
+  test("overlap-rules defines retirement exits for stale solutions", () => {
+    const overlapRules = readFileSync(
+      path.join(repoRoot, "skills", "05-learn", "references", "overlap-rules.md"),
+      "utf8",
+    )
+
+    // Three exits: superseded folds, dead reference deletes, scope narrowed updates
+    expect(overlapRules).toContain("## Retirement")
+    expect(overlapRules).toContain("Superseded")
+    expect(overlapRules).toContain("Git is the archive")
+    expect(overlapRules).toContain("applies_when")
+    // SKILL.md routes the decision through the reference
+    const learn = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
+    expect(learn).toContain("or retire")
+  })
+
+  test("03-work backs anti-rationalization with an excuse-to-reality table", () => {
+    const work = readFileSync(path.join(repoRoot, "skills", "03-work", "SKILL.md"), "utf8")
+
+    // Table anchors the one-line rule with concrete refutations
+    expect(work).toContain("Common rationalizations and their reality")
+    expect(work).toContain("One more retry will converge")
+    expect(work).toContain("skip re-verification")
+    // Table stays tied to the 3-failure cap, not a free-floating list
+    expect(work).toContain("3-failure cap")
+  })
+
   test("out-of-scope knowledge base records rejected/already-built requests", () => {
     const outOfScopeReadme = readFileSync(
       path.join(repoRoot, "docs", "out-of-scope", "README.md"),
