@@ -78,6 +78,7 @@ Super Pi 不是 fork，也不是 wrapper。它从下面这些项目中提取有�
 | [compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | think → plan → build → review → learn 五步循环，以及 knowledge compounding 的骨架。 |
 | [gstack](https://github.com/garrytan/gstack) | YC 式 forcing questions、CEO Review 认知框架、Browser QA 模式、failure maps、evidence-first validation。 |
 | [mattpocock/skills](https://github.com/mattpocock/skills) | 领域词汇表（`CONTEXT.md`）、轻量 ADR（三条件门槛 + "What qualifies" 清单）、反馈环优先调试纪律、deep-module 词汇（含 internal seams/rejected framings）、拷问纪律（事实 vs 决策、一次一问）、review Spec 轴、out-of-scope 知识库。以自包含 `skills/references/` 内容形式吸收——无外部路径依赖、无 issue tracker 依赖，不碎接独立技能（super-pi 现有 01-brainstorm/domain-language/module-design 已覆盖主动纪律）。 |
+| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | The Ladder（7 级极简决策链：需要存在吗 → 代码库复用 → stdlib → 平台原生 → 已装依赖 → 一行 → 最小实现）、`debt:` 债务标记约定（指名上限与升级触发条件）、依赖轴 review 标签（`stdlib:` / `native:` / `dependency:`，流入 04-review Standards 轴）。以 `rules/common/` 规则内容形式嵌入——不吸收三档强度、hooks/MCP、独立技能。 |
 
 ---
 
