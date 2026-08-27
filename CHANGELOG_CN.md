@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.30.6 — solution retirement + rationalization table：吸收 CE #1540 与 superpowers v6.2
+- **Solution retirement**（`skills/05-learn/references/overlap-rules.md` + `SKILL.md`）：`docs/solutions/` 只有入口门槛（necessity check）没有出口 —— 描述已不存在代码/API 的 artifact 持续污染后续每次 solution search。发现过时时的三个出口：**superseded** → 折叠进替代 artifact（旧 tags 保留可搜）并删除；**dead reference** → 直接删（git 即归档，不留墓碑）；**scope narrowed** → 改 `applies_when` 而非删除。源自 [compound-engineering-plugin #1540](https://github.com/EveryInc/compound-engineering-plugin/pull/1540) —— 实测其 glossary 25 个 commit +380/−11 行，只增不减。
+- **Rationalization table**（`skills/03-work/SKILL.md`）：一句式 anti-rationalization 规则（“不要合理化、降级或解释掉失败”）背后补上 4 行 Excuse → Reality 对照表：“差不多就行” → gate fail 即未完成；“再试一次就收敛” → 过 3 次上限后失败是结构性的；“改动很小跳过验证” → 未验证修复是回归入口；“这次是特例” → 无证据不例外。源自 [superpowers](https://github.com/obra/superpowers) v6.2 SDD（Common Rationalizations），裁剪至 03-work 非 subagent 语境。
+- **README 死链修复**：`everything-claude-code` 致谢链接 404 —— 仓库已改名 [ECC](https://github.com/affaan-m/ECC)。双 README 更新；扫描 ECC 近期更新（installer 加固、宿主适配器、TasteForge/Nasiko 垂直 skill）—— 无进一步可吸收内容，方向与极简原则相悖。superpowers 与 compound-engineering-plugin 致谢行同步补记两项新吸收。
+- 极简排除：CE STRATEGY.md（项目治理）、CE #1537（skill 编辑复述规则）、superpowers five-round breaker + ruling ledger（subagent 专属；3 次上限 + ask user 已覆盖）、agent-skills Phase 0 capability map（task_splitter 已按文件依赖分组）。5 文件 +26/−7，零新增 skill/tool/command。211 测试通过。
+
 ### 0.30.5 — 吸收 ponytail：The Ladder、债务标记、依赖轴 review 标签
 - **The Ladder**（`rules/common/coding-style.md`）：写码前依次判判的 7 级决策链 —— (1) 需要存在吗（YAGNI）→ (2) 代码库已有 → (3) stdlib → (4) 平台原生 → (5) 已装依赖 → (6) 一行 → (7) 才写最小可行代码。两条元规则锢定：ladder 在理解问题**之后**运行（懒于写，不懒于读）；bug 修复走**根因**（通常 diff 更小）。永不砍清单（信任边界校验、防数据丢失、安全、无障碍）显式隔离。
 - **债务标记**（同文件）：刻意砍掉有已知上限的东西（全局锁、O(n²) 扫描）时留 `// debt: <上限>, upgrade when <触发条件>`。无升级条件的标记是腐烂风险而非极简。可用 `rg 'debt:'` 审计。
