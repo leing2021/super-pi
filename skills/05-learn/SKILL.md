@@ -37,7 +37,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 - Every solution MUST include YAML frontmatter per `references/solution-schema.yaml` (title, category, severity, tags, applies_when).
 - Use `references/category-map.md` to map the problem to the correct solution category.
 - Check for overlap with nearby solution docs before creating a new artifact.
-- Use `references/overlap-rules.md` to decide whether to create, update, or consolidate.
+- Use `references/overlap-rules.md` to decide whether to create, update, consolidate, or retire.
 - Use **`pattern_extractor`** to identify recurring patterns across existing artifacts before writing a new solution.
 - Structure the document with `assets/solution-template.md`.
 - Determine storage level:

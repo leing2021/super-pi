@@ -55,6 +55,15 @@ Anti-rationalization — when a gate fails or evidence is missing:
 - Stop, report the blocker with evidence, and either fix the root cause or ask for direction.
 - Do not continue unrelated implementation after failed verification.
 
+Common rationalizations and their reality:
+
+| Excuse | Reality |
+|--------|---------|
+| "Close enough — the gate almost passed" | A failed gate means not done. Fix it or stop and report; those are the only exits. |
+| "One more retry will converge" | Past the 3-failure cap, retries do not converge — the failure is structural. Ask for direction. |
+| "The fix is tiny, skip re-verification" | Unverified fixes are how regressions land. Every fix ends with verification. |
+| "This failure is a special case" | No evidence, no exception. Treat it like every other failure. |
+
 This is a hard gate — do not push past a failing test or broken build to continue implementation. Errors compound.
 
 ## Error compaction after recovery
