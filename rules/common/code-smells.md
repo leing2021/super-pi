@@ -32,6 +32,14 @@ Each entry reads *what it is* → *how to fix*. Match against the diff, not the 
 - **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
+## Dependency-axis tags (reinvented-wheel check)
+
+The 12 smells above cover structure; these three catch **rebuilding what already exists**. Same binding rules apply (repo overrides, always a judgement call, default P2). One line per finding: location, what to cut, what replaces it.
+
+- **`stdlib:`** — hand-rolled code the language's standard library already ships. → name the function that replaces it (e.g. a manual loop building a dict vs `dict(zip(keys, values))`; hand-rolled path joining vs `pathlib`).
+- **`native:`** — a dependency or custom code doing what the platform already provides. → name the native feature (e.g. moment.js for one format call vs `Intl.DateTimeFormat`; a JS date-picker lib vs `<input type="date">`; app-level uniqueness checks vs a DB constraint).
+- **`dependency:`** — a new package added for what a few lines or an already-installed dependency can do. → inline it or use the existing dep; add the new one only when the hand-rolled version grows real complexity.
+
 ## What is deliberately NOT here
 
 These are Fowler's file-level smells, **excluded from the review baseline** because they read against a whole file, not a diff — weak signal in a diff-based review. They belong in architecture audit (`references/module-design.md`) and `03-work` REFACTOR, not in `04-review` Standards axis:

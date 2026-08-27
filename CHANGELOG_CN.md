@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.30.5 — 吸收 ponytail：The Ladder、债务标记、依赖轴 review 标签
+- **The Ladder**（`rules/common/coding-style.md`）：写码前依次判判的 7 级决策链 —— (1) 需要存在吗（YAGNI）→ (2) 代码库已有 → (3) stdlib → (4) 平台原生 → (5) 已装依赖 → (6) 一行 → (7) 才写最小可行代码。两条元规则锢定：ladder 在理解问题**之后**运行（懒于写，不懒于读）；bug 修复走**根因**（通常 diff 更小）。永不砍清单（信任边界校验、防数据丢失、安全、无障碍）显式隔离。
+- **债务标记**（同文件）：刻意砍掉有已知上限的东西（全局锁、O(n²) 扫描）时留 `// debt: <上限>, upgrade when <触发条件>`。无升级条件的标记是腐烂风险而非极简。可用 `rg 'debt:'` 审计。
+- **依赖轴 review 标签**（`rules/common/code-smells.md`）：Fowler 12 smells 之外新增三标签 —— `stdlib:`（手写了标准库已有的东西）、`native:`（代码/依赖做了平台原生已有的事）、`dependency:`（为几行代码新增包）。继承 baseline 两条绑定规则（repo 覆盖、judgement call、默认 P2），并经 04-review 既有的文件加载链自动流入 Standards 轴 —— 零 SKILL.md 改动。
+- 源自 [ponytail](https://github.com/DietrichGebert/ponytail)（113k star；实测 -54% LOC / -20% cost / 100% 安全）。极简原则排除：三档强度、hooks/MCP 分发、独立 debt/audit skill、台账工具化。
+- 测试覆盖（`tests/skill-contracts.test.ts`）：新增两个契约测试断言 ladder 阶梯、元规则、债务约定与三标签 —— 211 测试通过，0 回归。3 文件 +70 行，零 SKILL.md 改动。
+
 ### 0.30.4 — thinkingStrategy `max` 档位修复 + 未知值告警
 - **Bug 修复（中等严重度，静默降级）**：`extensions/ce-core/index.ts`（input hook 思考档切换）里硬编码的 `levelMap` 缺 `max` 键。任何 `"max"` 的 `thinkingStrategy` 值（如 `{"02-plan": "max"}`）都被 `?? "medium"` 兜底静默降为 `medium` —— 无报错无警告。pi 核心完全支持 `max`（`EXTENDED_THINKING_LEVELS` 含之；GLM-5.3 / DeepSeek V4 Pro 复杂 agent 场景官方推荐 `max`），这些模型的用户经 super-pi 始终触达不了目标档位。
 - **未知值改为告警而非静默降级**：拼写错误如 `"ultra"` 仍回落 `medium`（行为保留），但现在会通过 `ctx.ui.notify` 发出 `Unknown thinking level for <stage>: <value>, falling back to medium`（warning 级，仅 TUI/RPC 模式，与现有 notify 守卫一致）。

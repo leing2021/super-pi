@@ -32,6 +32,34 @@ Rationale: Immutable data prevents hidden side effects, makes debugging easier, 
 - Avoid speculative generality
 - Start simple, then refactor when the pressure is real
 
+### The Ladder
+
+Before writing code, stop at the **first rung that holds**:
+
+1. Does this need to exist at all? → No: skip it, say so in one line (YAGNI)
+2. Already in this codebase? → Reuse it. Search before writing; re-implementing what exists a few files over is the most common slop
+3. stdlib does it? → Use it
+4. Platform-native feature covers it? → Use it (native input over a picker lib, CSS over JS, DB constraint over app code)
+5. Already-installed dependency solves it? → Use it. Never add a new one for what a few lines can do
+6. Can it be one line? → One line
+7. Only then: the minimum code that works
+
+Meta-rules:
+- The ladder runs **after** understanding the problem, not instead of it. Lazy about writing, never about reading — trace every file the change touches first.
+- Bug fix = **root cause**, not symptom. The root-cause fix is usually the smaller diff: one guard in the shared function beats a guard in every caller.
+
+Never simplify away: trust-boundary validation, error handling that prevents data loss, security, accessibility, anything explicitly requested.
+
+### Debt marker
+
+When deliberately cutting a corner with a known ceiling (global lock, O(n²) scan, naive heuristic), mark it:
+
+```
+// debt: global lock, upgrade when per-account throughput matters
+```
+
+Name the ceiling and the trigger. A `debt:` marker with no upgrade condition is rot risk, not minimalism. Audit with `rg 'debt:'`.
+
 ## File Organization
 
 MANY SMALL FILES > FEW LARGE FILES:

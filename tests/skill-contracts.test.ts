@@ -447,6 +447,40 @@ describe("skill package contracts", () => {
     expect(premise).toContain("incorporated")
   })
 
+  test("coding-style embeds the ladder decision chain and debt marker", () => {
+    const codingStyle = readFileSync(
+      path.join(repoRoot, "rules", "common", "coding-style.md"),
+      "utf8",
+    )
+
+    // Ordered decision ladder (stop at the first rung that holds)
+    expect(codingStyle).toContain("The Ladder")
+    expect(codingStyle).toContain("stdlib")
+    expect(codingStyle).toContain("Platform-native")
+    // Two meta-rules: lazy about writing, not reading; root cause over symptom
+    expect(codingStyle).toContain("understanding the problem, not instead of it")
+    expect(codingStyle).toContain("root cause")
+    // Deliberate-shortcut debt marker convention
+    expect(codingStyle).toContain("debt:")
+    expect(codingStyle).toContain("upgrade when")
+    // Never-lazy list: trust-boundary guards survive the ladder
+    expect(codingStyle).toContain("Never simplify away")
+  })
+
+  test("code-smells adds dependency-axis tags beyond the Fowler baseline", () => {
+    const codeSmells = readFileSync(
+      path.join(repoRoot, "rules", "common", "code-smells.md"),
+      "utf8",
+    )
+
+    // Reinvented-wheel detection: three tags with replacement guidance
+    expect(codeSmells).toContain("stdlib:")
+    expect(codeSmells).toContain("native:")
+    expect(codeSmells).toContain("dependency:")
+    // Tags inherit the Fowler baseline's binding rules
+    expect(codeSmells).toContain("judgement call")
+  })
+
   test("out-of-scope knowledge base records rejected/already-built requests", () => {
     const outOfScopeReadme = readFileSync(
       path.join(repoRoot, "docs", "out-of-scope", "README.md"),
