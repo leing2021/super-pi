@@ -10,15 +10,12 @@ Built with TypeScript, tested with Bun test runner, published to npm as `@leing2
 - Runtime: Bun
 - Language: TypeScript (strict)
 - Test: `bun test`
-- Build: `bun run build`
 - Publish: `npm publish` via GitHub Actions on tag push
 
 ## Key Commands
 
 ```bash
 bun test              # Run all tests
-bun run build         # Build the project
-bun run lint          # Lint (if configured)
 ```
 
 ## Architecture
@@ -26,7 +23,7 @@ bun run lint          # Lint (if configured)
 ```
 skills/          # 7 pipeline skills (01-brainstorm through 07-worktree)
   references/    # Shared templates and schemas
-  rules/         # Coding standards (common + language-specific)
+rules/           # Coding standards (common + language-specific); loaded by 03-work/04-review
 extensions/      # Optional Pi extensions
 tests/           # Test files
 docs/            # Documentation and assets
