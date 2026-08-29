@@ -98,6 +98,8 @@ Configure in `.pi/settings.json`:
 
 Model and thinking level switch automatically — no manual `/model` needed.
 
+Routing triggers on explicit `/skill:` commands **and** when the agent reads a stage's `SKILL.md` on its own. If no strategy is configured, routing is a no-op — the session model is never touched. Project-level settings take precedence; missing keys fall back to global `~/.pi/agent/settings.json`.
+
 ## Design Philosophy & Acknowledgements
 
 **80% planning and review, 20% execution.**

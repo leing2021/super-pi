@@ -1,7 +1,4 @@
-import { readFile } from "node:fs/promises"
-import path from "node:path"
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
-import { CONFIG_DIR_NAME } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
 import { createAskUserQuestionTool, CUSTOM_SENTINEL } from "./tools/ask-user-question"
@@ -19,14 +16,7 @@ import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
-
-const PIPELINE_STAGE_KEYS = new Set([
-  "01-brainstorm",
-  "02-plan",
-  "03-work",
-  "04-review",
-  "05-learn",
-])
+import { applyStageStrategies, parseStageSkillName, parseStageSkillPath } from "./utils/stage-routing"
 
 /**
  * Module-level promise chain that serializes interactive `ask_user_question`
@@ -90,91 +80,6 @@ function buildAskUserQuestionUi(ctx: any): import("./tools/ask-user-question").A
   }
 
   return { input, select }
-}
-
-interface StrategySettings {
-  modelStrategy?: Record<string, string>
-  thinkingStrategy?: Record<string, string>
-}
-
-/**
- * Read settings from two locations (config dir honors pi's `CONFIG_DIR_NAME`,
- * which defaults to `.pi` but is user-configurable since pi 0.79.7):
- * 1. Project-level: {cwd}/{CONFIG_DIR_NAME}/settings.json (highest priority)
- * 2. Global-level: ~/{CONFIG_DIR_NAME}/agent/settings.json (fallback)
- *
- * Project-level takes precedence; global-level is used as fallback.
- */
-async function readSettings(cwd: string): Promise<StrategySettings | null> {
-  const agentHome = process.env.HOME || "~"
-  // Try project-level first
-  const projectPath = path.join(cwd, CONFIG_DIR_NAME, "settings.json")
-  try {
-    const content = await readFile(projectPath, "utf8")
-    const projectSettings = JSON.parse(content) as StrategySettings
-    // If project has modelStrategy or thinkingStrategy, use it
-    if (projectSettings.modelStrategy || projectSettings.thinkingStrategy) {
-      return projectSettings
-    }
-  } catch {
-    // Project settings not found, continue to global
-  }
-
-  // Fallback to global-level
-  const globalPath = path.join(agentHome, CONFIG_DIR_NAME, "agent", "settings.json")
-  try {
-    const content = await readFile(globalPath, "utf8")
-    return JSON.parse(content) as StrategySettings
-  } catch {
-    // Global settings not found either
-  }
-
-  // Try ~/{CONFIG_DIR_NAME}/settings.json as another fallback
-  const altGlobalPath = path.join(agentHome, CONFIG_DIR_NAME, "settings.json")
-  try {
-    const content = await readFile(altGlobalPath, "utf8")
-    return JSON.parse(content) as StrategySettings
-  } catch {
-    return null
-  }
-}
-
-function parseStageSkillName(text: string): string | null {
-  const trimmed = text.trim()
-  const match = trimmed.match(/^\/skill:([^\s]+)/)
-  if (!match) {
-    return null
-  }
-
-  const skillName = match[1]
-  return PIPELINE_STAGE_KEYS.has(skillName) ? skillName : null
-}
-
-function parseModelRef(
-  modelRef: string,
-  currentProvider?: string,
-): { provider: string, id: string } | null {
-  const trimmed = modelRef.trim()
-  if (!trimmed) {
-    return null
-  }
-
-  const slashIndex = trimmed.indexOf("/")
-  if (slashIndex > 0 && slashIndex < trimmed.length - 1) {
-    return {
-      provider: trimmed.slice(0, slashIndex),
-      id: trimmed.slice(slashIndex + 1),
-    }
-  }
-
-  if (!currentProvider) {
-    return null
-  }
-
-  return {
-    provider: currentProvider,
-    id: trimmed,
-  }
 }
 
 const artifactHelperParams = Type.Object({
@@ -360,76 +265,29 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return { action: "continue" as const }
     }
 
-    const settings = await readSettings(ctx.cwd)
-    const modelStrategy = settings?.modelStrategy
-    const thinkingStrategy = settings?.thinkingStrategy
-    // Notification guard: only notify in interactive (TUI) or RPC modes.
-    // For interactive input capability checks (askUserQuestion), use ctx.hasUI directly.
-    const shouldNotify = ctx.mode === "tui" || ctx.mode === "rpc"
-
-    // Model switching
-    if (modelStrategy) {
-      const targetModelRef = modelStrategy[stageKey] ?? modelStrategy.default
-      if (targetModelRef) {
-        const parsed = parseModelRef(targetModelRef, ctx.model?.provider)
-        if (parsed) {
-          // Skip if already using the same model
-          if (ctx.model?.provider !== parsed.provider || ctx.model?.id !== parsed.id) {
-            const model = ctx.modelRegistry.find(parsed.provider, parsed.id)
-            if (model) {
-              const switched = await pi.setModel(model)
-              if (switched) {
-                if (shouldNotify) {
-                  ctx.ui.notify(`Switched model for ${stageKey}: ${model.provider}/${model.id}`, "info")
-                }
-              } else {
-                if (shouldNotify) {
-                  ctx.ui.notify(`No API key for ${stageKey}: ${model.provider}/${model.id}`, "warning")
-                }
-              }
-            } else if (shouldNotify) {
-              ctx.ui.notify(`Model not found for ${stageKey}: ${targetModelRef}`, "warning")
-            }
-          }
-        } else if (shouldNotify) {
-          ctx.ui.notify(`Invalid modelStrategy for ${stageKey}: ${targetModelRef}`, "warning")
-        }
-      }
-    }
-
-    // Thinking level switching
-    if (thinkingStrategy) {
-      const targetThinking = thinkingStrategy[stageKey] ?? thinkingStrategy.default
-      if (targetThinking) {
-        const levelMap: Record<string, ReturnType<ExtensionAPI["getThinkingLevel"]>> = {
-          off: "off",
-          minimal: "minimal",
-          low: "low",
-          medium: "medium",
-          high: "high",
-          xhigh: "xhigh",
-          max: "max",
-          "0": "low",
-          "1": "medium",
-          "2": "high",
-        }
-        const rawThinking = targetThinking.toLowerCase()
-        const knownLevel = levelMap[rawThinking]
-        const normalized = knownLevel ?? "medium"
-        if (!knownLevel && shouldNotify) {
-          ctx.ui.notify(`Unknown thinking level for ${stageKey}: ${targetThinking}, falling back to medium`, "warning")
-        }
-        const currentLevel = pi.getThinkingLevel()
-        if (currentLevel !== normalized) {
-          pi.setThinkingLevel(normalized)
-          if (shouldNotify) {
-            ctx.ui.notify(`Switched thinking level for ${stageKey}: ${normalized}`, "info")
-          }
-        }
-      }
-    }
+    await applyStageStrategies(pi, ctx, stageKey)
 
     return { action: "continue" as const }
+  })
+
+  // Model-initiated skill invocation: when the agent reads a pipeline
+  // stage's SKILL.md (instead of the user typing /skill:), route the
+  // stage's model/thinking strategies the same way. Reads of other paths
+  // are untouched.
+  pi.on("tool_call", async (event, ctx) => {
+    if (event.toolName !== "read") {
+      return undefined
+    }
+    const filePath = (event.input as { path?: unknown } | undefined)?.path
+    if (typeof filePath !== "string") {
+      return undefined
+    }
+    const stageKey = parseStageSkillPath(filePath)
+    if (!stageKey) {
+      return undefined
+    }
+    await applyStageStrategies(pi, ctx, stageKey)
+    return undefined
   })
 
   const artifactHelper = createArtifactHelperTool()

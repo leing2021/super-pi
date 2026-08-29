@@ -1606,6 +1606,258 @@ describe("ce-core extension runtime registration", () => {
     expect(setModelCalls).toEqual(["anthropic/claude-opus-4-1"])
   })
 
+  test("input hook switches model for 06-next and 07-worktree stage commands", async () => {
+    // Arrange
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-model-routing-aux-stages-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        modelStrategy: {
+          "06-next": "anthropic/claude-haiku-4-20250414",
+          "07-worktree": "anthropic/claude-sonnet-4-20250514",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      async setModel(model: { provider: string, id: string }) {
+        setModelCalls.push(`${model.provider}/${model.id}`)
+        return true
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const inputHandlers = eventHandlers.get("input") ?? []
+    expect(inputHandlers.length).toBeGreaterThan(0)
+
+    // Act
+    await inputHandlers[0](
+      { text: "/skill:06-next", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        mode: "tui",
+        model: { provider: "anthropic", id: "claude-sonnet-4-20250514" },
+        modelRegistry: {
+          find(provider: string, id: string) {
+            return { provider, id }
+          },
+        },
+        ui: {
+          notify() {
+            // no-op
+          },
+        },
+      },
+    )
+    await inputHandlers[0](
+      { text: "/skill:07-worktree feature-x", source: "interactive" },
+      {
+        cwd: repoRoot,
+        hasUI: true,
+        mode: "tui",
+        // Reflects the model the first switch landed on.
+        model: { provider: "anthropic", id: "claude-haiku-4-20250414" },
+        modelRegistry: {
+          find(provider: string, id: string) {
+            return { provider, id }
+          },
+        },
+        ui: {
+          notify() {
+            // no-op
+          },
+        },
+      },
+    )
+
+    // Assert
+    expect(setModelCalls).toEqual([
+      "anthropic/claude-haiku-4-20250414",
+      "anthropic/claude-sonnet-4-20250514",
+    ])
+  })
+
+  test("tool_call hook switches model when the agent reads a stage SKILL.md", async () => {
+    // Arrange
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-model-routing-skill-read-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        modelStrategy: {
+          "03-work": "anthropic/claude-sonnet-4-20250514",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      async setModel(model: { provider: string, id: string }) {
+        setModelCalls.push(`${model.provider}/${model.id}`)
+        return true
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const toolCallHandlers = eventHandlers.get("tool_call") ?? []
+    expect(toolCallHandlers.length).toBeGreaterThan(0)
+
+    const ctx = {
+      cwd: repoRoot,
+      hasUI: true,
+      mode: "tui",
+      model: { provider: "anthropic", id: "claude-haiku-4-20250414" },
+      modelRegistry: {
+        find(provider: string, id: string) {
+          return { provider, id }
+        },
+      },
+      ui: {
+        notify() {
+          // no-op
+        },
+      },
+    }
+
+    // Act
+    const result = await toolCallHandlers[0](
+      {
+        toolName: "read",
+        toolCallId: "call-1",
+        input: {
+          path: `/Users/test/.pi/agent/npm/node_modules/@leing2021/super-pi/skills/03-work/SKILL.md`,
+        },
+      },
+      ctx,
+    )
+    // Bare relative path (read tool allows relative paths) also routes.
+    await toolCallHandlers[0](
+      {
+        toolName: "read",
+        toolCallId: "call-2",
+        input: { path: "skills/03-work/SKILL.md" },
+      },
+      ctx,
+    )
+
+    // Assert
+    expect(result).toBeUndefined()
+    expect(setModelCalls).toEqual([
+      "anthropic/claude-sonnet-4-20250514",
+      "anthropic/claude-sonnet-4-20250514",
+    ])
+  })
+
+  test("tool_call hook ignores reads outside stage skill paths", async () => {
+    // Arrange
+    const eventHandlers = new Map<string, any[]>()
+    const setModelCalls: string[] = []
+    const repoRoot = `/tmp/pi-ce-model-routing-non-skill-read-${Date.now()}`
+    await mkdir(path.join(repoRoot, ".pi"), { recursive: true })
+    await writeFile(
+      path.join(repoRoot, ".pi", "settings.json"),
+      JSON.stringify({
+        modelStrategy: {
+          "03-work": "anthropic/claude-sonnet-4-20250514",
+        },
+      }),
+      "utf8",
+    )
+
+    const pi = {
+      registerTool(_definition: { name: string }) {
+        // no-op
+      },
+      on(event: string, handler: any) {
+        const handlers = eventHandlers.get(event) ?? []
+        handlers.push(handler)
+        eventHandlers.set(event, handlers)
+      },
+      registerCommand(_name: string, _def: any) {
+        // no-op
+      },
+      async setModel(model: { provider: string, id: string }) {
+        setModelCalls.push(`${model.provider}/${model.id}`)
+        return true
+      },
+    }
+
+    ceCoreExtension(pi as never)
+
+    const toolCallHandlers = eventHandlers.get("tool_call") ?? []
+    expect(toolCallHandlers.length).toBeGreaterThan(0)
+
+    const ctx = {
+      cwd: repoRoot,
+      hasUI: false,
+      model: { provider: "anthropic", id: "claude-haiku-4-20250414" },
+      modelRegistry: {
+        find(provider: string, id: string) {
+          return { provider, id }
+        },
+      },
+      ui: {
+        notify() {
+          // no-op
+        },
+      },
+    }
+
+    // Act
+    await toolCallHandlers[0](
+      {
+        toolName: "read",
+        toolCallId: "call-1",
+        input: { path: `${repoRoot}/extensions/ce-core/index.ts` },
+      },
+      ctx,
+    )
+    await toolCallHandlers[0](
+      {
+        toolName: "read",
+        toolCallId: "call-2",
+        input: {
+          path: `/Users/test/super-pi/skills/99-unknown/SKILL.md`,
+        },
+      },
+      ctx,
+    )
+
+    // Assert
+    expect(setModelCalls).toEqual([])
+  })
+
   test("input hook switches thinking level through ExtensionAPI", async () => {
     const eventHandlers = new Map<string, any[]>()
     const thinkingCalls: string[] = []

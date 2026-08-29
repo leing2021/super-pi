@@ -4,8 +4,12 @@ Use these rules in all Phase 1 skills: `01-brainstorm` → `02-plan` → `03-wor
 
 ## Start of skill: model routing
 
-Model routing is handled automatically by the ce-core extension's `input` hook.
-When a user types `/skill:01-brainstorm` through `/skill:05-learn`, the extension:
+Model routing is handled automatically by the ce-core extension, with two triggers:
+
+1. **Explicit command**: the user types `/skill:01-brainstorm` through `/skill:07-worktree` (the `input` hook).
+2. **Model-initiated skill load**: the agent reads a stage's `SKILL.md` (e.g. `.../skills/03-work/SKILL.md`) without an explicit command (the `tool_call` hook).
+
+On either trigger the extension:
 
 1. Reads `.pi/settings.json` from the project root.
 2. Parses `modelStrategy[stageKey]` or falls back to `modelStrategy.default`.
