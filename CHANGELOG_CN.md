@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.31.0 — 双触发模型路由：skill 读取 hook + 辅助 stage 键集
+- **模型自主调用 skill 现在也触发路由**（`extensions/ce-core/`）：modelStrategy 此前仅靠 `input` hook 匹配显式 `/skill:` 命令。用户用自然语言描述任务、模型自行 read 阶段 `SKILL.md` 时——最常见的调用方式——路由静默跳过。新增 `tool_call` hook，read 路径命中 `skills/<stage>/SKILL.md`（支持绝对、`./` 前缀、裸相对、Windows 路径）即触发同一路由逻辑。`setModel` 在 read 结果返回后的下一次 LLM 请求生效，skill 执行全程运行在目标模型上。同模型重复 read 幂等（不重复切换/通知）。
+- **辅助 stage 可路由**（`extensions/ce-core/utils/stage-routing.ts`）：`PIPELINE_STAGE_KEYS` 补全至全部 7 个 stage（01-05 主线 + 06-next/07-worktree）——此前为它们配置 `modelStrategy`/`thinkingStrategy` 无任何效果。
+- **路由逻辑抽取**至 `extensions/ce-core/utils/stage-routing.ts`（228 行）；`index.ts` 从 860 行降至 718 行（回到 800 行文件上限内）。文档同步（`skills/references/pipeline-config.md`、双 README）；solution artifact 更新双触发模式（`docs/solutions/tooling/2026-04-24-pi-extension-terminate-and-model-routing.md`）。
+- **测试**（`tests/ce-core-extension.test.ts`）：+4 —— 06/07 stage 切换、SKILL.md read 路由（绝对 + 裸相对）、非 skill 路径负例。正则边界经 9 种路径形态验证。216 测试通过，零回归。
+
 ### 0.30.6 — solution retirement + rationalization table：吸收 CE #1540 与 superpowers v6.2
 - **Solution retirement**（`skills/05-learn/references/overlap-rules.md` + `SKILL.md`）：`docs/solutions/` 只有入口门槛（necessity check）没有出口 —— 描述已不存在代码/API 的 artifact 持续污染后续每次 solution search。发现过时时的三个出口：**superseded** → 折叠进替代 artifact（旧 tags 保留可搜）并删除；**dead reference** → 直接删（git 即归档，不留墓碑）；**scope narrowed** → 改 `applies_when` 而非删除。源自 [compound-engineering-plugin #1540](https://github.com/EveryInc/compound-engineering-plugin/pull/1540) —— 实测其 glossary 25 个 commit +380/−11 行，只增不减。
 - **Rationalization table**（`skills/03-work/SKILL.md`）：一句式 anti-rationalization 规则（“不要合理化、降级或解释掉失败”）背后补上 4 行 Excuse → Reality 对照表：“差不多就行” → gate fail 即未完成；“再试一次就收敛” → 过 3 次上限后失败是结构性的；“改动很小跳过验证” → 未验证修复是回归入口；“这次是特例” → 无证据不例外。源自 [superpowers](https://github.com/obra/superpowers) v6.2 SDD（Common Rationalizations），裁剪至 03-work 非 subagent 语境。
