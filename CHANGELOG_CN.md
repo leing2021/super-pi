@@ -1,5 +1,14 @@
 # 更新日志
 
+### 0.32.0 — rules 加载强制化：blocking 步骤 + manifest + 项目级语言扩展
+- **Rules 加载成为可见的 blocking 步骤**（`skills/03-work/`、`skills/04-review/`）：原先 "加载项目 rules" 只写在 Core rules 散文区，实际执行中常被静默跳过——agent 直接开始实现/评审，没读任何 rule 文件。现改为编号 blocking 步骤（"无 manifest 不实现/不出 findings"），内联语言映射（砍二跳引用），且必须在产出任何代码/finding 前输出单行 manifest（`Rules loaded: language=… (via …), common=…, lang=…, web=…`）。用户终于能看到 rules 是否真的加载了。
+- **同会话重复进入不再重读**：transcript 中已有同语言 `Rules loaded:` manifest 时跳过重读——同一对话内多轮 03-work/04-review 不再重复支付 token 成本。跨会话仍需重读（新上下文无 manifest，必要成本）。
+- **悬空引用修复**（`skills/references/pipeline-config.md`）：两个 skill 都引用了 "pipeline-config.md 里的 completion checklist"，但该段落从未存在。现已补上（rules manifest / workflow 步骤 / artifacts / 验证证据 / status blocks 五项），并对无 rules 加载步骤的阶段豁免首项。新增 contract test 锁定引用完整性——该悬空引用存活多个版本，正是因为没有任何断言。
+- **项目级语言扩展点**（`skills/references/language-detection.md` + 两个 skill）：项目可支持内置 13 语言之外的语言——加 `{repo-root}/rules/<lang>/` 目录 + 在 `{repo-root}/rules/language-detection.md` 加一行标记映射。合并语义：追加 + 同名覆盖，与现有 rules 覆盖链一致。损坏的行可见回退（manifest 显示映射来源；rules 目录缺失标记为 `lang: missing`）——绝不静默。
+- **新增 `rules/typescript/review-checklist.md`**：TS/JS 特有缺陷模式供 04-review 使用（null/undefined、类型安全、floating promise、async forEach、事件监听器泄漏、stale closure、NaN/相等比较），与 python/golang checklist 结构一致。04-review 对缺失的语言 checklist 显式标记 `missing (fell back to common)` 而非静默跳过。
+- **文档同步**：`rules/README.md`（补全 13 个语言目录、删除不存在的 install.sh 引用、补充终端用户项目级路径）、双 README（12 个通用主题、扩展点、测试统计）。上游 ECC `rules/` 已 diff 评估：无可吸收项（框架级 fastapi.md 与整目录加载机制冲突；quarkus 引用本地悬空）——决策记录在 `docs/out-of-scope/`，含重开条件。
+- **测试**（`tests/skill-contracts.test.ts`）：+3 contract test——manifest 要求 + blocking 步骤 + TS checklist 存在性、项目级扩展文档、skill 接线。全部 RED 验证（破坏目标段落会使测试套件失败）。219 tests passing，0 回归。
+
 ### 0.31.0 — 双触发模型路由：skill 读取 hook + 辅助 stage 键集
 - **模型自主调用 skill 现在也触发路由**（`extensions/ce-core/`）：modelStrategy 此前仅靠 `input` hook 匹配显式 `/skill:` 命令。用户用自然语言描述任务、模型自行 read 阶段 `SKILL.md` 时——最常见的调用方式——路由静默跳过。新增 `tool_call` hook，read 路径命中 `skills/<stage>/SKILL.md`（支持绝对、`./` 前缀、裸相对、Windows 路径）即触发同一路由逻辑。`setModel` 在 read 结果返回后的下一次 LLM 请求生效，skill 执行全程运行在目标模型上。同模型重复 read 幂等（不重复切换/通知）。
 - **辅助 stage 可路由**（`extensions/ce-core/utils/stage-routing.ts`）：`PIPELINE_STAGE_KEYS` 补全至全部 7 个 stage（01-05 主线 + 06-next/07-worktree）——此前为它们配置 `modelStrategy`/`thinkingStrategy` 无任何效果。
