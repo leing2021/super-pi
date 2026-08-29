@@ -17,33 +17,23 @@ rules/
 ├── typescript/      # TypeScript/JavaScript specific
 ├── python/          # Python specific
 ├── golang/          # Go specific
-├── web/             # Web and frontend specific
+├── rust/            # Rust specific
+├── java/            # Java specific
+├── kotlin/          # Kotlin specific
 ├── swift/           # Swift specific
-└── php/             # PHP specific
+├── csharp/          # C# specific
+├── cpp/             # C++ specific
+├── dart/            # Dart specific
+├── php/             # PHP specific
+├── perl/            # Perl specific
+└── web/             # Web and frontend specific
 ```
 
 - **common/** contains universal principles — no language-specific code examples.
 - **Language directories** extend the common rules with framework-specific patterns, tools, and code examples. Each file references its common counterpart.
-- **`review-checklist.md`** (optional, per language) holds precise, actionable defect patterns for code review — distinct from `patterns.md` which holds reusable design patterns. Currently used by `golang/` and `python/`.
+- **`review-checklist.md`** (optional, per language) holds precise, actionable defect patterns for code review — distinct from `patterns.md` which holds reusable design patterns. Currently used by `golang/`, `python/`, and `typescript/`.
 
 ## Installation
-
-### Option 1: Install Script (Recommended)
-
-```bash
-# Install common + one or more language-specific rule sets
-./install.sh typescript
-./install.sh python
-./install.sh golang
-./install.sh web
-./install.sh swift
-./install.sh php
-
-# Install multiple languages at once
-./install.sh typescript python
-```
-
-### Option 2: Manual Installation
 
 > **Important:** Copy entire directories — do NOT flatten with `/*`.
 > Common and language-specific directories contain files with the same names.
@@ -75,7 +65,7 @@ Language-specific rule files reference relevant skills where appropriate. Rules 
 
 ## Adding a New Language
 
-To add support for a new language (e.g., `rust/`):
+To add support for a new language (e.g., `zig/`):
 
 1. Create a `rules/rust/` directory
 2. Add files that extend the common rules:

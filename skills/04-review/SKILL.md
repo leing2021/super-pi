@@ -60,6 +60,7 @@ Code review is **technical evaluation**, not social performance:
    - Detect language from changed files (`.ts`/`.tsx`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers (`tsconfig.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `pom.xml`); full map in [language detection](../references/language-detection.md). Mixed-language diffs: load per language
    - Check `{repo-root}/rules/` first (overrides package defaults); load `rules/common/code-review.md`, `code-smells.md`, matching `rules/{lang}/` files including `review-checklist.md`, `rules/web/` for frontend/browser changes
    - Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>), common=<files>, lang=<files>, web=<files or N/A>`
+   - **Same-session re-entry:** if the transcript already contains a `Rules loaded:` manifest for the same language, do not re-read the rule files — reuse them, cite the earlier manifest, and note the skip
 4. Collect stats (files, insertions, deletions) → call `review_router`
 5. Read matching plan artifact; if absent, follow [`references/spec-source-detection.md`](references/spec-source-detection.md) to probe brainstorm and commit issue refs
 6. Run solution search
