@@ -11,11 +11,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-1. Load project rules (4 steps):
-   - Load `../../rules/common/code-review.md` and `../../rules/common/code-smells.md`
-   - Detect language from changed files via [language detection](../references/language-detection.md)
-   - Load matching language-specific rules (e.g., `rules/typescript/`)
-   - If frontend/browser changes, also load `rules/web/` files
+1. Load project rules before producing findings (detailed in Workflow step 3): load `../../rules/common/code-review.md` + `code-smells.md`, detect language from changed files, load matching `rules/{lang}/` files including `review-checklist.md` (mark `missing (fell back to common)` when absent), plus `rules/web/` for frontend/browser changes. Emit a `Rules loaded:` manifest — **no manifest, no findings**
 2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
 3. **Standards axis baseline:** apply [`../../rules/common/code-smells.md`](../../rules/common/code-smells.md) (Fowler smell baseline). Two binding rules: a documented repo standard overrides the baseline; every smell is a judgement call (report as "possible Feature Envy"), never a hard violation. Map severity via P0/P1/P2 — default P2, escalate when a repo doc endorses it or it harms data flow/testability.
 4. Determine **diff scope** before selecting reviewers
@@ -60,13 +56,17 @@ Code review is **technical evaluation**, not social performance:
 
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Determine diff scope — prefer `branch`/`base` from latest handoff if present; else from explicit target; else ask user
-3. Collect stats (files, insertions, deletions) → call `review_router`
-4. Read matching plan artifact; if absent, follow [`references/spec-source-detection.md`](references/spec-source-detection.md) to probe brainstorm and commit issue refs
-5. Run solution search
-6. Apply each reviewer persona from `review_router`
-7. Merge into structured findings
-8. Verify each finding against codebase
-9. Apply autofixes, re-run tests, re-review if needed
+3. **Load project rules** (blocking — no findings before this completes):
+   - Detect language from changed files (`.ts`/`.tsx`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers (`tsconfig.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `pom.xml`); full map in [language detection](../references/language-detection.md). Mixed-language diffs: load per language
+   - Check `{repo-root}/rules/` first (overrides package defaults); load `rules/common/code-review.md`, `code-smells.md`, matching `rules/{lang}/` files including `review-checklist.md`, `rules/web/` for frontend/browser changes
+   - Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>), common=<files>, lang=<files>, web=<files or N/A>`
+4. Collect stats (files, insertions, deletions) → call `review_router`
+5. Read matching plan artifact; if absent, follow [`references/spec-source-detection.md`](references/spec-source-detection.md) to probe brainstorm and commit issue refs
+6. Run solution search
+7. Apply each reviewer persona from `review_router`
+8. Merge into structured findings — include `rules applied` in the review summary (see `references/findings-schema.md`)
+9. Verify each finding against codebase
+10. Apply autofixes, re-run tests, re-review if needed
 
 ## Optional: QA Test Mode
 

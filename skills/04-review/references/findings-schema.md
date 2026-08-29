@@ -15,3 +15,11 @@ Optional fields:
 - `autofixable` — whether this finding can be automatically fixed
 - `autofix applied` — whether the autofix was applied
 - `autofix summary` — description of what was changed
+
+## Review summary block
+
+End every review with a summary that includes:
+
+- `rules applied` — language + rule files actually loaded for this review (mirror of the `Rules loaded:` manifest)
+- findings count by severity: `high / moderate / low`
+- verification status of confirmed findings (fixed / pushed back / deferred)

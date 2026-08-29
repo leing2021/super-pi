@@ -85,6 +85,16 @@ Next step mapping:
 - `04-review` → `/skill:05-learn`
 - `05-learn` → `Completed`
 
+## End of skill: completion checklist
+
+Before declaring a stage complete, verify every item. A failed item means not done — fix it or stop and report:
+
+1. **Rules loaded and listed** — for stages whose workflow includes a rules-loading step (02-plan, 03-work, 04-review), session output contains a `Rules loaded:` manifest (language + rule files). If missing, load the rules now before finishing.
+2. **All workflow steps executed** — every numbered step in the stage's SKILL.md ran, or was explicitly skipped with a stated reason.
+3. **Artifacts saved** — plan / checkpoint / findings / handoff written to their artifact paths.
+4. **Verification evidence recorded** — exact command plus result in output, not a claim of success.
+5. **Pipeline Status + Context Status blocks output** — both present, real values, no placeholders.
+
 ### Handoff-lite template
 
 When a stage produces or updates handoff-lite, use this evidence-first structure and keep it concise (target <= 1500 tokens):

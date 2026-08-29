@@ -11,11 +11,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 ## Core rules
 
-1. Load project rules (4 steps):
-   - Load `rules/common/development-workflow.md` and `rules/common/testing.md`
-   - Detect project language via [language detection](../references/language-detection.md)
-   - Load matching language-specific rules
-   - If frontend/browser concerns, also load `rules/web/` files
+1. Load project rules before writing any code: detect language via repo markers (map in Workflow step 2), then load `rules/common/development-workflow.md`, `rules/common/testing.md`, matching `rules/{lang}/` files, plus `rules/web/` for frontend/browser concerns. Emit a `Rules loaded:` manifest — **no manifest, no implementation**
 2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
 3. **Distinguish input:** plan path vs bare prompt
 4. Derive tasks from plan **implementation units**
@@ -79,19 +75,23 @@ If the same tool, command, or implementation unit fails 3 consecutive times, sto
 
 ## Workflow
 
-1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
-2. Detect input type (plan path vs bare prompt)
-3. Read implementation units if plan path
-4. Load `session_checkpoint` to skip completed units
-5. Use `task_splitter` for dependency analysis
-6. Execute: **inline mode** — all units run in the current session
-7. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
-8. **Source-driven gate:** Before implementing framework/library-specific code, verify the API or pattern against official documentation. Flag unverified patterns as UNVERIFIED in output.
-9. Record progress via `references/progress-update-format.md`
-9. Save `session_checkpoint` after each unit
-10. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
-11. Provide completion report (see `references/completion-report.md`)
-12. **Save handoff**: `context_handoff save` with current stage, next stage, activeFiles, blocker, verification, activeRules
-13. Handoff to `04-review` using `references/handoff.md`
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point; `activeRules` may already list loaded rules — verify against the repo, do not blindly trust. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
+2. **Load project rules** (blocking — no implementation before this completes):
+   - Detect language: `tsconfig.json`/`package.json`→typescript, `Cargo.toml`→rust, `go.mod`→golang, `pyproject.toml`/`requirements.txt`→python, `pom.xml`/`build.gradle(.kts)`→java/kotlin; others in [language detection](../references/language-detection.md)
+   - Check `{repo-root}/rules/` first (overrides package defaults); then load `rules/common/development-workflow.md`, `rules/common/testing.md`, matching `rules/{lang}/` files, `rules/web/` only for frontend/browser concerns
+   - Emit manifest before any code: `Rules loaded: language=<lang> (via <marker>), common=<files>, lang=<files>, web=<files or N/A>`
+3. Detect input type (plan path vs bare prompt)
+4. Read implementation units if plan path
+5. Load `session_checkpoint` to skip completed units
+6. Use `task_splitter` for dependency analysis
+7. Execute: **inline mode** — all units run in the current session
+8. Follow TDD per unit: RED → minimal code → GREEN → refactor → unit-level **verification**
+9. **Source-driven gate:** Before implementing framework/library-specific code, verify the API or pattern against official documentation. Flag unverified patterns as UNVERIFIED in output.
+10. Record progress via `references/progress-update-format.md`
+11. Save `session_checkpoint` after each unit
+12. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
+13. Provide completion report (see `references/completion-report.md`) — include the `Rules applied` section
+14. **Save handoff**: `context_handoff save` with current stage, next stage, activeFiles, blocker, verification, activeRules (carry loaded rules in `activeRules`)
+15. Handoff to `04-review` using `references/handoff.md`
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

@@ -521,4 +521,34 @@ describe("skill package contracts", () => {
     // 05-learn writes to out-of-scope when appropriate
     expect(learnContent).toContain("out-of-scope")
   })
+
+  test("rules-loading steps emit a manifest and the completion checklist exists", () => {
+    // pipeline-config must actually contain the checklist both skills reference (guard against dangling references)
+    const pipelineConfig = readFileSync(
+      path.join(repoRoot, "skills", "references", "pipeline-config.md"),
+      "utf8",
+    )
+    expect(pipelineConfig).toContain("## End of skill: completion checklist")
+    expect(pipelineConfig).toContain("Rules loaded and listed")
+
+    for (const skillName of ["03-work", "04-review"]) {
+      const content = readFileSync(
+        path.join(repoRoot, "skills", skillName, "SKILL.md"),
+        "utf8",
+      )
+      // Blocking rules-loading workflow step with a visible manifest
+      expect(content).toContain("**Load project rules** (blocking")
+      expect(content).toContain("Rules loaded: language=")
+      // Completion report / findings surface the rules that were applied
+      expect(content).toMatch(/Rules applied|rules applied/)
+    }
+
+    // 04-review consumes a per-language review checklist; typescript must ship one
+    const tsChecklist = readFileSync(
+      path.join(repoRoot, "rules", "typescript", "review-checklist.md"),
+      "utf8",
+    )
+    expect(tsChecklist).toContain("paths:")
+    expect(tsChecklist).toContain("Precision over recall")
+  })
 })

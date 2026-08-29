@@ -18,6 +18,12 @@ Brief description of what was completed.
 - Created: `path/to/file`
 - Modified: `path/to/file`
 
+## Rules applied
+
+| Language | Rule files | Detected via |
+|---|---|---|
+| typescript | `rules/typescript/coding-style.md`, `rules/typescript/testing.md` | `tsconfig.json` |
+
 ## Commands run
 
 | Command | Result |
@@ -44,6 +50,7 @@ All tests pass. Build succeeds. No regressions.
 
 **Completed:** list of unit names
 **Files changed:** all created/modified files
+**Rules applied:** language + rule files loaded
 **Commands run:** all verification commands
 **Verification:** pass/fail status for each
 
