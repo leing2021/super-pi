@@ -57,9 +57,9 @@ Code review is **technical evaluation**, not social performance:
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Determine diff scope — prefer `branch`/`base` from latest handoff if present; else from explicit target; else ask user
 3. **Load project rules** (blocking — no findings before this completes):
-   - Detect language from changed files (`.ts`/`.tsx`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers (`tsconfig.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `pom.xml`); full map in [language detection](../references/language-detection.md). Mixed-language diffs: load per language
+   - Detect language from changed files (`.ts`/`.tsx`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers, merging `{repo-root}/rules/language-detection.md` (project-level map, same marker wins); full map in [language detection](../references/language-detection.md). Mixed-language diffs: load per language
    - Check `{repo-root}/rules/` first (overrides package defaults); load `rules/common/code-review.md`, `code-smells.md`, matching `rules/{lang}/` files including `review-checklist.md`, `rules/web/` for frontend/browser changes
-   - Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>), common=<files>, lang=<files>, web=<files or N/A>`
+   - Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>[, project-level map]), common=<files>, lang=<files>, web=<files or N/A>`
    - **Same-session re-entry:** if the transcript already contains a `Rules loaded:` manifest for the same language, do not re-read the rule files — reuse them, cite the earlier manifest, and note the skip
 4. Collect stats (files, insertions, deletions) → call `review_router`
 5. Read matching plan artifact; if absent, follow [`references/spec-source-detection.md`](references/spec-source-detection.md) to probe brainstorm and commit issue refs

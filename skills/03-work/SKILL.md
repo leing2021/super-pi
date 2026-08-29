@@ -77,9 +77,9 @@ If the same tool, command, or implementation unit fails 3 consecutive times, sto
 
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `blocker`, `verification`, `activeRules` as starting point; `activeRules` may already list loaded rules — verify against the repo, do not blindly trust. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. **Load project rules** (blocking — no implementation before this completes):
-   - Detect language: `tsconfig.json`/`package.json`→typescript, `Cargo.toml`→rust, `go.mod`→golang, `pyproject.toml`/`requirements.txt`→python, `pom.xml`/`build.gradle(.kts)`→java/kotlin; others in [language detection](../references/language-detection.md)
+   - Detect language: merge `{repo-root}/rules/language-detection.md` (project-level map, same marker wins) with the built-in table: `tsconfig.json`/`package.json`→typescript, `Cargo.toml`→rust, `go.mod`→golang, `pyproject.toml`/`requirements.txt`→python, `pom.xml`/`build.gradle(.kts)`→java/kotlin; others in [language detection](../references/language-detection.md)
    - Check `{repo-root}/rules/` first (overrides package defaults); then load `rules/common/development-workflow.md`, `rules/common/testing.md`, matching `rules/{lang}/` files, `rules/web/` only for frontend/browser concerns
-   - Emit manifest before any code: `Rules loaded: language=<lang> (via <marker>), common=<files>, lang=<files>, web=<files or N/A>`
+   - Emit manifest before any code: `Rules loaded: language=<lang> (via <marker>[, project-level map]), common=<files>, lang=<files>, web=<files or N/A>`
    - **Same-session re-entry:** if the transcript already contains a `Rules loaded:` manifest for the same language, do not re-read the rule files — reuse them, cite the earlier manifest, and note the skip
 3. Detect input type (plan path vs bare prompt)
 4. Read implementation units if plan path

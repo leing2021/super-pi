@@ -551,4 +551,37 @@ describe("skill package contracts", () => {
     expect(tsChecklist).toContain("paths:")
     expect(tsChecklist).toContain("Precision over recall")
   })
+
+  test("language detection supports project-level extension rows", () => {
+    const detection = readFileSync(
+      path.join(repoRoot, "skills", "references", "language-detection.md"),
+      "utf8",
+    )
+    // The extension section must exist and define the merge semantics
+    expect(detection).toContain("## Project-level extensions")
+    expect(detection).toContain("Same marker")
+    expect(detection).toContain("project-level")
+    // Malformed/unmatched rows fall back visibly, never silently
+    expect(detection).toContain("fall back")
+    expect(detection).toContain("missing")
+
+    // End-user docs point to the project-level path
+    const rulesReadme = readFileSync(path.join(repoRoot, "rules", "README.md"), "utf8")
+    expect(rulesReadme).toContain("project-level")
+    expect(rulesReadme).toContain("language-detection.md")
+  })
+
+  test("03-work and 04-review merge project-level language maps before detection", () => {
+    for (const skillName of ["03-work", "04-review"]) {
+      const content = readFileSync(
+        path.join(repoRoot, "skills", skillName, "SKILL.md"),
+        "utf8",
+      )
+      // Detection step must consult the project-level marker table first
+      expect(content).toContain("language-detection.md")
+      expect(content).toContain("project-level")
+      // Manifest must reveal the mapping source
+      expect(content).toContain("project-level map")
+    }
+  })
 })

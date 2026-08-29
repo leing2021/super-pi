@@ -83,6 +83,8 @@ To add support for a new language (e.g., `zig/`):
 
 For non-language domains like `web/`, follow the same layered pattern when there is enough reusable domain-specific guidance to justify a standalone ruleset.
 
+End users of this package do not need to modify it to support a new language: create a project-level `{repo-root}/rules/<lang>/` directory and a marker row in `{repo-root}/rules/language-detection.md` — see "Project-level extensions" in `skills/references/language-detection.md`.
+
 ## Rule Priority
 
 When language-specific rules and common rules conflict, **language-specific rules take precedence** (specific overrides general). This follows the standard layered configuration pattern (similar to CSS specificity or `.gitignore` precedence).

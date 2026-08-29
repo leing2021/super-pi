@@ -190,9 +190,9 @@ Commit everything to git — these files are the project's traceable memory.
 | Tools | 12 CE + 10 Pi built-in |
 | Rules | 78 |
 | TypeScript lines | ~4,100 |
-| Tests | 180 (727 assertions) |
+| Tests | 219 (882 assertions) |
 
-Rules in `rules/` cover 11 common topics + language-specific sets (TypeScript, Rust, Go, Python, Java, Kotlin, C++, C#, Dart, Swift, Perl, PHP). Project-level overrides take priority.
+Rules in `rules/` cover 12 common topics + language-specific sets (TypeScript, Rust, Go, Python, Java, Kotlin, C++, C#, Dart, Swift, Perl, PHP). Project-level overrides take priority; projects can also add new languages via a project-level `rules/language-detection.md` marker map (append + same-marker wins).
 
 ---
 

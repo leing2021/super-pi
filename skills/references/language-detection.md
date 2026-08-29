@@ -26,6 +26,18 @@ Rules are loaded from two locations with priority:
 
 Check project-level first. If a file exists there for the topic, use it. Otherwise fall back to package-level.
 
+## Project-level extensions
+
+A repo can extend the built-in marker table at the top of this file by creating `{repo-root}/rules/language-detection.md` with additional rows in the same table format (`File(s)` | `Language` | `Rules directory`). Use it when your project uses a language that is not in the built-in table.
+
+Merge semantics (applied before detection):
+
+- **Append:** project-level rows add new languages on top of the built-in table.
+- **Same marker → project-level wins:** if a marker file appears in both tables, the project-level row replaces the built-in one.
+- **Fall back:** if the project-level file is missing, empty, or a row is malformed, the built-in table applies — behavior never changes silently. A row pointing at a rules directory that does not exist is detected as the language but surfaces as `lang: missing` in the `Rules loaded:` manifest.
+
+The `Rules loaded:` manifest must state the mapping source, e.g. `language=zig (via build.zig, project-level map)` so a broken project-level row is visible in output.
+
 ## Rule precedence
 
 ```
