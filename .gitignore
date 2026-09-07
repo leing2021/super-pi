@@ -7,12 +7,9 @@ coverage/
 graphify-out/
 bun.lock
 
-# docs/ is local/runtime-heavy process artifacts, not for public
-docs/*
-# exception: static convention docs that skills reference
-!docs/token-cost-evaluation.md
-!docs/out-of-scope/
-!docs/assets/
+# docs/ is local process artifacts (brainstorms/plans/solutions/reports), not for public.
+# Intentionally public assets live in public/.
+docs/
 
 # temp reports
 *.html

@@ -2,7 +2,7 @@
 
 
 
-![Super Pi Workflow](docs/assets/super-pi.webp)
+![Super Pi Workflow](public/super-pi.webp)
 
 
 
