@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.33.1 — 05-learn fallback Close + public/ asset split
+- **05-learn fallback Close** (`skills/05-learn/SKILL.md`): phases that skip 04-review (doc-only work, small direct pushes, interrupted reviews) left plans stalled in `executing` — non-terminal, invisible to consumer gates, rotting until periodic WARN. 05-learn now flips such plans to `done` and moves them to `docs/plans/archive/` — same Close semantics as 04-review step 6, idempotent (plans already archived are no longer in `docs/plans/`, so it's a no-op). Two-layer closure: 04-review owns the normal path, 05-learn catches the skip path.
+- **public/ allowlist** (repo layout): intentionally public assets (logo webp/png, token-cost evaluation) moved to `public/`; `docs/` is now fully local (brainstorms/plans/solutions/reports/out-of-scope) and untracked. README logo path updated. npm package contents unchanged (`files` never included docs/).
+- **Tests**: +2 contract assertions (fallback sentence + archive path), mutation-verified. 219 tests passing, 890 assertions, 0 regressions.
+
 ### 0.33.0 — plan status header: machine-readable lifecycle across 02/03/04
 - **Status header on every plan** (`skills/02-plan/references/plan-template.md`): plans are now born with `> Status: draft` plus a closed-vocabulary comment (draft → ready → executing → done → deprecated). Previously plan state lived only in agent improvisation — four dialects coexisted in the wild, and completed plans had no machine-greppable completion signal (a downstream repo accumulated 91 completed plans with no archive trigger).
 - **Lifecycle rules, one line per skill**: 02-plan writes `draft` at creation and flips to `ready` on finalization (Core rule 5); 03-work flips to `executing` before executing (Core rule 6); 04-review flips to `done` and moves the plan to `docs/plans/archive/` when findings are resolved and tests green (Handling findings step 6 "Close"). `deprecated` is human-adjudicated. No new files, no new workflow steps, no new artifact types.

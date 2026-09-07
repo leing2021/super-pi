@@ -1,5 +1,10 @@
 # 更新日志
 
+### 0.33.1 — 05-learn 兑底 Close + public/ 资产拆分
+- **05-learn 兑底 Close**（`skills/05-learn/SKILL.md`）：跳过 04-review 的路径（纯文档工作、小修直提、review 中断）会让 plan 卡在 `executing`——非终态、消费端门禁不可见，直到周期性 WARN 才被发现。05-learn 现将这类 plan 翻 `done` 并移入 `docs/plans/archive/`——与 04-review 第 6 步 Close 同语义，幂等（已归档的 plan 不在 `docs/plans/`，自然空操作）。双层关单：正常路径 04-review 主责，跳过路径 05-learn 兑底。
+- **public/ 白名单目录**（仓布局）：刻意公开的资产（logo webp/png、token 成本评估）移入 `public/`；`docs/` 完全本地化（brainstorms/plans/solutions/reports/out-of-scope）并取消跟踪。README logo 路径已更新。npm 包内容不变（`files` 从未包含 docs/）。
+- **测试**：+2 contract 断言（兑底句 + 归档路径），突变验证。219 tests passing，890 assertions，0 回归。
+
 ### 0.33.0 — plan 状态头：跨 02/03/04 的机器可读生命周期
 - **每个 plan 出生即带状态头**（`skills/02-plan/references/plan-template.md`）：模板自带 `> Status: draft` + 封闭词表注释（draft → ready → executing → done → deprecated）。此前 plan 状态全靠 agent 临场发挥——野外四种方言并存，完成的 plan 没有机器可 grep 的完成信号（下游仓曾积压 91 份完成 plan 无归档触发）。
 - **生命周期规则，每 skill 一句话**：02-plan 创建写 `draft`、定稿翻 `ready`（Core rule 5）；03-work 执行前翻 `executing`（Core rule 6）；04-review findings 全清+测试绿时翻 `done` 并移入 `docs/plans/archive/`（Handling findings 第 6 步 "Close"）。`deprecated` 由人裁决。无新文件、无新流程步骤、无新 artifact 类型。
