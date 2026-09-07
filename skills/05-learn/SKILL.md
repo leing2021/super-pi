@@ -46,6 +46,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
   - Default to **global** when uncertain.
 - **Out-of-scope branch:** if the request was rejected or already implemented, write to `docs/out-of-scope/` (template: `assets/out-of-scope-template.md`, convention: `../../docs/out-of-scope/README.md`) instead of `docs/solutions/`.
 - Make the result useful to future `02-plan` and `04-review` runs via the search strategy in `references/solution-search-strategy.md`.
+- If this phase's plan still sits in `docs/plans/` with work complete (path skipped 04-review), flip its Status header to `done` and move it to `docs/plans/archive/` — same Close semantics as 04-review step 6.
 
 ## Workflow
 

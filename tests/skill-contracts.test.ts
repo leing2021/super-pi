@@ -151,6 +151,9 @@ describe("skill package contracts", () => {
 
     expect(content).toContain("pattern_extractor")
     expect(content).toContain("docs/solutions/")
+    // Safety net: flip + archive plans whose phase skipped 04-review
+    expect(content).toContain("docs/plans/archive/")
+    expect(content).toContain("skipped 04-review")
     expect(content).toContain("schema")
     expect(content).toContain("overlap")
     expect(content).toContain("02-plan")
