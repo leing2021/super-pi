@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.33.0 — plan 状态头：跨 02/03/04 的机器可读生命周期
+- **每个 plan 出生即带状态头**（`skills/02-plan/references/plan-template.md`）：模板自带 `> Status: draft` + 封闭词表注释（draft → ready → executing → done → deprecated）。此前 plan 状态全靠 agent 临场发挥——野外四种方言并存，完成的 plan 没有机器可 grep 的完成信号（下游仓曾积压 91 份完成 plan 无归档触发）。
+- **生命周期规则，每 skill 一句话**：02-plan 创建写 `draft`、定稿翻 `ready`（Core rule 5）；03-work 执行前翻 `executing`（Core rule 6）；04-review findings 全清+测试绿时翻 `done` 并移入 `docs/plans/archive/`（Handling findings 第 6 步 "Close"）。`deprecated` 由人裁决。无新文件、无新流程步骤、无新 artifact 类型。
+- **done 落在 04-review，不是 05-learn**：plan 生命周期止于实施验收；05-learn 的 solution artifact 是旁路知识沉淀。04-review 在强制 handoff 链上（03 → 04），05-learn 可整段跳过——把归档挂在可跳环节正是 91 份积压的成因。返工自洽：03-work 执行时自动翻回 `executing`。
+- **Architecture decisions 标题强制保留**（`plan-template.md`）：无决策时须在原标题下写 "No ADR-worthy decisions" 而非删除标题——存量 32 份 plan 中 28 份静默删了标题，破坏 grep 式 ADR 审计。
+- **测试**（`tests/skill-contracts.test.ts`）：+4 断言锚定状态头与封闭词表（跨 02-plan/03-work/04-review）。突变验证（还原 02-plan 改动会使套件变红）。219 tests passing，888 assertions，0 回归。
+
 ### 0.32.0 — rules 加载强制化：blocking 步骤 + manifest + 项目级语言扩展
 - **Rules 加载成为可见的 blocking 步骤**（`skills/03-work/`、`skills/04-review/`）：原先 "加载项目 rules" 只写在 Core rules 散文区，实际执行中常被静默跳过——agent 直接开始实现/评审，没读任何 rule 文件。现改为编号 blocking 步骤（"无 manifest 不实现/不出 findings"），内联语言映射（砍二跳引用），且必须在产出任何代码/finding 前输出单行 manifest（`Rules loaded: language=… (via …), common=…, lang=…, web=…`）。用户终于能看到 rules 是否真的加载了。
 - **同会话重复进入不再重读**：transcript 中已有同语言 `Rules loaded:` manifest 时跳过重读——同一对话内多轮 03-work/04-review 不再重复支付 token 成本。跨会话仍需重读（新上下文无 manifest，必要成本）。
