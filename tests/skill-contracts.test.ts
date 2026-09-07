@@ -520,7 +520,7 @@ describe("skill package contracts", () => {
 
   test("out-of-scope knowledge base records rejected/already-built requests", () => {
     const outOfScopeReadme = readFileSync(
-      path.join(repoRoot, "docs", "out-of-scope", "README.md"),
+      path.join(repoRoot, "skills", "05-learn", "assets", "out-of-scope-convention.md"),
       "utf8",
     )
     const learnContent = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
