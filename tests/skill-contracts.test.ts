@@ -111,11 +111,16 @@ describe("skill package contracts", () => {
     expect(content).toContain("TDD violation")
     expect(content).toContain("docs/brainstorms/")
     expect(content).toContain("docs/plans/")
+    expect(content).toContain("Status: draft")
     // Must include grep-first solution search strategy
     expect(content).toContain("grep -rl")
     expect(content).toContain("~/.pi/agent/docs/solutions")
     expect(content).toContain("frontmatter")
     expect(template).toContain("Implementation units")
+    // Plan status header: closed vocabulary, machine-greppable
+    expect(template).toContain("> Status: draft")
+    expect(template).toContain("executing")
+    expect(template).toContain("deprecated")
     expect(unitTemplate).toContain("Goal")
     expect(unitTemplate).toContain("Files")
     expect(unitTemplate).toContain("Patterns to follow")
@@ -186,6 +191,7 @@ describe("skill package contracts", () => {
     expect(content).not.toContain("ce_parallel_subagent")
     expect(content).not.toContain("ce_subagent")
     expect(content).toContain("session_checkpoint")
+    expect(content).toContain("executing")
     expect(content).toContain("task_splitter")
     expect(content).toContain("retry")
     expect(content).toContain("RED")
@@ -218,6 +224,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("structured findings")
     expect(content).toContain("review_router")
     expect(content).toContain("autofix")
+    expect(content).toContain("docs/plans/archive/")
     expect(content).toContain("YAGNI")
     expect(content).toContain("technical evaluation")
     // Must include grep-first solution search strategy

@@ -16,7 +16,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 3. **Distinguish input:** plan path vs bare prompt
 4. Derive tasks from plan **implementation units**
 5. **Execution mode:** **inline mode** — all plan units execute inline in the current session. No built-in subagent tools.
-6. Use **`session_checkpoint`** to track progress and enable resume
+6. Use **`session_checkpoint`** to track progress and enable resume; before executing a plan, flip its Status header to `executing`
 7. Use **`task_splitter`** to analyze dependencies before execution
 8. If in **worktree** (via `07-worktree`), execute inside it
 9. End by recommending `04-review`

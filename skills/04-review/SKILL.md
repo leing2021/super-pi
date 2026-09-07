@@ -51,6 +51,7 @@ Code review is **technical evaluation**, not social performance:
 3. **Evaluate** — is it sound for THIS codebase?
 4. **Act** — fix confirmed issues, push back on incorrect ones
 5. **Test** — verify each fix individually, no regressions
+6. **Close** — when findings are resolved and tests green, flip the reviewed plan's Status header to `done` and move it to `docs/plans/archive/` (skip if no plan artifact)
 
 ## Workflow
 

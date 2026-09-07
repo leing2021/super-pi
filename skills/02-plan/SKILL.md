@@ -22,7 +22,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates
-5. Write plan to `docs/plans/`
+5. Write plan to `docs/plans/` with the `> Status: draft` header (closed vocabulary: draft → ready → executing → done → deprecated); flip to `ready` when the plan is finalized
 6. If plan exists, use **`plan_diff`** to compare and patch incrementally
 7. End by recommending `03-work`
 
