@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.33.2 — ship 0.33.1 + out-of-scope convention moves into the package
+- v0.33.1 was never published to npm: its tag was pushed before CI caught a regression — `docs/` was untracked but a contract test still read `docs/out-of-scope/README.md`, which is absent on clean checkouts. This release ships the same content plus:
+- **Out-of-scope convention now lives in the package** (`skills/05-learn/assets/out-of-scope-convention.md`): the convention doc that 05-learn references moved from `docs/out-of-scope/` (now fully local/untracked) into the skill's assets — it ships with npm installs, and the contract test reads it from its product home instead of a path that no longer exists in clean checkouts. Instance decision records stay local.
+- Tests: same suite, now green on clean checkouts. 219 tests passing, 890 assertions, 0 regressions.
+
 ### 0.33.1 — 05-learn fallback Close + public/ asset split
 - **05-learn fallback Close** (`skills/05-learn/SKILL.md`): phases that skip 04-review (doc-only work, small direct pushes, interrupted reviews) left plans stalled in `executing` — non-terminal, invisible to consumer gates, rotting until periodic WARN. 05-learn now flips such plans to `done` and moves them to `docs/plans/archive/` — same Close semantics as 04-review step 6, idempotent (plans already archived are no longer in `docs/plans/`, so it's a no-op). Two-layer closure: 04-review owns the normal path, 05-learn catches the skip path.
 - **public/ allowlist** (repo layout): intentionally public assets (logo webp/png, token-cost evaluation) moved to `public/`; `docs/` is now fully local (brainstorms/plans/solutions/reports/out-of-scope) and untracked. README logo path updated. npm package contents unchanged (`files` never included docs/).

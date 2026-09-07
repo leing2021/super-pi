@@ -1,5 +1,10 @@
 # 更新日志
 
+### 0.33.2 — 发布 0.33.1 内容 + out-of-scope 惯例文档入包
+- v0.33.1 从未发布到 npm：tag 推送后 CI 才抓到回归——`docs/` 已取消跟踪，但 contract test 仍读取 `docs/out-of-scope/README.md`，干净 checkout 上该文件不存在。本版发布相同内容外加：
+- **out-of-scope 惯例文档入包**（`skills/05-learn/assets/out-of-scope-convention.md`）：05-learn 引用的惯例文档从 `docs/out-of-scope/`（现已完全本地化/取消跟踪）移入 skill 的 assets——随 npm 安装分发，contract test 改从产品归属地读取。实例决策记录仍留本地。
+- 测试：同一套件，干净 checkout 上恢复绿色。219 tests passing，890 assertions，0 回归。
+
 ### 0.33.1 — 05-learn 兑底 Close + public/ 资产拆分
 - **05-learn 兑底 Close**（`skills/05-learn/SKILL.md`）：跳过 04-review 的路径（纯文档工作、小修直提、review 中断）会让 plan 卡在 `executing`——非终态、消费端门禁不可见，直到周期性 WARN 才被发现。05-learn 现将这类 plan 翻 `done` 并移入 `docs/plans/archive/`——与 04-review 第 6 步 Close 同语义，幂等（已归档的 plan 不在 `docs/plans/`，自然空操作）。双层关单：正常路径 04-review 主责，跳过路径 05-learn 兑底。
 - **public/ 白名单目录**（仓布局）：刻意公开的资产（logo webp/png、token 成本评估）移入 `public/`；`docs/` 完全本地化（brainstorms/plans/solutions/reports/out-of-scope）并取消跟踪。README logo 路径已更新。npm 包内容不变（`files` 从未包含 docs/）。
