@@ -18,7 +18,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - If frontend/browser concerns, also load `rules/web/` files
 2. **Priority:** project-level `{repo-root}/rules/` overrides package defaults
 3. Search `docs/brainstorms/` for relevant requirements first
-4. Run solution search (see `references/solution-search.md`):
+4. Run solution search (see `../references/solution-search.md`):
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates

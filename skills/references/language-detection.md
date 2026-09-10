@@ -8,14 +8,7 @@ Detect the project's primary language by checking for these files in the repo ro
 | `package.json` (without `tsconfig.json`) | JavaScript | `rules/typescript/` |
 | `Cargo.toml` | Rust | `rules/rust/` |
 | `go.mod` | Go | `rules/golang/` |
-| `pubspec.yaml` | Dart | `rules/dart/` |
-| `pom.xml` / `build.gradle` | Java | `rules/java/` |
-| `*.sln` / `*.csproj` | C# | `rules/csharp/` |
-| `Package.swift` | Swift | `rules/swift/` |
 | `requirements.txt` / `pyproject.toml` / `setup.py` | Python | `rules/python/` |
-| `composer.json` | PHP | `rules/php/` |
-| `Makefile.PL` / `cpanfile` | Perl | `rules/perl/` |
-| `build.gradle.kts` | Kotlin | `rules/kotlin/` |
 
 ## Rules loading strategy
 

@@ -19,7 +19,6 @@ import { createTaskSplitterTool } from "../extensions/ce-core/tools/task-splitte
 import { createBrainstormDialogTool } from "../extensions/ce-core/tools/brainstorm-dialog"
 import { createPlanDiffTool } from "../extensions/ce-core/tools/plan-diff"
 import { createSessionHistoryTool } from "../extensions/ce-core/tools/session-history"
-import { createPatternExtractorTool } from "../extensions/ce-core/tools/pattern-extractor"
 import { normalizeSlug } from "../extensions/ce-core/utils/name-utils"
 
 describe("artifact paths", () => {
@@ -1225,96 +1224,8 @@ describe("session_history", () => {
   })
 })
 
-describe("pattern_extractor", () => {
-  test("extract identifies recurring patterns from artifacts", () => {
-    const tool = createPatternExtractorTool()
-
-    const result = tool.execute({
-      operation: "extract",
-      artifacts: [
-        { path: "docs/brainstorms/auth.md", content: "Use OAuth2 for authentication. Need token refresh." },
-        { path: "docs/brainstorms/api.md", content: "Use OAuth2 for API auth. Token refresh needed." },
-        { path: "docs/brainstorms/docs.md", content: "Add API documentation using markdown." },
-      ],
-      keywords: ["OAuth2", "token", "API"],
-    })
-
-    if (result.operation !== "extract") throw new Error("Expected extract result")
-    expect(result.patterns.length).toBeGreaterThanOrEqual(1)
-    const oauthPattern = result.patterns.find((p: { keyword: string }) => p.keyword === "OAuth2")
-    expect(oauthPattern).toBeTruthy()
-    expect(oauthPattern!.occurrences).toBe(2)
-    expect(oauthPattern!.sources.length).toBe(2)
-  })
-
-  test("extract with no keywords extracts all word frequencies", () => {
-    const tool = createPatternExtractorTool()
-
-    const result = tool.execute({
-      operation: "extract",
-      artifacts: [
-        { path: "a.md", content: "test test test unit test" },
-      ],
-    })
-
-    if (result.operation !== "extract") throw new Error("Expected extract result")
-    expect(result.patterns.length).toBeGreaterThan(0)
-  })
-
-  test("categorize groups patterns by type", () => {
-    const tool = createPatternExtractorTool()
-
-    const result = tool.execute({
-      operation: "categorize",
-      patterns: [
-        { keyword: "OAuth2", occurrences: 3, sources: ["a.md", "b.md", "c.md"] },
-        { keyword: "JWT", occurrences: 2, sources: ["a.md", "b.md"] },
-        { keyword: "database", occurrences: 1, sources: ["c.md"] },
-      ],
-      categories: {
-        "auth": ["OAuth2", "JWT", "token", "authentication"],
-        "infra": ["database", "cache", "queue"],
-      },
-    })
-
-    if (result.operation !== "categorize") throw new Error("Expected categorize result")
-    expect(result.categories["auth"].length).toBe(2)
-    expect(result.categories["infra"].length).toBe(1)
-    expect(result.uncategorized.length).toBe(0)
-  })
-
-  test("categorize puts unmatched patterns in uncategorized", () => {
-    const tool = createPatternExtractorTool()
-
-    const result = tool.execute({
-      operation: "categorize",
-      patterns: [
-        { keyword: "OAuth2", occurrences: 1, sources: ["a.md"] },
-        { keyword: "unknown", occurrences: 1, sources: ["b.md"] },
-      ],
-      categories: {
-        "auth": ["OAuth2"],
-      },
-    })
-
-    if (result.operation !== "categorize") throw new Error("Expected categorize result")
-    expect(result.categories["auth"].length).toBe(1)
-    expect(result.uncategorized.length).toBe(1)
-    expect(result.uncategorized[0].keyword).toBe("unknown")
-  })
-
-  test("rejects unknown operations", () => {
-    const tool = createPatternExtractorTool()
-
-    expect(() =>
-      tool.execute({ operation: "unknown" as any, artifacts: [] }),
-    ).toThrow("Unknown operation")
-  })
-})
-
-
 describe("ce-core extension runtime registration", () => {
-  test("registers 12 workflow control tools (no subagent tools)", () => {
+  test("registers 11 workflow control tools (no subagent tools)", () => {
     const registeredNames: string[] = []
     const eventHandlers = new Map<string, any[]>()
     const pi = {
@@ -1344,7 +1255,6 @@ describe("ce-core extension runtime registration", () => {
       "brainstorm_dialog",
       "plan_diff",
       "session_history",
-      "pattern_extractor",
       "context_handoff",
     ])
   })
@@ -1439,7 +1349,6 @@ describe("ce-core extension runtime registration", () => {
     const reviewRouter = definitions.get("review_router")
     const sessionCheckpoint = definitions.get("session_checkpoint")
     const sessionHistory = definitions.get("session_history")
-    const patternExtractor = definitions.get("pattern_extractor")
 
     const workflowStateResult = await workflowState.execute("tool-call-id", {
       repoRoot: `/tmp/pi-ce-ws-runtime-${Date.now()}`,
@@ -1467,13 +1376,6 @@ describe("ce-core extension runtime registration", () => {
       repoRoot: historyRepoRoot,
     })
     expect(historyResult.terminate).not.toBe(true)
-
-    const patternResult = await patternExtractor.execute("tool-call-id", {
-      operation: "extract",
-      artifacts: [{ path: "docs/a.md", content: "oauth token refresh oauth" }],
-      keywords: ["oauth"],
-    })
-    expect(patternResult.terminate).not.toBe(true)
   })
 
   test("input hook switches model for stage skill commands using .pi/settings.json", async () => {
@@ -2540,7 +2442,6 @@ describe("public exports", () => {
       "createBrainstormDialogTool",
       "createPlanDiffTool",
       "createSessionHistoryTool",
-      "createPatternExtractorTool",
       "createContextHandoffTool",
       "getBrainstormArtifactPath",
       "getPlanArtifactPath",

@@ -7,7 +7,7 @@ Grep-first strategy for finding relevant solutions before planning or reviewing.
 1. **Extract keywords** from the task description
 2. **Grep frontmatter** fields (tags, title) in both locations:
    ```bash
-   grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/
+   grep -rl "tags:.*keyword" docs/solutions/ <global-solutions-root>/
    ```
 3. **Read frontmatter only** (first 15 lines) of matching files
 4. **Score by:**
@@ -21,7 +21,7 @@ Grep-first strategy for finding relevant solutions before planning or reviewing.
 | Level | Path | Use for |
 |---|---|---|
 | Project | `docs/solutions/` | Project-specific learnings |
-| Global | `~/.pi/agent/docs/solutions/` | Cross-project patterns |
+| Global | `<global-solutions-root>/` | Cross-project patterns |
 
 ## Scoring rubric
 

@@ -37,7 +37,7 @@ pi install npm:@leing2021/super-pi
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
 | **03-work** | inline 执行,断点续传,严格 TDD | `session_checkpoint`, `task_splitter` |
 | **04-review** | 自动分配评审,六轴发现(Standards + Spec),自动修复循环 | `review_router` |
-| **05-learn** | 模式提取 → 可搜索知识卡片 | `pattern_extractor` |
+| **05-learn** | 重叠检查 → 可搜索知识卡片 | — |
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
 | **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
 
@@ -150,7 +150,7 @@ your-project/
 - **~4,100 行** TypeScript, **219 个测试** (904 assertions)
 - **渐进式规则加载** ——只加载当前任务需要的
 
-规则放在 `rules/` (12 个通用 + 语言特定)。项目级规则优先；项目还可通过项目级 `rules/language-detection.md` 标记表新增语言（追加 + 同名覆盖）。
+规则放在 `rules/` (12 个通用 + 语言特定：TypeScript、Python、Go、Rust、Web)。项目级规则优先；项目还可通过项目级 `rules/language-detection.md` 标记表 + 自带规则目录新增其他语言（追加 + 同名覆盖）。
 
 ---
 

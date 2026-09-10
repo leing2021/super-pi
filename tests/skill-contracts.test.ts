@@ -158,7 +158,6 @@ describe("skill package contracts", () => {
       "utf8",
     )
 
-    expect(content).toContain("pattern_extractor")
     expect(content).toContain("docs/solutions/")
     // Safety net: flip + archive plans whose phase skipped 04-review
     expect(content).toContain("docs/plans/archive/")

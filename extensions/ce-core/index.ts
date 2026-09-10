@@ -11,7 +11,6 @@ import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 import { createPlanDiffTool } from "./tools/plan-diff"
 import { createSessionHistoryTool } from "./tools/session-history"
-import { createPatternExtractorTool } from "./tools/pattern-extractor"
 import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
@@ -195,17 +194,6 @@ const sessionHistoryParams = Type.Object({
   summary: Type.Optional(Type.String({ description: "Execution summary" })),
 })
 
-const artifactInputSchema = Type.Object({
-  path: Type.String({ description: "Artifact path" }),
-  content: Type.String({ description: "Artifact content" }),
-})
-
-const patternSchema = Type.Object({
-  keyword: Type.String({ description: "Pattern keyword" }),
-  occurrences: Type.Number({ description: "Number of occurrences" }),
-  sources: Type.Array(Type.String(), { description: "Artifact sources" }),
-})
-
 const contextHandoffParams = Type.Object({
   operation: Type.Union([
     Type.Literal("save"),
@@ -235,17 +223,6 @@ const contextHandoffParams = Type.Object({
   recentlyAccessedFiles: Type.Optional(Type.Array(Type.String(), { description: "Files recently read or edited (defaults to activeFiles)" })),
   compressionRisk: Type.Optional(Type.Array(Type.String(), { description: "Context compression risks to watch for" })),
   activeRules: Type.Optional(Type.Array(Type.String(), { description: "1-5 must-know rules for continuation (TDD gates, constraints, do-not-repeat)" })),
-})
-
-const patternExtractorParams = Type.Object({
-  operation: Type.Union([
-    Type.Literal("extract"),
-    Type.Literal("categorize"),
-  ], { description: "Pattern operation" }),
-  artifacts: Type.Optional(Type.Array(artifactInputSchema, { description: "Artifacts to analyze" })),
-  keywords: Type.Optional(Type.Array(Type.String(), { description: "Keywords to search for" })),
-  patterns: Type.Optional(Type.Array(patternSchema, { description: "Patterns to categorize" })),
-  categories: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()), { description: "Category name to keyword mapping" })),
 })
 
 export default function ceCoreExtension(pi: ExtensionAPI) {
@@ -300,7 +277,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const brainstormDialog = createBrainstormDialogTool()
   const planDiff = createPlanDiffTool()
   const sessionHistory = createSessionHistoryTool()
-  const patternExtractor = createPatternExtractorTool()
   const contextHandoff = createContextHandoffTool()
 
   pi.registerTool({
@@ -544,27 +520,6 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   })
 
   pi.registerTool({
-    name: patternExtractor.name,
-    label: "Pattern Extractor",
-    description: "Extract and categorize recurring patterns from artifacts.",
-    parameters: patternExtractorParams,
-    async execute(_toolCallId, params) {
-      const input: Record<string, unknown> = { operation: params.operation }
-      if (params.artifacts) input.artifacts = params.artifacts
-      if (params.keywords) input.keywords = params.keywords
-      if (params.patterns) input.patterns = params.patterns
-      if (params.categories) input.categories = params.categories
-
-      const result = patternExtractor.execute(input as any)
-
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        details: result,
-      }
-    },
-  })
-
-  pi.registerTool({
     name: contextHandoff.name,
     label: "Context Handoff",
     description: "Manage cross-stage context handoffs with evidence-first templates. Supports save (write handoff + state), load (read handoff + state), latest (read latest dated handoff), status (read current state), and validate (check continuation readiness with deterministic probes).",
@@ -704,7 +659,6 @@ export { createTaskSplitterTool } from "./tools/task-splitter"
 export { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
 export { createPlanDiffTool } from "./tools/plan-diff"
 export { createSessionHistoryTool } from "./tools/session-history"
-export { createPatternExtractorTool } from "./tools/pattern-extractor"
 export { createContextHandoffTool } from "./tools/context-handoff"
 export {
   getBrainstormArtifactPath,

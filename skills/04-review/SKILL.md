@@ -17,7 +17,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 4. Determine **diff scope** before selecting reviewers
 5. Use **`review_router`** tool to select reviewer personas based on diff metadata
 6. Read relevant **plan** artifact when exists
-7. Run solution search (see `references/solution-search.md`):
+7. Run solution search (see `../references/solution-search.md`):
    - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
    - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
    - Fully read top 3 candidates

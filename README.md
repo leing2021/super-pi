@@ -74,7 +74,7 @@ You: /skill:03-work docs/plans/plan.md
 | **02-plan** | TDD-gated implementation units, optional CEO Review | `plan_diff` |
 | **03-work** | Inline execution, checkpoint resume, strict TDD, stop-the-line | `session_checkpoint`, `task_splitter` |
 | **04-review** | Auto-assigned reviewers, six-axis findings (Standards + Spec), autofix loop | `review_router` |
-| **05-learn** | Pattern extraction → searchable solution artifacts | `pattern_extractor` |
+| **05-learn** | Solution artifacts with overlap check → searchable knowledge | — |
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
 | **07-worktree** | Isolated git worktree development | `worktree_manager` |
 
@@ -194,9 +194,9 @@ Commit everything to git — these files are the project's traceable memory.
 | Tools | 12 CE + 10 Pi built-in |
 | Rules | 78 |
 | TypeScript lines | ~4,100 |
-| Tests | 219 (904 assertions) |
+| Tests | 214 (892 assertions) |
 
-Rules in `rules/` cover 12 common topics + language-specific sets (TypeScript, Rust, Go, Python, Java, Kotlin, C++, C#, Dart, Swift, Perl, PHP). Project-level overrides take priority; projects can also add new languages via a project-level `rules/language-detection.md` marker map (append + same-marker wins).
+Rules in `rules/` cover 12 common topics + language-specific sets (TypeScript, Python, Go, Rust, Web). Project-level overrides take priority; projects can also add other languages via a project-level `rules/language-detection.md` marker map plus their own rules directory (append + same-marker wins).
 
 ---
 

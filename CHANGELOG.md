@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.35.0 — minimalism subtraction: rules language layers cut to 6, pattern_extractor removed (BREAKING)
+- **BREAKING: 8 low-traffic language rules removed** (`rules/`): dart, java, kotlin, swift, csharp, cpp, perl, php directories deleted (~3,400 lines). Bundled layers are now common + TypeScript, Python, Go, Rust, Web. Projects needing other languages add a project-level `rules/language-detection.md` marker row plus their own rules directory (append + same-marker wins; loading behavior unchanged). Docs synced: README/README_CN language list, `rules/README.md` structure map, 03-work SKILL inline detection table.
+- **BREAKING: `pattern_extractor` tool removed** (ce-core): the extract/categorize two-step ceremony duplicated what LLMs do natively — 05-learn now scans existing solution docs directly (one workflow step instead of two tool calls). Registered tools: 12 → 11.
+- **Dedup**: `solution-search.md` was byte-identical in 02-plan and 04-review references — moved to shared `skills/references/`; both skills point there.
+- **Review fixes**: README/README_CN skill tables no longer list `pattern_extractor`; test-count snapshot updated; `public/token-cost-evaluation.md` kept as the 0.24.0 baseline snapshot (untouched).
+- Tests: 214 passing (892 assertions), 0 regressions; `tsc --noEmit` clean; npm pack 115.2 kB / 108 files.
+
 ### 0.34.0 — interaction asymmetry: precise questions up front, continuous execution down the pipeline
 - **Recommended answer on every question** (`skills/01-brainstorm/SKILL.md`, `skills/02-plan/SKILL.md`): both skills now require exactly one `✓ 推荐`-prefixed option plus a one-line reason for every `ask_user_question` — a missing recommendation is a blocking violation. Previously the discipline lived only in `premise-challenge.md` (since 0.28.0), leaving main-flow questions (mode selection, CEO Review) without recommendations.
 - **CEO Review recommends by change scale** (`skills/02-plan/SKILL.md`): small/safe change → A (Just go), cross-cutting or risky change → C (Strict Review).

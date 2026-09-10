@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.35.0 — 极简减法：rules 语言层砍至 6 层，移除 pattern_extractor（破坏性变更）
+- **BREAKING：移除 8 个低频语言规则**（`rules/`）：删除 dart、java、kotlin、swift、csharp、cpp、perl、php 目录（约 3400 行）。内置层收敛为 common + TypeScript、Python、Go、Rust、Web。需要其他语言的项目：在项目级 `rules/language-detection.md` 标记表加一行 + 自带规则目录（追加 + 同名覆盖；加载行为不变）。文档已同步：README/README_CN 语言列表、`rules/README.md` 结构图、03-work SKILL 内置检测表。
+- **BREAKING：移除 `pattern_extractor` 工具**（ce-core）：extract/categorize 两步仪式重复了 LLM 的原生能力——05-learn 现在直接读既有 solution 文档扫描（两个工具调用 → 一个流程步骤）。注册工具：12 → 11。
+- **去重**：`solution-search.md` 在 02-plan 与 04-review 的 references 下逐字节相同——移入共享层 `skills/references/`，两个 skill 统一指向。
+- **审核修复**：README/README_CN skill 表不再列 `pattern_extractor`；测试数快照更新；`public/token-cost-evaluation.md` 保持 0.24.0 基线快照原状（未动）。
+- 测试：214 通过（892 断言），0 回归；`tsc --noEmit` 干净；npm pack 115.2 kB / 108 文件。
+
 ### 0.34.0 — 交互不对称：前端问得准，后端不问
 - **每问必带推荐答案**（`skills/01-brainstorm/SKILL.md`、`skills/02-plan/SKILL.md`）：两 skill 现在要求每次 `ask_user_question` 有且仅有一个 `✓ 推荐` 前缀选项外加一句推荐理由——缺失推荐属阻断违规。此前该纪律只存在于 `premise-challenge.md`（0.28.0 起），主流程提问（模式选择、CEO Review）无推荐。
 - **CEO Review 按变更规模推荐**（`skills/02-plan/SKILL.md`）：小/安全变更 → A（Just go），跨切面/高风险变更 → C（Strict Review）。

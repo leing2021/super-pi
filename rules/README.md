@@ -18,19 +18,11 @@ rules/
 ├── python/          # Python specific
 ├── golang/          # Go specific
 ├── rust/            # Rust specific
-├── java/            # Java specific
-├── kotlin/          # Kotlin specific
-├── swift/           # Swift specific
-├── csharp/          # C# specific
-├── cpp/             # C++ specific
-├── dart/            # Dart specific
-├── php/             # PHP specific
-├── perl/            # Perl specific
 └── web/             # Web and frontend specific
 ```
 
 - **common/** contains universal principles — no language-specific code examples.
-- **Language directories** extend the common rules with framework-specific patterns, tools, and code examples. Each file references its common counterpart.
+- **Language directories** extend the common rules with framework-specific patterns, tools, and code examples. Each file references its common counterpart. Bundled languages: TypeScript, Python, Go, Rust, Web. Other languages: add a project-level `rules/language-detection.md` marker row plus your own rules directory (same table format as the built-in map in the super-pi package).
 - **`review-checklist.md`** (optional, per language) holds precise, actionable defect patterns for code review — distinct from `patterns.md` which holds reusable design patterns. Currently used by `golang/`, `python/`, and `typescript/`.
 
 ## Installation
@@ -50,8 +42,6 @@ cp -r rules/typescript ~/.claude/rules/typescript
 cp -r rules/python ~/.claude/rules/python
 cp -r rules/golang ~/.claude/rules/golang
 cp -r rules/web ~/.claude/rules/web
-cp -r rules/swift ~/.claude/rules/swift
-cp -r rules/php ~/.claude/rules/php
 
 # Attention ! ! ! Configure according to your actual project requirements; the configuration here is for reference only.
 ```
@@ -90,7 +80,7 @@ End users of this package do not need to modify it to support a new language: cr
 When language-specific rules and common rules conflict, **language-specific rules take precedence** (specific overrides general). This follows the standard layered configuration pattern (similar to CSS specificity or `.gitignore` precedence).
 
 - `rules/common/` defines universal defaults applicable to all projects.
-- `rules/golang/`, `rules/python/`, `rules/swift/`, `rules/php/`, `rules/typescript/`, etc. override those defaults where language idioms differ.
+- `rules/golang/`, `rules/python/`, `rules/typescript/`, etc. override those defaults where language idioms differ.
 
 ### Example
 
