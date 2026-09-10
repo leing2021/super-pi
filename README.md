@@ -144,6 +144,10 @@ When implementation depends on a framework/library API, version-specific behavio
 
 All reviewers evaluate changes across: **correctness, readability, architecture, security, performance.**
 
+### Continuous execution (03-work)
+
+Units run without pauses between them; report once at completion. Exactly four valves may stop and ask: stop-the-line failure that cannot self-heal, 3-failure cap, destructive/irreversible operations, spec ambiguity/plan gap. The frontend (01/02) ships every question with a ✓ recommended answer; the backend (03) doesn't ask unless a valve fires.
+
 ---
 
 ## Token Cost
@@ -190,7 +194,7 @@ Commit everything to git — these files are the project's traceable memory.
 | Tools | 12 CE + 10 Pi built-in |
 | Rules | 78 |
 | TypeScript lines | ~4,100 |
-| Tests | 219 (890 assertions) |
+| Tests | 219 (904 assertions) |
 
 Rules in `rules/` cover 12 common topics + language-specific sets (TypeScript, Rust, Go, Python, Java, Kotlin, C++, C#, Dart, Swift, Perl, PHP). Project-level overrides take priority; projects can also add new languages via a project-level `rules/language-detection.md` marker map (append + same-marker wins).
 

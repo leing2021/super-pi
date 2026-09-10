@@ -21,6 +21,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 8. If in **worktree** (via `07-worktree`), execute inside it
 9. End by recommending `04-review`
 10. When designing/restructuring modules, use the deep-module vocabulary (`../references/module-design.md`) — evaluate depth and seam placement.
+11. **Continuous execution:** do not pause between units for confirmation. Progress goes to `session_checkpoint`; report once at completion. Four — and only four — valves may stop and ask: (1) stop-the-line failure that cannot self-heal, (2) 3-failure cap on the same unit, (3) destructive or irreversible operations (delete, overwrite, force-push, or anything without an undo path), (4) spec ambiguity or plan gap discovered mid-execution — record as blocker, ask, never guess. Do not automate past any valve.
 
 > **Advanced:** If you need external child agent delegation (background runs, parallel audits), install `pi-subagents` separately. Super Pi does not require it.
 
@@ -66,10 +67,8 @@ This is a hard gate — do not push past a failing test or broken build to conti
 
 After a stop-the-line failure is diagnosed, fixed, and verified:
 
-1. Replace full traces in handoff/context with `ERROR(resolved): <root cause>`
-2. Keep only the final repro, root cause, fix summary, and verification result
-3. Remove intermediate debug output and failed exploratory runs that are no longer relevant
-4. Update `session_checkpoint` with the compacted state only
+1. Replace full traces with `ERROR(resolved): <root cause>`; keep only the final repro, root cause, fix summary, and verification result
+2. Remove stale debug output and failed exploratory runs; update `session_checkpoint` with the compacted state only
 
 If the same tool, command, or implementation unit fails 3 consecutive times, stop retrying and ask the user for direction with a concise evidence summary.
 

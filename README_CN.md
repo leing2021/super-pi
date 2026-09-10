@@ -147,7 +147,7 @@ your-project/
 
 - **7 个 skills** 配专用工具
 - **12 CE + 10 Pi 内置工具**
-- **~4,100 行** TypeScript, **219 个测试** (890 assertions)
+- **~4,100 行** TypeScript, **219 个测试** (904 assertions)
 - **渐进式规则加载** ——只加载当前任务需要的
 
 规则放在 `rules/` (12 个通用 + 语言特定)。项目级规则优先；项目还可通过项目级 `rules/language-detection.md` 标记表新增语言（追加 + 同名覆盖）。

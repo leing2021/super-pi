@@ -84,6 +84,8 @@ describe("skill package contracts", () => {
     expect(content.toLowerCase()).toContain("stop conditions")
     expect(content).toContain("docs/brainstorms/")
     expect(content).toContain("implementation details")
+    expect(content).toContain("✓ 推荐")
+    expect(content.toLowerCase()).toContain("recommended answer")
     expect(template).toContain("Requirements")
     expect(template).toContain("Success criteria")
     expect(handoff).toContain("02-plan")
@@ -128,6 +130,13 @@ describe("skill package contracts", () => {
     expect(unitTemplate).toContain("Verification")
     expect(unitTemplate).toContain("Dependencies")
     expect(handoff).toContain("03-work")
+    expect(content).toContain("✓ 推荐")
+    expect(content.toLowerCase()).toContain("recommended answer")
+    expect(content).toContain("CEO Review")
+    expect(content.toLowerCase()).toContain("change scale")
+    expect(content).toContain("units ≥ 5")
+    expect(content.toLowerCase()).toContain("advisory")
+    expect(content).toContain("07-worktree")
   })
 
   test("05-learn writes structured solution artifacts and checks overlap", () => {
@@ -202,6 +211,10 @@ describe("skill package contracts", () => {
     expect(content).toContain("completion report")
     expect(content).toContain("verification")
     expect(content).toContain("worktree")
+    expect(content).toContain("Continuous execution")
+    expect(content).toContain("3-failure")
+    expect(content).toContain("force-push")
+    expect(content.toLowerCase()).toContain("spec ambiguity")
     expect(progress).toContain("Completed")
     expect(progress).toContain("Verification")
     expect(handoff).toContain("04-review")
@@ -275,6 +288,7 @@ describe("skill package contracts", () => {
     expect(content).toContain("merge")
     expect(content).toContain("cleanup")
     expect(content).toContain("03-work")
+    expect(content.toLowerCase()).toContain("git rev-parse")
   })
 
   test("05-learn solution-search-strategy defines grep-first retrieval steps", () => {

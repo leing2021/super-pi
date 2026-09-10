@@ -24,7 +24,8 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Fully read top 3 candidates
 5. Write plan to `docs/plans/` with the `> Status: draft` header (closed vocabulary: draft → ready → executing → done → deprecated); flip to `ready` when the plan is finalized
 6. If plan exists, use **`plan_diff`** to compare and patch incrementally
-7. End by recommending `03-work`
+7. End by recommending `03-work`. If the plan shows units ≥ 5 or files ≥ 8, append one advisory line: "Large task — recommended: run `/skill:07-worktree` first for isolation, then `/skill:03-work`." This is the decision point; the user has unlimited time to act on it
+8. Every question to the user ships with a **recommended answer**: mark exactly one option with a `✓ 推荐` prefix in `ask_user_question` and give a one-line reason before asking. Questions without a recommendation are a blocking violation.
 
 ## Hard gates — TDD enforcement
 
@@ -58,6 +59,8 @@ After plan is written, offer strategic review:
 > - **A) Just go** — trust the plan
 > - **B) CEO Review** — challenge premises, dream-state mapping
 > - **C) Strict Review** — CEO + error maps, failure modes, test diagrams
+>
+> Recommend by change scale: small/safe change → A, cross-cutting or risky change → C.
 
 If B or C: read `references/ceo-review-mode.md` and execute review flow.
 After review: update plan artifact, then handoff to `03-work`.

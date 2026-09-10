@@ -1,5 +1,15 @@
 # 更新日志
 
+### 0.34.0 — 交互不对称：前端问得准，后端不问
+- **每问必带推荐答案**（`skills/01-brainstorm/SKILL.md`、`skills/02-plan/SKILL.md`）：两 skill 现在要求每次 `ask_user_question` 有且仅有一个 `✓ 推荐` 前缀选项外加一句推荐理由——缺失推荐属阻断违规。此前该纪律只存在于 `premise-challenge.md`（0.28.0 起），主流程提问（模式选择、CEO Review）无推荐。
+- **CEO Review 按变更规模推荐**（`skills/02-plan/SKILL.md`）：小/安全变更 → A（Just go），跨切面/高风险变更 → C（Strict Review）。
+- **03-work 连续执行**（`skills/03-work/SKILL.md`）：units 之间不停顿——进度入 `session_checkpoint`，结束时一次性报告。仅四个枚举安全阀可停问：(1) 无法自愈的 stop-the-line 失败，(2) 同一单元 3 次失败上限，(3) 破坏性/不可逆操作（delete、overwrite、force-push、无 undo 路径），(4) spec 歧义/plan 缺口——记 blocker、问人、绝不猜。设计哲学：前端（01/02）问得少而准；后端（03）不问——除非硬阀触发。
+- **大任务 worktree advisory 前移至决策点**（`skills/02-plan/SKILL.md`）：定稿 units ≥ 5 或 files ≥ 8 的 plan 时，02-plan 追加一行提示——"Large task — recommended: run `/skill:07-worktree` first for isolation, then `/skill:03-work`." 提示恰好落在用户决定是否启动 03-work 的位置，操作时间无限，且明确给出推荐动作序列。（初版放在 03-work 内 task_splitter 之后，显示与执行同一口气——没有操作时间的提示等于噪音；已前移到用户必经的 gate 上。plan 产物常未提交，自动路由进新建 worktree 仍然不做。）
+- **100 行护栏触发且未被放宽**：加规则使 03-work SKILL.md 触及 ≤100 行契约上限；Error compaction 节 4 条压 2 行，四点语义全保留。护栏未放松。
+- **CEO Review 证明价值**：抓到一次真实转写丢失——brainstorm 的第 4 阀在 plan 里漏掉。已沉淀为 solution artifact（`docs/solutions/workflow/…`，本地 docs 不随包发布）。
+- **worktree git 前置检测**（`skills/07-worktree/SKILL.md`）：`create` 依赖 git——用 `git rev-parse --is-inside-work-tree` 验证；失败则告知用户原因并停止。
+- **测试**（`tests/skill-contracts.test.ts`）：+14 条契约断言，锚定推荐答案规则、四阀枚举、advisory 阈值。219 tests passing，904 assertions，0 回归。
+
 ### 0.33.2 — 发布 0.33.1 内容 + out-of-scope 惯例文档入包
 - v0.33.1 从未发布到 npm：tag 推送后 CI 才抓到回归——`docs/` 已取消跟踪，但 contract test 仍读取 `docs/out-of-scope/README.md`，干净 checkout 上该文件不存在。本版发布相同内容外加：
 - **out-of-scope 惯例文档入包**（`skills/05-learn/assets/out-of-scope-convention.md`）：05-learn 引用的惯例文档从 `docs/out-of-scope/`（现已完全本地化/取消跟踪）移入 skill 的 assets——随 npm 安装分发，contract test 改从产品归属地读取。实例决策记录仍留本地。

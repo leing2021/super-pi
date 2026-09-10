@@ -10,6 +10,7 @@ Use this skill for optional isolated git worktree development for large, risky, 
 ## Core rules
 
 - Use **`worktree_manager`** tool for all operations
+- **Git prerequisite:** `create` requires git — verify with `git rev-parse --is-inside-work-tree`; if it fails, tell the user why and stop
 - Only create when user explicitly asks or task is large/risky enough (with confirmation)
 - Derive branch name from plan or task
 - Report worktree path after creation so `03-work` can execute inside it
