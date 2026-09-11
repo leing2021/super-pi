@@ -16,7 +16,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 - Every question ships with a **recommended answer**: mark exactly one option with a `✓ 推荐` prefix in `ask_user_question` and give a one-line reason before asking. Questions without a recommendation are a blocking violation.
 - Compare **2-3 approaches** when multiple directions are plausible.
 - Keep focused on **what** to build, not implementation details.
-- **Explicit user approval required** before handoff to `02-plan`.
+- **Explicit user approval required** before chaining into `02-plan` (the approval is the 01→02 gate).
 - Write result to `docs/brainstorms/` as durable requirements document.
 
 ## Mode selection
@@ -75,7 +75,7 @@ Stop and ask instead of guessing when: requirements conflict, success criteria u
 
 ## Approval gate
 
-**Required:** Explicit user approval before handoff to `02-plan`.
+**Required:** Explicit user approval before chaining into `02-plan` — this approval is the 01→02 gate; after it, chaining happens in-session (Workflow step 12).
 
 ## Workflow
 

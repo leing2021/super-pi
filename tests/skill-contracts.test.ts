@@ -297,6 +297,8 @@ describe("skill package contracts", () => {
     const review = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
     const learn = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
 
+    // 02-plan: requirements gate — never draft a plan from verbal intent alone
+    expect(plan).toContain("✓ 转 01-brainstorm")
     // 01-brainstorm: after explicit approval, chains into plan in-session
     const brain = readFileSync(path.join(repoRoot, "skills", "01-brainstorm", "SKILL.md"), "utf8")
     expect(brain).toContain("../02-plan/SKILL.md")

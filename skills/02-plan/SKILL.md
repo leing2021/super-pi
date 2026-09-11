@@ -45,7 +45,7 @@ Every unit follows **RED → GREEN → REFACTOR**:
 ## Planning flow
 
 1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles` and `blocker` as starting point. If not found, proceed normally (new project). Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
-2. Read relevant brainstorm from `docs/brainstorms/`
+2. Read relevant brainstorm from `docs/brainstorms/`. If no relevant requirements artifact exists AND the user hasn't provided requirements inline in this conversation, stop and ask via `ask_user_question` (recommended option `✓ 转 01-brainstorm`) — never draft a plan from verbal intent alone; the spec chain must start from an approved artifact
 3. Run solution search (keywords → grep frontmatter → read top 3)
 4. Grep `docs/out-of-scope/` for prior rejections of features in this plan
 5. Gather repository context
