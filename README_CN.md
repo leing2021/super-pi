@@ -41,6 +41,8 @@ pi install npm:@leing2021/super-pi
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
 | **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
 
+> **自动串联**：stage 过 gate 后同 session 自动执行——仅两处确认（01→02 需求批准、02→03 开工确认），05-learn 输出终局 summary 收尾。`07-worktree` 仅显式 `/skill:07-worktree` 调用。
+
 ### 模型与思考深度路由
 
 在 `.pi/settings.json` 中配置:

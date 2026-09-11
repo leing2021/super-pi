@@ -24,8 +24,12 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Fully read top 3 candidates
 5. Write plan to `docs/plans/` with the `> Status: draft` header (closed vocabulary: draft → ready → executing → done → deprecated); flip to `ready` when the plan is finalized
 6. If plan exists, use **`plan_diff`** to compare and patch incrementally
-7. End by recommending `03-work`. If the plan shows units ≥ 5 or files ≥ 8, append one advisory line: "Large task — recommended: run `/skill:07-worktree` first for isolation, then `/skill:03-work`." This is the decision point; the user has unlimited time to act on it
+7. End by recommending `03-work` — see the **Work gate and chaining** section below.
 8. Every question to the user ships with a **recommended answer**: mark exactly one option with a `✓ 推荐` prefix in `ask_user_question` and give a one-line reason before asking. Questions without a recommendation are a blocking violation.
+
+## Work gate and chaining
+
+When the plan is finalized (`Status: ready`), present a brief plan summary (units, files, verification strategy), then ask via `ask_user_question` with the review choice folded into the gate options: `✓ 开工` (recommended), `CEO Review`, `Strict Review`. Recommend by change scale: small/safe change → `✓ 开工`, cross-cutting or risky change → CEO/Strict. **This is the default path's only human confirmation point — no other prompt may precede or follow it.** On `✓ 开工`, immediately read `../03-work/SKILL.md` and execute it in this session — do not wait for further user input. If CEO/Strict is chosen, run `references/ceo-review-mode.md`, update the plan artifact, then re-ask the gate. The four valves (defined in 03-work) apply chain-wide from this point.
 
 ## Hard gates — TDD enforcement
 
@@ -53,17 +57,7 @@ Every unit follows **RED → GREEN → REFACTOR**:
 
 ## Optional: CEO Review
 
-After plan is written, offer strategic review:
-
-> Plan ready. How to review?
-> - **A) Just go** — trust the plan
-> - **B) CEO Review** — challenge premises, dream-state mapping
-> - **C) Strict Review** — CEO + error maps, failure modes, test diagrams
->
-> Recommend by change scale: small/safe change → A, cross-cutting or risky change → C.
-
-If B or C: read `references/ceo-review-mode.md` and execute review flow.
-After review: update plan artifact, then handoff to `03-work`.
+Folded into the work gate (above): the gate's options include `CEO Review` and `Strict Review`. If chosen, read `references/ceo-review-mode.md`, execute the review flow, update the plan artifact, then re-run the gate. No separate pre-gate review prompt.
 
 ## Artifact output
 

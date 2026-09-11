@@ -18,10 +18,9 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 5. **Execution mode:** **inline mode** — all plan units execute inline in the current session. No built-in subagent tools.
 6. Use **`session_checkpoint`** to track progress and enable resume; before executing a plan, flip its Status header to `executing`
 7. Use **`task_splitter`** to analyze dependencies before execution
-8. If in **worktree** (via `07-worktree`), execute inside it
-9. End by recommending `04-review`
-10. When designing/restructuring modules, use the deep-module vocabulary (`../references/module-design.md`) — evaluate depth and seam placement.
-11. **Continuous execution:** do not pause between units for confirmation. Progress goes to `session_checkpoint`; report once at completion. Four — and only four — valves may stop and ask: (1) stop-the-line failure that cannot self-heal, (2) 3-failure cap on the same unit, (3) destructive or irreversible operations (delete, overwrite, force-push, or anything without an undo path), (4) spec ambiguity or plan gap discovered mid-execution — record as blocker, ask, never guess. Do not automate past any valve.
+8. End by chaining into `04-review` (see Workflow step 15) — no user prompt between stages
+9. When designing/restructuring modules, use the deep-module vocabulary (`../references/module-design.md`) — evaluate depth and seam placement.
+10. **Continuous execution:** do not pause between units for confirmation. Progress goes to `session_checkpoint`; report once at completion. Four — and only four — valves may stop and ask: (1) stop-the-line failure that cannot self-heal, (2) 3-failure cap on the same unit, (3) destructive or irreversible operations (delete, overwrite, force-push, or anything without an undo path), (4) spec ambiguity or plan gap discovered mid-execution — record as blocker, ask, never guess. Do not automate past any valve.
 
 > **Advanced:** If you need external child agent delegation (background runs, parallel audits), install `pi-subagents` separately. Super Pi does not require it.
 
@@ -92,6 +91,6 @@ If the same tool, command, or implementation unit fails 3 consecutive times, sto
 12. On failure: `session_checkpoint` `fail` → `retry` → follow strategy
 13. Provide completion report (see `references/completion-report.md`) — include the `Rules applied` section
 14. **Save handoff**: `context_handoff save` with current stage, next stage, activeFiles, blocker, verification, activeRules (carry loaded rules in `activeRules`)
-15. Handoff to `04-review` using `references/handoff.md`
+15. **Chain to review:** immediately read `../04-review/SKILL.md` and execute it in this session — do not wait for user instruction. `references/handoff.md` still defines the handoff artifact to save first.
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).

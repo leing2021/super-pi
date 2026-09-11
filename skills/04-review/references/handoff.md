@@ -18,5 +18,5 @@ When findings have `autofixable: true`:
 1. Apply the fix for each autofixable finding.
 2. Re-run affected tests.
 3. Re-review only the changed lines.
-4. If re-review produces new findings, repeat (max 3 iterations).
+4. If re-review produces new findings, repeat (cap: stop after 2 consecutive rounds still containing P0/P1 findings — ask the user; see SKILL.md **Fix loop and chain**).
 5. Report final state: fixed, partially fixed, or needs manual intervention.

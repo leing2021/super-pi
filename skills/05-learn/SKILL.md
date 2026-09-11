@@ -59,3 +59,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 7. Save/mention handoff-lite path under `.context/compound-engineering/handoffs/` using the shared `Handoff-lite template` in `skills/references/pipeline-config.md`.
 
 Before finishing this skill, apply the completion checklist in [shared pipeline instructions](../references/pipeline-config.md).
+
+## Pipeline terminus
+
+05-learn is the last stage of the pipeline. After saving the solution artifact and handoff-lite, output the final pipeline summary — stages executed, artifacts written, verification evidence — and stop. Do not load or chain into another stage skill: the chain ends here.

@@ -78,6 +78,8 @@ You: /skill:03-work docs/plans/plan.md
 | **06-next** | Next-step recommendation + workflow status | `workflow_state` |
 | **07-worktree** | Isolated git worktree development | `worktree_manager` |
 
+> **Auto-chaining:** stages run in-session once their gate passes — requirements approval (01→02) and the work gate (02→03) are the only prompts; 05-learn ends the pipeline with a final summary. `07-worktree` runs only on explicit `/skill:07-worktree`.
+
 ### Model & Thinking Routing
 
 Configure in `.pi/settings.json`:

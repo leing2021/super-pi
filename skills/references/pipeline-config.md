@@ -85,6 +85,10 @@ Next step mapping:
 - `04-review` → `/skill:05-learn`
 - `05-learn` → `Completed`
 
+## Stage chaining (01-brainstorm onward)
+
+On completion, each stage immediately reads and executes the next stage's SKILL.md in the same session: `01-brainstorm` → `02-plan` → `03-work` → `04-review` → `05-learn`. The four valves (defined in 03-work) apply chain-wide. The only default-path human confirmations are the 01-brainstorm requirements approval and the 02-plan work gate. 05-learn is the terminus: it outputs the final pipeline summary and stops — no further stage loading.
+
 ## End of skill: completion checklist
 
 Before declaring a stage complete, verify every item. A failed item means not done — fix it or stop and report:
@@ -94,6 +98,7 @@ Before declaring a stage complete, verify every item. A failed item means not do
 3. **Artifacts saved** — plan / checkpoint / findings / handoff written to their artifact paths.
 4. **Verification evidence recorded** — exact command plus result in output, not a claim of success.
 5. **Pipeline Status + Context Status blocks output** — both present, real values, no placeholders.
+6. **Stage chaining honored** — next stage executed in-session (read its SKILL.md) or a valve stop recorded; the chain terminates at 05-learn with a final pipeline summary.
 
 ### Handoff-lite template
 

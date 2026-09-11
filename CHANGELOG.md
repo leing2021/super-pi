@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.36.0 — pipeline auto-chaining: one entry to 05-learn, worktree off the main flow
+- **Auto-chaining**：stage 过 gate 后同 session 自动执行下一 stage（read 下一 SKILL.md 并执行）：01→02→…→05，四阀全链沿用。仅两处确认：01→02 requirements 批准（既有）、02→03 work gate（review 选项折叠，预选 ✓ 开工）。05-learn 为 terminus，输出终局 summary。
+- **修复闭环**：04-review P0/P1 findings 当轮就地修复 + 复审；连续 2 轮仍有 P0/P1 阀停问人（取代原 max 3 iterations，全仓 cap 唯一）。
+- **worktree 出清主流程**：02-plan advisory、03-work worktree 规则、06-next 推荐链及 references 全部移除；`07-worktree` 保留为纯独立 skill，仅显式 `/skill:07-worktree` 触发。
+- **铁律固化**（AGENTS.md）：铁律 1 减负不增负；铁律 2 极简非必要不增溢；验收以实测为准（未实测即未实现）。
+- Tests: 217 passing (904 assertions), 新增 3 个契约测试（串联指令存在性、worktree 缺席性、共享条款）防静默回退。
+
 ### 0.35.0 — minimalism subtraction: rules language layers cut to 6, pattern_extractor removed (BREAKING)
 - **BREAKING: 8 low-traffic language rules removed** (`rules/`): dart, java, kotlin, swift, csharp, cpp, perl, php directories deleted (~3,400 lines). Bundled layers are now common + TypeScript, Python, Go, Rust, Web. Projects needing other languages add a project-level `rules/language-detection.md` marker row plus their own rules directory (append + same-marker wins; loading behavior unchanged). Docs synced: README/README_CN language list, `rules/README.md` structure map, 03-work SKILL inline detection table.
 - **BREAKING: `pattern_extractor` tool removed** (ce-core): the extract/categorize two-step ceremony duplicated what LLMs do natively — 05-learn now scans existing solution docs directly (one workflow step instead of two tool calls). Registered tools: 12 → 11.

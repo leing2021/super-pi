@@ -134,9 +134,6 @@ describe("skill package contracts", () => {
     expect(content.toLowerCase()).toContain("recommended answer")
     expect(content).toContain("CEO Review")
     expect(content.toLowerCase()).toContain("change scale")
-    expect(content).toContain("units ≥ 5")
-    expect(content.toLowerCase()).toContain("advisory")
-    expect(content).toContain("07-worktree")
   })
 
   test("05-learn writes structured solution artifacts and checks overlap", () => {
@@ -209,7 +206,6 @@ describe("skill package contracts", () => {
     expect(content).toContain("GREEN")
     expect(content).toContain("completion report")
     expect(content).toContain("verification")
-    expect(content).toContain("worktree")
     expect(content).toContain("Continuous execution")
     expect(content).toContain("3-failure")
     expect(content).toContain("force-push")
@@ -277,6 +273,55 @@ describe("skill package contracts", () => {
     expect(recommendationLogic).toContain("work")
     expect(recommendationLogic).toContain("review")
     expect(recommendationLogic).toContain("learn")
+  })
+
+  test("worktree is purged from the pipeline — 07-worktree stays standalone", () => {
+    for (const [skill, file] of [
+      ["02-plan", "SKILL.md"],
+      ["03-work", "SKILL.md"],
+      ["06-next", "SKILL.md"],
+    ] as const) {
+      const content = readFileSync(path.join(repoRoot, "skills", skill, file), "utf8")
+      expect(content).not.toContain("worktree")
+    }
+    const logic = readFileSync(
+      path.join(repoRoot, "skills", "06-next", "references", "recommendation-logic.md"),
+      "utf8",
+    )
+    expect(logic).not.toContain("07-worktree")
+  })
+
+  test("pipeline auto-chains 01→02→03→04→05 with approval + work gates", () => {
+    const plan = readFileSync(path.join(repoRoot, "skills", "02-plan", "SKILL.md"), "utf8")
+    const work = readFileSync(path.join(repoRoot, "skills", "03-work", "SKILL.md"), "utf8")
+    const review = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
+    const learn = readFileSync(path.join(repoRoot, "skills", "05-learn", "SKILL.md"), "utf8")
+
+    // 01-brainstorm: after explicit approval, chains into plan in-session
+    const brain = readFileSync(path.join(repoRoot, "skills", "01-brainstorm", "SKILL.md"), "utf8")
+    expect(brain).toContain("../02-plan/SKILL.md")
+    // 02-plan: work gate (default path's only human confirmation), then in-session chaining
+    expect(plan).toContain("Work gate")
+    expect(plan).toContain("../03-work/SKILL.md")
+    // 03-work: chains into review in-session
+    expect(work).toContain("../04-review/SKILL.md")
+    // 04-review: P0/P1 fix loop capped at 2 consecutive rounds (valve), then chains into learn
+    expect(review).toContain("P0/P1")
+    expect(review).toContain("2 consecutive")
+    expect(review).toContain("../05-learn/SKILL.md")
+    // 05-learn: chain terminus — no further stage loading
+    expect(learn).toContain("Pipeline terminus")
+    expect(learn).not.toContain("../06")
+  })
+
+  test("pipeline-config defines cross-stage chaining and checklist item", () => {
+    const config = readFileSync(
+      path.join(repoRoot, "skills", "references", "pipeline-config.md"),
+      "utf8",
+    )
+    expect(config).toContain("Stage chaining")
+    expect(config).toContain("chain-wide")
+    expect(config).toContain("terminates at 05-learn")
   })
 
   test("07-worktree manages git worktree lifecycle using worktree_manager", () => {

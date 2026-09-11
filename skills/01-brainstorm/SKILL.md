@@ -90,7 +90,7 @@ Stop and ask instead of guessing when: requirements conflict, success criteria u
 9. Use `brainstorm_dialog` `summarize` to finalize
 10. Capture requirements in `docs/brainstorms/`
 11. Get explicit user approval
-12. Handoff to `02-plan` using `references/handoff.md`
+12. **Chain to plan:** after explicit user approval, immediately read `../02-plan/SKILL.md` and execute it in this session — do not wait for further user instruction. `references/handoff.md` still defines the handoff artifact to save first.
 
 ## Artifact contract
 

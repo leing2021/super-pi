@@ -23,7 +23,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
    - Fully read top 3 candidates
 8. **Spec axis:** determine spec source via [`references/spec-source-detection.md`](references/spec-source-detection.md) (plan → brainstorm → commit issue ref → skip). Against the chosen spec, report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't).
 9. Produce structured findings using `references/findings-schema.md`
-10. **Autofixable findings:** apply and re-review (max 3 iterations)
+10. **Autofixable findings:** apply and re-review (cap governed by **Fix loop and chain** below)
 
 ## Review discipline
 
@@ -81,6 +81,13 @@ After code review complete, offer browser QA:
 
 If B or C: read `references/qa-test-mode.md` and execute workflow.
 After QA: include findings in handoff, note fix commits/test files.
+
+## Fix loop and chain
+
+1. After producing findings, fix confirmed P0/P1 issues in place, re-verify, and re-review (this subsumes the autofix loop in Core rule 10)
+2. **Cap:** after 2 consecutive review rounds still containing P0/P1 findings, stop and ask the user — do not loop past this valve
+3. P2 findings: record them in the handoff; do not loop on them
+4. When no P0/P1 findings remain: immediately read `../05-learn/SKILL.md` and execute it in this session — do not wait for user instruction
 
 ## Handoff
 

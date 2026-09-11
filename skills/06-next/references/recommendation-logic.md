@@ -103,7 +103,6 @@ If no rule matches cleanly:
 | `03-work` | Execute the plan | Plan ready |
 | `04-review` | Review changes with structured findings | After implementation |
 | `05-learn` | Capture learnings as solution artifacts | After solving a problem |
-| `07-worktree` | Isolated git worktree development | Large/risky/parallel work |
 
 ## Artifact locations
 

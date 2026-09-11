@@ -1,5 +1,13 @@
 # AGENTS.md — Super Pi
 
+## ⛔ 铁律（不可违背，优先级高于一切功能设计）
+
+背景：v0.33.x 最近两次升级（minimalism subtraction / interaction asymmetry）实测背离设计目标——03-work ~ 05-learn 并未真正自动化串联，07-worktree 反而增加用户操作负担。教训固化如下：
+
+- **铁律 1：减负不增负**。开发目的是减轻用户操作步骤、简化操作、减轻负担。任何设计若增加操作复杂度（多一步确认、多一次手动衔接、多一个必选参数），即为设计背离，禁止合入。新增功能前先回答：用户步骤变多了还是变少了？
+- **铁律 2：极简原则，非必要不增溢**。不添加非必要的流程、选项、文件、交互。默认路径零额外操作；任何额外交互必须有不可替代的理由，否则砍掉。
+- **验收标准以实测为准**：skill 声称「自动/连续/推荐」的能力，必须实测验证真实发生（如 03-work 完成后自动进入 04-review 再 05-learn），文档写 ≠ 实际会。自动化承诺未实测即视为未实现。
+
 ## Project Overview
 
 Super Pi is a Pi-native engineering workflow layer: brainstorm → plan → work → review → learn.

@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.36.0 — pipeline 自动串联：一个入口直达 05-learn，worktree 移出主流程
+- **自动串联**：stage 过 gate 后同 session 自动执行下一 stage（read 下一 SKILL.md 并执行）：01→02→…→05，四阀全链沿用。仅两处确认：01→02 requirements 批准（既有）、02→03 work gate（review 选项折叠，预选 ✓ 开工）。05-learn 为 terminus，输出终局 summary。
+- **修复闭环**：04-review P0/P1 findings 当轮就地修复 + 复审；连续 2 轮仍有 P0/P1 阀停问人（取代原 max 3 iterations，全仓 cap 唯一）。
+- **worktree 出清主流程**：02-plan advisory、03-work worktree 规则、06-next 推荐链及 references 全部移除；`07-worktree` 保留为纯独立 skill，仅显式 `/skill:07-worktree` 触发。
+- **铁律固化**（AGENTS.md）：铁律 1 减负不增负；铁律 2 极简非必要不增溢；验收以实测为准（未实测即未实现）。
+- 测试：217 通过（904 断言），新增 3 个契约测试（串联指令存在性、worktree 缺席性、共享条款）防静默回退。
+
 ### 0.35.0 — 极简减法：rules 语言层砍至 6 层，移除 pattern_extractor（破坏性变更）
 - **BREAKING：移除 8 个低频语言规则**（`rules/`）：删除 dart、java、kotlin、swift、csharp、cpp、perl、php 目录（约 3400 行）。内置层收敛为 common + TypeScript、Python、Go、Rust、Web。需要其他语言的项目：在项目级 `rules/language-detection.md` 标记表加一行 + 自带规则目录（追加 + 同名覆盖；加载行为不变）。文档已同步：README/README_CN 语言列表、`rules/README.md` 结构图、03-work SKILL 内置检测表。
 - **BREAKING：移除 `pattern_extractor` 工具**（ce-core）：extract/categorize 两步仪式重复了 LLM 的原生能力——05-learn 现在直接读既有 solution 文档扫描（两个工具调用 → 一个流程步骤）。注册工具：12 → 11。
