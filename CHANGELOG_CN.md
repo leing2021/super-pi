@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.38.0 — ask_user_question 选择器体验：数字键快选、transcript 回看、富选项
+- **数字键 1-9 直选**：选项带 `1. ` `2. ` 前缀，按数字键立即选中（单键正则守卫），免去反复箭头导航。社区贡献 PR #16。
+- **Ctrl+] transcript 回看**：折叠为单行提示（问题首行摘要），可回看终端里 agent 的前置分析再作答；Esc 恢复对话框而非取消（防误触丢上下文）；提示前置防窄终端截断。
+- **富选项**：支持 `{ label, description }` 对象，渲染为 `label — description`，LLM 只收干净 label。字符串选项完全兼容。
+- **Enter 兼容 `\r`**（部分终端发送 CR）。
+- 测试：243 通过（992 断言）+7；`tsc --noEmit` 干净；merge 实测干净。
+
 ### 0.37.0 — 隔离审查：04-review 独立 session 执行，消除 author bias
 - **隔离审查**（`isolated_review` 工具，ce-core）：04-review 先 spawn 零 author 上下文的 fresh pi session（`pi --mode json --no-session -p`）执行审查，阻塞等 findings artifact 回传主链。同 session 自审的 self-consistency 偏见从结构上消除，而非靠 prompt 纪律对抗。注册工具：11 → 12。
 - **Reviewer 只审不修**：spawned reviewer 产 findings，修复责任在主链。身份约束在打包 prompt 资产：不修代码、findings 写指定路径、不链 05-learn、完整 rules 加载。

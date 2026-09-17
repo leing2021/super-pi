@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.38.0 — ask_user_question selector UX: 1-9 quick pick, transcript peek, rich options
+- **数字键 1-9 直选**：选项带 `1. ` `2. ` 前缀，按数字键立即选中（`/^[1-9]$/` 单键守卫），免去反复箭头导航。社区贡献 PR #16。
+- **Ctrl+] transcript peek**：折叠为单行提示（问题首行摘要），可回看终端里 agent 的前置分析再作答；Esc 恢复对话框而非取消（防误触丢上下文）；提示文本前置防窄终端截断。
+- **Rich options**：选项支持 `{ label, description }` 对象，渲染为 `label — description`，LLM 只收干净的 label。字符串选项完全向后兼容。
+- **Enter 兼容 `\r`**（部分终端发送 CR）。
+- Tests: 243 passing (992 assertions) +7（数字键、前缀渲染、折叠切换/Esc 恢复、rich options 解析）；`tsc --noEmit` clean；merge 实测干净。
+
 ### 0.37.0 — isolated review: 04-review spawns a fresh session, author bias eliminated
 - **Isolated review**（`isolated_review` 工具，ce-core）：04-review 现在先 spawn 一个零 author 上下文的 fresh pi session（`pi --mode json --no-session -p`）执行审查，阻塞等待 findings artifact 回传主链。同 session 自审的 self-consistency 偏见（author bias）从结构上消除，而非靠 prompt 纪律对抗。注册工具：11 → 12。
 - **Reviewer 只审不修**：spawned reviewer 产出 findings，修复责任在主链（author 有完整实现上下文）。身份约束在打包 prompt 资产（`skills/04-review/assets/isolated-reviewer-prompt.md`）：不修代码、findings 写指定路径、不链 05-learn、完整 rules 加载。
