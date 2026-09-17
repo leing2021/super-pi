@@ -1,6 +1,8 @@
+export type QuestionOption = string | { label: string; description?: string }
+
 export interface AskUserQuestionInput {
   question: string
-  options?: string[]
+  options?: QuestionOption[]
   allowCustom?: boolean
 }
 
@@ -27,14 +29,27 @@ export const MAX_OPTION_LABEL_WIDTH = 60
 
 /**
  * Build the single-line display label for one option.
+ * Supports string options and structured { label, description } objects.
  *
  * Rules:
  * - Take only the first line (drop embedded `\n`).
  * - Trim surrounding whitespace.
  * - Truncate to {@link MAX_OPTION_LABEL_WIDTH} with an ellipsis when needed.
  */
-export function toOptionDisplayLabel(option: string): string {
-  const firstLine = option.split("\n", 1)[0] ?? ""
+export function toOptionDisplayLabel(option: QuestionOption): string {
+  if (typeof option === "object" && option !== null && "label" in option) {
+    const label = option.label.trim()
+    const desc = option.description?.trim()
+    const combined = desc ? `${label} — ${desc}` : label
+    const firstLine = combined.split("\n", 1)[0] ?? ""
+    const trimmed = firstLine.trim()
+    if (trimmed.length <= MAX_OPTION_LABEL_WIDTH) {
+      return trimmed
+    }
+    return trimmed.slice(0, MAX_OPTION_LABEL_WIDTH - 1) + "…"
+  }
+  const str = String(option)
+  const firstLine = str.split("\n", 1)[0] ?? ""
   const trimmed = firstLine.trim()
   if (trimmed.length <= MAX_OPTION_LABEL_WIDTH) {
     return trimmed
@@ -49,7 +64,7 @@ export function toOptionDisplayLabel(option: string): string {
  * @returns A map from display label back to the original full option string.
  *          When collisions exist, labels become `<label> (#<n>)`.
  */
-export function normalizeQuestionOptions(options: string[]): Map<string, string> {
+export function normalizeQuestionOptions(options: QuestionOption[]): Map<string, string> {
   const labelToOriginal = new Map<string, string>()
   const labelCounts = new Map<string, number>()
 
@@ -67,7 +82,11 @@ export function normalizeQuestionOptions(options: string[]): Map<string, string>
       dedup += 1
       label = `${baseLabel} (#${dedup})`
     }
-    labelToOriginal.set(label, original)
+
+    const resolvedValue = typeof original === "object" && original !== null && "label" in original
+      ? original.label
+      : String(original)
+    labelToOriginal.set(label, resolvedValue)
   }
 
   return labelToOriginal
@@ -92,9 +111,7 @@ export function createAskUserQuestionTool() {
       input: AskUserQuestionInput,
       ui: AskUserQuestionUi,
     ): Promise<AskUserQuestionResult> {
-      const options = input.options ?? []
-
-      if (options.length === 0) {
+      if (!input.options || input.options.length === 0) {
         const answer = await ui.input(input.question)
         return answer === null
           ? { answer: null, mode: "cancelled" }
@@ -102,7 +119,7 @@ export function createAskUserQuestionTool() {
       }
 
       const allowCustom = input.allowCustom ?? true
-      const labelToOriginal = normalizeQuestionOptions(options)
+      const labelToOriginal = normalizeQuestionOptions(input.options)
       const customLabel = allowCustom
         ? resolveCustomSentinelLabel(labelToOriginal)
         : null

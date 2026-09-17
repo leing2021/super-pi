@@ -10,7 +10,11 @@ import {
   getRunArtifactPath,
 } from "../extensions/ce-core/utils/artifact-paths"
 import { createArtifactHelperTool } from "../extensions/ce-core/tools/artifact-helper"
-import { createAskUserQuestionTool, normalizeQuestionOptions } from "../extensions/ce-core/tools/ask-user-question"
+import {
+  createAskUserQuestionTool,
+  normalizeQuestionOptions,
+  toOptionDisplayLabel,
+} from "../extensions/ce-core/tools/ask-user-question"
 import { AskUserQuestionSelector, createAskUserQuestionCustomFactory } from "../extensions/ce-core/tools/ask-user-question-ui"
 import { createWorkflowStateTool } from "../extensions/ce-core/tools/workflow-state"
 import { createWorktreeManagerTool } from "../extensions/ce-core/tools/worktree-manager"
@@ -280,6 +284,33 @@ describe("ask_user_question", () => {
 
     // No display label may collide with an unrelated original's suffix form.
     expect(labels.filter((l) => l === "X (#2)").length).toBe(1)
+  })
+
+  test("toOptionDisplayLabel formats { label, description } objects", () => {
+    expect(toOptionDisplayLabel({ label: "Fast", description: "Minimal checks" })).toBe("Fast — Minimal checks")
+    expect(toOptionDisplayLabel({ label: "Clean" })).toBe("Clean")
+  })
+
+  test("supports structured { label, description } options returning the label", async () => {
+    const tool = createAskUserQuestionTool()
+    const options = [
+      { label: "Option 1", description: "First choice" },
+      { label: "Option 2", description: "Second choice" },
+    ]
+
+    const result = await tool.execute(
+      { question: "Choose an option", options, allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, displayOptions) => {
+          expect(displayOptions[0]).toBe("Option 1 — First choice")
+          return displayOptions[0]
+        },
+      },
+    )
+
+    expect(result.answer).toBe("Option 1")
+    expect(result.mode).toBe("select")
   })
 })
 
@@ -2234,6 +2265,105 @@ describe("ask_user_question custom selector component", () => {
     selector.handleInput("\u001b")
     expect(first.selectedLabel).toBe("A")
     expect(captured as { selectedLabel: string | null } | null).toStrictEqual(first)
+  })
+
+  test("number keys 1-9 immediately select matching option", () => {
+    let captured: { selectedLabel: string | null } | null = null
+    const selector = new AskUserQuestionSelector(
+      { question: "Pick", displayOptions: ["Alpha", "Beta", "Gamma"], customLabel: null },
+      noopTheme,
+      (result) => { captured = result },
+    )
+    selector.handleInput("2")
+    expect(captured).not.toBeNull()
+    expect(captured!.selectedLabel).toBe("Beta")
+  })
+
+  test("renders 1. and 2. prefixes for the first options", () => {
+    const selector = new AskUserQuestionSelector(
+      { question: "Pick", displayOptions: ["Alpha", "Beta"], customLabel: null },
+      noopTheme,
+      () => {},
+    )
+    const lines = selector.render(60)
+    const joined = lines.join("\n")
+    expect(joined).toContain("1. Alpha")
+    expect(joined).toContain("2. Beta")
+  })
+
+  test("Ctrl+] toggles collapsed mode for transcript peeking", () => {
+    const selector = new AskUserQuestionSelector(
+      { question: "Check history", displayOptions: ["A", "B"], customLabel: null },
+      noopTheme,
+      () => {},
+    )
+    let lines = selector.render(60)
+    expect(lines.join("\n")).toContain("1. A")
+
+    // Press Ctrl+] (\u001d)
+    selector.handleInput("\u001d")
+    lines = selector.render(60)
+    expect(lines.join("\n")).toContain("Ctrl+] to expand")
+    expect(lines.join("\n")).not.toContain("1. A")
+
+    // Pressing option numbers while collapsed should not select
+    let captured: any = null
+    const collapsedSelector = new AskUserQuestionSelector(
+      { question: "Check history", displayOptions: ["A", "B"], customLabel: null },
+      noopTheme,
+      (res) => { captured = res },
+    )
+    collapsedSelector.handleInput("\u001d")
+    collapsedSelector.handleInput("1")
+    expect(captured).toBeNull()
+
+    // Press Ctrl+] again to expand and select
+    collapsedSelector.handleInput("\u001d")
+    collapsedSelector.handleInput("1")
+    expect(captured).not.toBeNull()
+    expect(captured.selectedLabel).toBe("A")
+  })
+
+  test("Esc while collapsed uncollapses without cancelling the prompt", () => {
+    let captured: any = null
+    const selector = new AskUserQuestionSelector(
+      { question: "Check history", displayOptions: ["A", "B"], customLabel: null },
+      noopTheme,
+      (res) => { captured = res },
+    )
+    // Collapse via Ctrl+]
+    selector.handleInput("\u001d")
+    let lines = selector.render(60)
+    expect(lines.join("\n")).toContain("Ctrl+] to expand")
+
+    // Press Esc while collapsed -> uncollapses, does NOT cancel
+    selector.handleInput("\u001b")
+    expect(captured).toBeNull()
+    lines = selector.render(60)
+    expect(lines.join("\n")).toContain("1. A")
+
+    // Now press Esc while expanded -> cancels
+    selector.handleInput("\u001b")
+    expect(captured).not.toBeNull()
+    expect(captured.selectedLabel).toBeNull()
+  })
+
+  test("non-digit or invalid digit strings are ignored by number picker", () => {
+    let captured: any = null
+    const selector = new AskUserQuestionSelector(
+      { question: "Pick", displayOptions: ["Alpha", "Beta", "Gamma"], customLabel: null },
+      noopTheme,
+      (res) => { captured = res },
+    )
+    selector.handleInput("3x")
+    expect(captured).toBeNull()
+    selector.handleInput("0")
+    expect(captured).toBeNull()
+    selector.handleInput("4")
+    expect(captured).toBeNull()
+    selector.handleInput("3")
+    expect(captured).not.toBeNull()
+    expect(captured.selectedLabel).toBe("Gamma")
   })
 })
 

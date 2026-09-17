@@ -100,7 +100,7 @@ const artifactHelperParams = Type.Object({
 
 const askUserQuestionParams = Type.Object({
   question: Type.String({ description: "Question shown to the user" }),
-  options: Type.Optional(Type.Array(Type.String(), { description: "Selectable options" })),
+  options: Type.Optional(Type.Array(Type.Any(), { description: "Selectable options (strings or {label, description} objects)" })),
   allowCustom: Type.Optional(Type.Boolean({ description: "Allow a custom answer when options are present" })),
 })
 
@@ -348,9 +348,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         ? "User cancelled."
         : result.mode === "custom"
           ? `User answered: ${result.answer}`
-          : result.mode === "select"
-            ? `User selected: ${result.answer}`
-            : `User answered: ${result.answer}`
+          : `User selected: ${result.answer}`
 
       return {
         content: [{ type: "text", text: contentText }],
