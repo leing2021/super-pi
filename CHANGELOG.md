@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.37.0 — isolated review: 04-review spawns a fresh session, author bias eliminated
+- **Isolated review**（`isolated_review` 工具，ce-core）：04-review 现在先 spawn 一个零 author 上下文的 fresh pi session（`pi --mode json --no-session -p`）执行审查，阻塞等待 findings artifact 回传主链。同 session 自审的 self-consistency 偏见（author bias）从结构上消除，而非靠 prompt 纪律对抗。注册工具：11 → 12。
+- **Reviewer 只审不修**：spawned reviewer 产出 findings，修复责任在主链（author 有完整实现上下文）。身份约束在打包 prompt 资产（`skills/04-review/assets/isolated-reviewer-prompt.md`）：不修代码、findings 写指定路径、不链 05-learn、完整 rules 加载。
+- **Fix loop 语义重写**：cap 2 轮为上限非配额（任一轮全绿提前终止）；重审触发 = 存在 P0 或上轮 P1 有待验修复 diff，纯 P2 不进 loop；重审为增量 spawn（上轮 findings + 修复 diff，不碰全量）；cap 耗尽仍有 P0/P1 → 停线交付末轮 findings + 完整 findings chain。
+- **降级契约机器可读**：spawn 失败（`cli_not_found` / `version` / `timeout` / `child_failed` 四分类）降级为同 session 审查，findings frontmatter 写 `isolation: degraded` + `spawn_error`——下游（05-learn/handoff）可辨识低置信证据。确定性失败直接降级，超时重试 1 次再降级；degraded 下 loop 语义不变。
+- **Live 验收（铁律：未实测即未实现）**：埋雷 diff（off-by-one）隔离审 89.1s 抓到 P0（含沙箱数值验证）；本 feature 自审 3 轮实证全部机制——round 1 抓 6 findings（含 npm 跨仓库 prompt 资产解析 bug）、round 2 增量审抓到修复引入的回归（Bun 专属 `import.meta.dir` 使扩展在 pi Node+jiti 运行时全灭，`bun test` 全绿掩盖）、cap 停线 valve 触发、round 3 全绿提前终止。修复：`import.meta.dirname`（三运行时安全）、stderr tail 诊断、AbortSignal 透传。
+- Tests: 236 passing (967 assertions) +19（工具 13 用例：成功/四分类降级/重试+stderrTail/增量注入/abort/prompt 来源三态；契约锁 loop 口径锚文本与 prompt 身份约束）；`tsc --noEmit` clean；pi 真实加载验证通过。
+
 ### 0.36.0 — pipeline auto-chaining: one entry to 05-learn, worktree off the main flow
 - **Auto-chaining**：stage 过 gate 后同 session 自动执行下一 stage（read 下一 SKILL.md 并执行）：01→02→…→05，四阀全链沿用。仅两处确认：01→02 requirements 批准（既有）、02→03 work gate（review 选项折叠，预选 ✓ 开工）。05-learn 为 terminus，输出终局 summary。
 - **修复闭环**：04-review P0/P1 findings 当轮就地修复 + 复审；连续 2 轮仍有 P0/P1 阀停问人（取代原 max 3 iterations，全仓 cap 唯一）。

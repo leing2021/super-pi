@@ -89,6 +89,8 @@ Next step mapping:
 
 On completion, each stage immediately reads and executes the next stage's SKILL.md in the same session: `01-brainstorm` → `02-plan` → `03-work` → `04-review` → `05-learn`. The four valves (defined in 03-work) apply chain-wide. The only default-path human confirmations are the 01-brainstorm requirements approval and the 02-plan work gate. 05-learn is the terminus: it outputs the final pipeline summary and stops — no further stage loading.
 
+One boundary is special: when 04-review loads, it spawns a fresh session via the `isolated_review` tool to run the actual review (author-bias-free), blocks until the findings artifact returns, and only degrades to in-session review when the spawn fails (findings frontmatter marked `isolation: degraded` + `spawn_error`).
+
 ## End of skill: completion checklist
 
 Before declaring a stage complete, verify every item. A failed item means not done — fix it or stop and report:

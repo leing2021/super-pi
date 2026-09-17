@@ -25,7 +25,7 @@ pi install npm:@leing2021/super-pi
 - **Five-step loop** — brainstorm → plan → work → review → learn, with automatic skill routing
 - **Checkpoint resume** — interrupted? Resume from the exact unit you left off
 - **TDD enforcement** — every unit follows RED → GREEN → REFACTOR with hard gates
-- **Evidence-first review** — auto-assigned reviewers across five axes, autofix loop
+- **Evidence-first review** — auto-assigned reviewers across five axes, autofix loop, and isolated spawn (fresh session, no author bias)
 - **Knowledge compounding** — solved problems become searchable solution artifacts
 - **Token-efficient** — ~4,200 tokens new-conversation overhead; progressive loading
 
@@ -45,7 +45,7 @@ You: I want to build a CLI tool that helps indie devs find early users
 → 01-brainstorm: structured discovery → requirements artifact
 → 02-plan: TDD-gated implementation units → plan artifact
 → 03-work: inline execution, checkpoint resume
-→ 04-review: five-axis findings, autofix loop
+→ 04-review: isolated spawn review, five-axis findings, author-side fix loop
 → 05-learn: knowledge compounding
 
 You: continue
@@ -196,7 +196,7 @@ Commit everything to git — these files are the project's traceable memory.
 | Tools | 12 CE + 10 Pi built-in |
 | Rules | 78 |
 | TypeScript lines | ~4,100 |
-| Tests | 214 (892 assertions) |
+| Tests | 236 (967 assertions) |
 
 Rules in `rules/` cover 12 common topics + language-specific sets (TypeScript, Python, Go, Rust, Web). Project-level overrides take priority; projects can also add other languages via a project-level `rules/language-detection.md` marker map plus their own rules directory (append + same-marker wins).
 

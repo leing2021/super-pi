@@ -6,6 +6,7 @@ import { createAskUserQuestionCustomFactory } from "./tools/ask-user-question-ui
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
 import { createReviewRouterTool } from "./tools/review-router"
+import { createIsolatedReviewTool } from "./tools/isolated-review"
 import { createSessionCheckpointTool } from "./tools/session-checkpoint"
 import { createTaskSplitterTool } from "./tools/task-splitter"
 import { createBrainstormDialogTool } from "./tools/brainstorm-dialog"
@@ -123,6 +124,17 @@ const reviewRouterParams = Type.Object({
   filesChanged: Type.Array(Type.String(), { description: "List of file paths changed in the diff" }),
   insertions: Type.Number({ description: "Number of lines added" }),
   deletions: Type.Number({ description: "Number of lines removed" }),
+})
+
+const isolatedReviewParams = Type.Object({
+  repoRoot: Type.String({ description: "Repository root" }),
+  diffBase: Type.String({ description: "Diff base ref, e.g. main" }),
+  findingsPath: Type.String({ description: "Absolute path where the reviewer session writes its findings artifact" }),
+  promptPath: Type.Optional(Type.String({ description: "Optional prompt template path override" })),
+  incrementalPreviousFindingsPath: Type.Optional(
+    Type.String({ description: "Previous findings path for incremental re-review mode" }),
+  ),
+  timeoutMs: Type.Optional(Type.Number({ description: "Spawn timeout in ms (default 600000)" })),
 })
 
 const sessionCheckpointParams = Type.Object({
@@ -272,6 +284,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
   const workflowState = createWorkflowStateTool()
   const worktreeManager = createWorktreeManagerTool()
   const reviewRouter = createReviewRouterTool()
+  const isolatedReview = createIsolatedReviewTool()
   const sessionCheckpoint = createSessionCheckpointTool()
   const taskSplitter = createTaskSplitterTool()
   const brainstormDialog = createBrainstormDialogTool()
@@ -414,6 +427,28 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         details: result,
       }
+    },
+  })
+
+  pi.registerTool({
+    name: isolatedReview.name,
+    label: "Isolated Review",
+    description:
+      "Spawn a fresh pi session to run 04-review in isolation (no author bias). Blocks until the reviewer finishes, then returns the findings artifact path. Degrades with a machine-readable isolation: degraded marker when spawn fails.",
+    parameters: isolatedReviewParams,
+    async execute(_toolCallId, params, signal) {
+      const result = await isolatedReview.execute(
+        {
+          repoRoot: params.repoRoot,
+          diffBase: params.diffBase,
+          findingsPath: params.findingsPath,
+          promptPath: params.promptPath,
+          incrementalPreviousFindingsPath: params.incrementalPreviousFindingsPath,
+          timeoutMs: params.timeoutMs,
+        },
+        signal,
+      )
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }], details: result }
     },
   })
 

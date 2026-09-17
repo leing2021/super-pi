@@ -17,23 +17,14 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 4. Determine **diff scope** before selecting reviewers
 5. Use **`review_router`** tool to select reviewer personas based on diff metadata
 6. Read relevant **plan** artifact when exists
-7. Run solution search (see `../references/solution-search.md`):
-   - Extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`
-   - Read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance
-   - Fully read top 3 candidates
+7. Run solution search (see `../references/solution-search.md`): extract keywords → `grep -rl "tags:.*keyword" docs/solutions/ ~/.pi/agent/docs/solutions/`; read **frontmatter** only (first 15 lines) of matches → score by severity + tag relevance; fully read top 3 candidates
 8. **Spec axis:** determine spec source via [`references/spec-source-detection.md`](references/spec-source-detection.md) (plan → brainstorm → commit issue ref → skip). Against the chosen spec, report **missing** requirements, **scope creep** (unrequested behaviour), and **wrong implementation** (looks done but isn't).
 9. Produce structured findings using `references/findings-schema.md`
-10. **Autofixable findings:** apply and re-review (cap governed by **Fix loop and chain** below)
+10. **Autofixable findings:** the main session applies autofixes and re-reviews (cap governed by **Fix loop and chain** below; the isolated reviewer never applies fixes — it only marks `autofixable`)
 
 ## Review discipline
 
-Code review is **technical evaluation**, not social performance:
-- **Verify before implementing** any suggestion
-- **YAGNI check:** question features nothing uses
-- **No performative agreement:** verify before concurring
-- **Push back** with reasoning when findings are incorrect
-- **Evidence before assertions:** cite specific code, not principles
-- **Architecture axis:** audit module depth and seams using `../references/module-design.md`
+Code review is **technical evaluation**, not social performance: **verify before implementing** any suggestion; **YAGNI check** — question features nothing uses; **no performative agreement** — verify before concurring; **push back** with reasoning when findings are incorrect; **evidence before assertions** — cite specific code, not principles; **architecture axis** — audit module depth and seams using `../references/module-design.md`.
 
 ### Precision gate
 
@@ -53,15 +44,17 @@ Code review is **technical evaluation**, not social performance:
 5. **Test** — verify each fix individually, no regressions
 6. **Close** — when findings are resolved and tests green, flip the reviewed plan's Status header to `done` and move it to `docs/plans/archive/` (skip if no plan artifact)
 
+## Chain entry: isolated review first
+
+The review executes first in an isolated spawned session via the `isolated_review` tool — a fresh pi session with zero author context runs the reviewer workflow and writes a findings artifact. The main session never reviews its own code unless isolation is unavailable.
+
+Main-session responsibilities: call `isolated_review` (repoRoot, diffBase from handoff, fresh findingsPath under `.context/compound-engineering/findings/`); on `completed` read findings and drive the Fix loop and chain; on `degraded` follow its degraded path; on `aborted` surface to the user — never silently re-run. The sections below define what the spawned reviewer (and a degraded in-session review, verbatim) executes.
+
 ## Workflow
 
-1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`. If found, use `activeFiles`, `artifacts.plan` as starting point. If not found, proceed normally. Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
+1. **Load context**: consume latest handoff before any broad file reads — `context_handoff load` or read `.context/compound-engineering/handoffs/latest.md`; use `activeFiles`, `artifacts.plan` as starting point (proceed normally if absent). Read `CONTEXT.md` if it exists at root — see `../references/domain-language.md`.
 2. Determine diff scope — prefer `branch`/`base` from latest handoff if present; else from explicit target; else ask user
-3. **Load project rules** (blocking — no findings before this completes):
-   - Detect language from changed files (`.ts`/`.tsx`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers, merging `{repo-root}/rules/language-detection.md` (project-level map, same marker wins); full map in [language detection](../references/language-detection.md). Mixed-language diffs: load per language
-   - Check `{repo-root}/rules/` first (overrides package defaults); load `rules/common/code-review.md`, `code-smells.md`, matching `rules/{lang}/` files including `review-checklist.md`, `rules/web/` for frontend/browser changes
-   - Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>[, project-level map]), common=<files>, lang=<files>, web=<files or N/A>`
-   - **Same-session re-entry:** if the transcript already contains a `Rules loaded:` manifest for the same language, do not re-read the rule files — reuse them, cite the earlier manifest, and note the skip
+3. **Load project rules** (blocking — no findings before this completes): detect language from changed files (`.ts`→typescript, `.py`→python, `.go`→golang, `.rs`→rust, `.java`→java) or repo markers, merging `{repo-root}/rules/language-detection.md` (project-level map, same marker wins); mixed-language diffs load per language ([full map](../references/language-detection.md)). Check `{repo-root}/rules/` first (overrides package defaults); load `rules/common/code-review.md`, `code-smells.md`, matching `rules/{lang}/` files including `review-checklist.md`, `rules/web/` for frontend changes. Emit manifest before any finding: `Rules loaded: language=<lang> (via <files/markers>, project-level map), common=<files>, lang=<files>, web=<files or N/A>`. **Same-session re-entry:** if the transcript already has a `Rules loaded:` manifest for the same language, reuse it and note the skip
 4. Collect stats (files, insertions, deletions) → call `review_router`
 5. Read matching plan artifact; if absent, follow [`references/spec-source-detection.md`](references/spec-source-detection.md) to probe brainstorm and commit issue refs
 6. Run solution search
@@ -72,22 +65,29 @@ Code review is **technical evaluation**, not social performance:
 
 ## Optional: QA Test Mode
 
-After code review complete, offer browser QA:
+After code review completes, offer browser QA:
 
 > Code review done. Run browser QA?
 > - **A) Done** — stop here
 > - **B) Browser QA** — find visual/functional bugs
 > - **C) QA + regression tests** — find bugs, fix, add tests
 
-If B or C: read `references/qa-test-mode.md` and execute workflow.
-After QA: include findings in handoff, note fix commits/test files.
+If B or C: read `references/qa-test-mode.md` and execute. After QA: include findings in handoff, note fix commits/test files.
 
 ## Fix loop and chain
 
-1. After producing findings, fix confirmed P0/P1 issues in place, re-verify, and re-review (this subsumes the autofix loop in Core rule 10)
-2. **Cap:** after 2 consecutive review rounds still containing P0/P1 findings, stop and ask the user — do not loop past this valve
-3. P2 findings: record them in the handoff; do not loop on them
-4. When no P0/P1 findings remain: immediately read `../05-learn/SKILL.md` and execute it in this session — do not wait for user instruction
+The spawned reviewer produces findings; the main session (author side) owns every fix:
+
+1. After findings arrive, fix confirmed P0/P1 issues in the main session (subsumes the autofix loop in Core rule 10); verify each fix; run tests
+2. Re-review trigger — iff findings contain a P0, or a previous P1 now has a fix diff awaiting verification. Pure P2 findings never re-enter the loop: record them in the handoff instead
+3. Re-review is incremental: call `isolated_review` again with `incrementalPreviousFindingsPath` = previous round's artifact. The fresh reviewer verifies only the fix diff against those findings — not the whole codebase
+4. The cap of 2 rounds is a ceiling, not a quota: any round that returns all-green (no P0, no P1 fix awaiting verification) ends the loop immediately
+5. 2 rounds exhausted with P0/P1 remaining: stop-the-line — hand the user the latest findings artifact plus the full findings chain (paths of every round) as the decision basis. Do not proceed to 05-learn
+6. All-green: immediately read `../05-learn/SKILL.md` and execute it in this session — do not wait for user instruction
+
+### Degraded mode
+
+When `isolated_review` returns degraded (frontmatter `isolation: degraded` + `spawn_error`): execute the Workflow below in THIS session (author context, reduced independence); keep the degraded markings in every findings artifact produced; loop semantics unchanged — ceiling of 2, all-green early exit, incremental in-session re-review, same stop-the-line delivery
 
 ## Handoff
 

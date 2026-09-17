@@ -48,6 +48,20 @@ describe("skill package contracts", () => {
     expect(existsSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"))).toBe(true)
   })
 
+  test("ce-core registers the isolated_review tool backed by the spawn runner", () => {
+    const indexContent = readFileSync(path.join(repoRoot, "extensions", "ce-core", "index.ts"), "utf8")
+    const runnerContent = readFileSync(
+      path.join(repoRoot, "extensions", "ce-core", "tools", "isolated-review.ts"),
+      "utf8",
+    )
+
+    expect(indexContent).toContain("createIsolatedReviewTool")
+    expect(indexContent).toContain("isolatedReview.name")
+    expect(runnerContent).toContain('name: "isolated_review"')
+    expect(runnerContent).toContain("isolation: degraded")
+    expect(runnerContent).toContain("spawn_error")
+  })
+
 
   test("06-next provides both next-step recommendation and full status report", () => {
     const content = readFileSync(path.join(repoRoot, "skills", "06-next", "SKILL.md"), "utf8")
@@ -247,11 +261,50 @@ describe("skill package contracts", () => {
     expect(findingsSchema).toContain("evidence")
     expect(findingsSchema).toContain("recommended action")
     expect(findingsSchema).toContain("autofixable")
+    // Isolated review integration (spawn-first, author fixes, loop semantics)
+    expect(content).toContain("isolated_review")
+    expect(content).toContain("degraded")
+    expect(content).toContain("incremental")
+    expect(content).toContain("ceiling, not a quota")
+    expect(content).toContain("all-green")
+    expect(content).toContain("never re-enter the loop")
+    expect(content).toContain("full findings chain")
     expect(reviewerSelection).toContain("review_router")
     expect(reviewerSelection).toContain("correctness-reviewer")
     expect(reviewerSelection).toContain("security-reviewer")
     expect(handoff).toContain("05-learn")
     expect(handoff).toContain("autofix")
+  })
+
+  test("pipeline-config routes 03→04 through isolated_review with degraded fallback", () => {
+    const pipelineConfig = readFileSync(
+      path.join(repoRoot, "skills", "references", "pipeline-config.md"),
+      "utf8",
+    )
+
+    expect(pipelineConfig).toContain("isolated_review")
+    expect(pipelineConfig).toContain("degraded")
+    expect(pipelineConfig).toContain("fresh session")
+  })
+
+  test("04-review isolated reviewer prompt enforces review-only identity constraints", () => {
+    const prompt = readFileSync(
+      path.join(repoRoot, "skills", "04-review", "assets", "isolated-reviewer-prompt.md"),
+      "utf8",
+    )
+    const findingsSchema = readFileSync(
+      path.join(repoRoot, "skills", "04-review", "references", "findings-schema.md"),
+      "utf8",
+    )
+
+    expect(prompt).toContain("do NOT fix code")
+    expect(prompt).toContain("05-learn")
+    expect(prompt).toContain("Rules loaded:")
+    expect(prompt).toContain("isolation: isolated")
+    // Schema must define machine-readable isolation fields
+    expect(findingsSchema).toContain("isolation")
+    expect(findingsSchema).toContain("spawn_error")
+    expect(findingsSchema).toContain("degraded")
   })
 
   test("06-next uses workflow_state to recommend the next skill", () => {
@@ -307,9 +360,10 @@ describe("skill package contracts", () => {
     expect(plan).toContain("../03-work/SKILL.md")
     // 03-work: chains into review in-session
     expect(work).toContain("../04-review/SKILL.md")
-    // 04-review: P0/P1 fix loop capped at 2 consecutive rounds (valve), then chains into learn
+    // 04-review: isolated spawn first, author-side fix loop capped at 2 rounds (ceiling, valve), then chains into learn
     expect(review).toContain("P0/P1")
-    expect(review).toContain("2 consecutive")
+    expect(review).toContain("ceiling, not a quota")
+    expect(review).toContain("isolated_review")
     expect(review).toContain("../05-learn/SKILL.md")
     // 05-learn: chain terminus — no further stage loading
     expect(learn).toContain("Pipeline terminus")

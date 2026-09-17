@@ -1,5 +1,20 @@
 # Findings schema
 
+## Isolation frontmatter (required for every findings artifact)
+
+Start every findings artifact with machine-readable isolation metadata:
+
+```yaml
+---
+isolation: isolated   # or: degraded
+spawn_error: cli_not_found | version | timeout | child_failed   # only when isolation: degraded
+---
+```
+
+- `isolation: isolated` — produced by a fresh spawned reviewer session (no author context)
+- `isolation: degraded` — isolated spawn failed; the review ran in the author's session with reduced independence. Downstream consumers (05-learn, handoff) must treat degraded findings as lower-confidence evidence.
+- `spawn_error` — required when degraded: why the spawn failed (`cli_not_found`, `version`, `timeout`, or `child_failed` — the reviewer process exited nonzero, detail included) so the user knows what to fix before re-running
+
 Each structured finding must include:
 
 - `severity` — one of: `high`, `moderate`, `low`

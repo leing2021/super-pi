@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { mkdir, writeFile } from "node:fs/promises"
+import { readFileSync } from "node:fs"
 import ceCoreExtension, { COMPACTION_FOCUS_INSTRUCTIONS } from "../extensions/ce-core/index"
 import {
   getBrainstormArtifactPath,
@@ -1225,7 +1226,7 @@ describe("session_history", () => {
 })
 
 describe("ce-core extension runtime registration", () => {
-  test("registers 11 workflow control tools (no subagent tools)", () => {
+  test("registers 12 workflow control tools (single-purpose isolated_review, no subagent framework)", () => {
     const registeredNames: string[] = []
     const eventHandlers = new Map<string, any[]>()
     const pi = {
@@ -1250,6 +1251,7 @@ describe("ce-core extension runtime registration", () => {
       "workflow_state",
       "worktree_manager",
       "review_router",
+      "isolated_review",
       "session_checkpoint",
       "task_splitter",
       "brainstorm_dialog",
@@ -2456,3 +2458,22 @@ describe("public exports", () => {
     expect(exportNames.sort()).toEqual(expectedExports.sort())
   })
 })
+
+describe("isolated_review registration wiring", () => {
+  test("forwards the AbortSignal from pi execute into the tool", () => {
+    const indexContent = readFileSync(
+      path.join(repoRootForWiring(), "extensions", "ce-core", "index.ts"),
+      "utf8",
+    )
+    const registerBlock = indexContent.slice(
+      indexContent.indexOf("name: isolatedReview.name"),
+      indexContent.indexOf("name: sessionCheckpoint.name"),
+    )
+    expect(registerBlock).toContain("async execute(_toolCallId, params, signal)")
+    expect(registerBlock).toContain("signal,")
+  })
+})
+
+function repoRootForWiring(): string {
+  return path.resolve(import.meta.dirname, "..")
+}

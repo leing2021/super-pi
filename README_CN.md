@@ -36,7 +36,7 @@ pi install npm:@leing2021/super-pi
 | **01-brainstorm** | YC 风格追问,三种模式(Startup/Builder/CE),领域词汇持久化 | `brainstorm_dialog` |
 | **02-plan** | RED→GREEN→REFACTOR,增量更新,可选 CEO Review | `plan_diff` |
 | **03-work** | inline 执行,断点续传,严格 TDD | `session_checkpoint`, `task_splitter` |
-| **04-review** | 自动分配评审,六轴发现(Standards + Spec),自动修复循环 | `review_router` |
+| **04-review** | 隔离 spawn 审查,六轴发现,主链修复循环(增量重审, cap 上限制) | `isolated_review`, `review_router` |
 | **05-learn** | 重叠检查 → 可搜索知识卡片 | — |
 | **06-next** | 下一步推荐 + 完整状态报告 | `workflow_state` |
 | **07-worktree** | 隔离 git worktree 开发 | `worktree_manager` |
@@ -149,7 +149,7 @@ your-project/
 
 - **7 个 skills** 配专用工具
 - **12 CE + 10 Pi 内置工具**
-- **~4,100 行** TypeScript, **219 个测试** (904 assertions)
+- **~4,100 行** TypeScript, **236 个测试** (967 assertions)
 - **渐进式规则加载** ——只加载当前任务需要的
 
 规则放在 `rules/` (12 个通用 + 语言特定：TypeScript、Python、Go、Rust、Web)。项目级规则优先；项目还可通过项目级 `rules/language-detection.md` 标记表 + 自带规则目录新增其他语言（追加 + 同名覆盖）。
