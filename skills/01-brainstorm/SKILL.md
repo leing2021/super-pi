@@ -13,7 +13,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 - Use **`brainstorm_dialog`** to manage multi-round conversations (`start` → `refine` → `summarize`).
 - Ask **one question at a time**.
-- Every question ships with a **recommended answer**: mark exactly one option with a `✓ 推荐` prefix in `ask_user_question` and give a one-line reason before asking. Questions without a recommendation are a blocking violation.
+- Every question ships with a **recommended answer**: put the recommendation and its one-line reason in the `question` text on its own line below the question (e.g. `✓ 推荐「X」：<理由>`), NOT inside options — option labels must stay short (≤ 20 chars) or the selector UI truncates them. Questions without a recommendation are a blocking violation.
 - Compare **2-3 approaches** when multiple directions are plausible.
 - Keep focused on **what** to build, not implementation details.
 - **Explicit user approval required** before chaining into `02-plan` (the approval is the 01→02 gate).

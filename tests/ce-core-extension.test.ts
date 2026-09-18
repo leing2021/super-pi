@@ -291,6 +291,42 @@ describe("ask_user_question", () => {
     expect(toOptionDisplayLabel({ label: "Clean" })).toBe("Clean")
   })
 
+  test("toOptionDisplayLabel truncates by terminal display width, not UTF-16 length (CJK counts as 2 columns)", () => {
+    // 35 CJK chars = 70 display columns > 60 → must truncate (old .length-based check saw 35 ≤ 60 and kept it)
+    const cjk35 = "汉".repeat(35)
+    const truncated = toOptionDisplayLabel(cjk35)
+    expect(truncated).toBe("汉".repeat(29) + "…")
+    expect([...truncated].length).toBe(30)
+
+    // Exactly 60 columns → no truncation
+    expect(toOptionDisplayLabel("汉".repeat(30))).toBe("汉".repeat(30))
+
+    // Regression: ASCII keeps the old 60-code-unit behavior
+    expect(toOptionDisplayLabel("a".repeat(70))).toBe("a".repeat(59) + "…")
+    expect(toOptionDisplayLabel("a".repeat(60))).toBe("a".repeat(60))
+  })
+
+  test("toOptionDisplayLabel counts emoji as wide characters when truncating", () => {
+    // 👍 is 2 columns wide: 40 emoji = 80 columns > 60 → 29 emoji + ellipsis
+    const emoji40 = "👍".repeat(40)
+    const truncated = toOptionDisplayLabel(emoji40)
+    expect(truncated).toBe("👍".repeat(29) + "…")
+  })
+
+  test("toOptionDisplayLabel never splits a grapheme cluster (ZWJ emoji sequence) at the cut point", () => {
+    // 👨‍👩‍👧 is one grapheme (visible width 2) built from multiple code points;
+    // the cut must keep or drop it as a whole, never emit a dangling ZWJ
+    const family = "👨‍👩‍👧"
+    const label = "汉".repeat(28) + family + "汉".repeat(10)
+    expect(toOptionDisplayLabel(label)).toBe("汉".repeat(28) + family + "…")
+  })
+
+  test("toOptionDisplayLabel handles mixed CJK + ASCII width at the cut boundary", () => {
+    // 20 CJK (40 cols) + 19 ASCII (19 cols) = 59 → fits; next ASCII would exceed
+    const mixed = "汉".repeat(20) + "a".repeat(39) + "尾"
+    expect(toOptionDisplayLabel(mixed)).toBe("汉".repeat(20) + "a".repeat(19) + "…")
+  })
+
   test("supports structured { label, description } options returning the label", async () => {
     const tool = createAskUserQuestionTool()
     const options = [

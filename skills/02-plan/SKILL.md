@@ -25,7 +25,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 5. Write plan to `docs/plans/` with the `> Status: draft` header (closed vocabulary: draft → ready → executing → done → deprecated); flip to `ready` when the plan is finalized
 6. If plan exists, use **`plan_diff`** to compare and patch incrementally
 7. End by recommending `03-work` — see the **Work gate and chaining** section below.
-8. Every question to the user ships with a **recommended answer**: mark exactly one option with a `✓ 推荐` prefix in `ask_user_question` and give a one-line reason before asking. Questions without a recommendation are a blocking violation.
+8. Every question to the user ships with a **recommended answer**: put the recommendation and its one-line reason in the `question` text on its own line below the question (e.g. `✓ 推荐「X」：<理由>`), NOT inside options — option labels must stay short (≤ 20 chars) or the selector UI truncates them. Questions without a recommendation are a blocking violation.
 
 ## Work gate and chaining
 

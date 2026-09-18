@@ -1,3 +1,5 @@
+import { visibleWidth } from "@earendil-works/pi-tui"
+
 export type QuestionOption = string | { label: string; description?: string }
 
 export interface AskUserQuestionInput {
@@ -20,12 +22,39 @@ export interface AskUserQuestionResult {
 export const CUSTOM_SENTINEL = "Other"
 
 /**
- * Maximum display width for a normalized option label. Long labels overflow the
- * selector row in the built-in `ctx.ui.select()` renderer (see
- * `docs/bug/ask-user-question-long-options-truncated.md`), so labels are kept
- * to a single line and truncated to this width.
+ * Maximum display width (terminal columns) for a normalized option label. Long
+ * labels overflow the selector row in the built-in `ctx.ui.select()` renderer
+ * (see `docs/bug/ask-user-question-long-options-truncated.md`), so labels are
+ * kept to a single line and truncated to this width. Width is measured in
+ * terminal columns (CJK/emoji count as 2), not UTF-16 length.
  */
 export const MAX_OPTION_LABEL_WIDTH = 60
+
+/**
+ * Truncate `str` so its terminal display width fits `maxWidth` columns,
+ * appending an ellipsis when truncation happens. Iterates grapheme clusters
+ * (via `Intl.Segmenter` when available), so multi-code-point sequences such as
+ * ZWJ emoji families are measured and cut as a whole.
+ */
+function truncateToDisplayWidth(str: string, maxWidth: number): string {
+  if (visibleWidth(str) <= maxWidth) return str
+  let width = 0
+  let out = ""
+  for (const cluster of segmentGraphemes(str)) {
+    const w = visibleWidth(cluster)
+    if (width + w > maxWidth - 1) break
+    out += cluster
+    width += w
+  }
+  return out + "…"
+}
+
+/** Split into grapheme clusters; falls back to code points without `Intl.Segmenter`. */
+function segmentGraphemes(str: string): string[] {
+  if (typeof Intl.Segmenter === "undefined") return [...str]
+  const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
+  return [...segmenter.segment(str)].map((s) => s.segment)
+}
 
 /**
  * Build the single-line display label for one option.
@@ -34,7 +63,8 @@ export const MAX_OPTION_LABEL_WIDTH = 60
  * Rules:
  * - Take only the first line (drop embedded `\n`).
  * - Trim surrounding whitespace.
- * - Truncate to {@link MAX_OPTION_LABEL_WIDTH} with an ellipsis when needed.
+ * - Truncate to {@link MAX_OPTION_LABEL_WIDTH} terminal columns with an
+ *   ellipsis when needed (CJK/emoji count as 2 columns).
  */
 export function toOptionDisplayLabel(option: QuestionOption): string {
   if (typeof option === "object" && option !== null && "label" in option) {
@@ -42,19 +72,11 @@ export function toOptionDisplayLabel(option: QuestionOption): string {
     const desc = option.description?.trim()
     const combined = desc ? `${label} — ${desc}` : label
     const firstLine = combined.split("\n", 1)[0] ?? ""
-    const trimmed = firstLine.trim()
-    if (trimmed.length <= MAX_OPTION_LABEL_WIDTH) {
-      return trimmed
-    }
-    return trimmed.slice(0, MAX_OPTION_LABEL_WIDTH - 1) + "…"
+    return truncateToDisplayWidth(firstLine.trim(), MAX_OPTION_LABEL_WIDTH)
   }
   const str = String(option)
   const firstLine = str.split("\n", 1)[0] ?? ""
-  const trimmed = firstLine.trim()
-  if (trimmed.length <= MAX_OPTION_LABEL_WIDTH) {
-    return trimmed
-  }
-  return trimmed.slice(0, MAX_OPTION_LABEL_WIDTH - 1) + "…"
+  return truncateToDisplayWidth(firstLine.trim(), MAX_OPTION_LABEL_WIDTH)
 }
 
 /**
