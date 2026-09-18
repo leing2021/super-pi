@@ -310,3 +310,94 @@ describe("loadPromptTemplate", () => {
     cleanup(path.dirname(custom))
   })
 })
+
+describe("progress reporting (onProgress)", () => {
+  test("reports spawn start and each assistant message preview; ignores non-assistant events", async () => {
+    const findingsPath = tmpFindingsPath()
+    const child = makeFakeChild()
+    const spawnFn = makeSpawnFn([child], [])
+    const progress: string[] = []
+    const messageEnd = JSON.stringify({
+      type: "message_end",
+      message: { role: "assistant", content: [{ type: "text", text: "Reading diff against main\nsecond line" }] },
+    })
+
+    const pending = runIsolatedReview(
+      { repoRoot: "/repo", diffBase: "main", findingsPath, promptTemplate: "P" },
+      { spawnFn, probeCliVersion: okVersionProbe },
+      undefined,
+      (text) => progress.push(text),
+    )
+
+    queueMicrotask(() => {
+      child.emitStdout(JSON.stringify({ type: "message_start", message: { role: "assistant" } }) + "\n")
+      child.emitStdout(messageEnd + "\n")
+      child.emitExit(0)
+    })
+
+    const result = await pending
+    expect(result.status).toBe("completed")
+    // spawn-start expectation message
+    expect(progress.some((t) => t.includes("spawned"))).toBe(true)
+    // exactly one preview for the one assistant message_end; newline flattened
+    expect(progress.filter((t) => t.includes("Reading diff against main second line")).length).toBe(1)
+    expect(progress.length).toBe(2)
+    cleanup(path.dirname(findingsPath))
+  })
+
+  test("aborted run writes evidence findings (isolation marker, elapsed, stderr tail)", async () => {
+    const findingsPath = tmpFindingsPath()
+    const child = makeFakeChild()
+    const spawnFn = makeSpawnFn([child], [])
+    const controller = new AbortController()
+
+    const pending = runIsolatedReview(
+      { repoRoot: "/repo", diffBase: "main", findingsPath, promptTemplate: "P" },
+      { spawnFn, probeCliVersion: okVersionProbe },
+      controller.signal,
+    )
+
+    queueMicrotask(() => {
+      child.emitStderr("mid-run noise\n")
+      controller.abort()
+    })
+
+    const result = await pending
+    if (result.status !== "aborted") throw new Error(`expected aborted, got ${result.status}`)
+    expect(child.killed).toBe(true)
+    expect(result.findingsWritten).toBe(true)
+    expect(result.elapsedMs).toBeGreaterThanOrEqual(0)
+    const content = readFileSync(findingsPath, "utf8")
+    expect(content).toContain("isolation: aborted")
+    expect(content).toContain("mid-run noise")
+    expect(content).toMatch(/aborted after \d+s/)
+    cleanup(path.dirname(findingsPath))
+  })
+})
+
+describe("isolated_review tool execute (onUpdate forwarding + abort summary)", () => {
+  test("forwards progress to onUpdate and reports elapsed in the aborted summary", async () => {
+    const { createIsolatedReviewTool } = await import("../extensions/ce-core/tools/isolated-review")
+    const findingsPath = tmpFindingsPath()
+    const child = makeFakeChild()
+    const spawnFn = makeSpawnFn([child], [])
+    const controller = new AbortController()
+    const updates: string[] = []
+    const tool = createIsolatedReviewTool({ spawnFn, probeCliVersion: okVersionProbe })
+
+    const pending = tool.execute(
+      { repoRoot: "/repo", diffBase: "main", findingsPath },
+      controller.signal,
+      (update) => {
+        for (const block of update.content) if (block.type === "text") updates.push(block.text)
+      },
+    )
+
+    queueMicrotask(() => controller.abort())
+
+    const result = await pending
+    expect(result.summary).toMatch(/aborted after \d+s/)
+    expect(updates.some((t) => t.includes("spawned"))).toBe(true)
+    cleanup(path.dirname(findingsPath))
+  })
+})

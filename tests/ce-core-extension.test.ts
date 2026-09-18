@@ -2635,8 +2635,9 @@ describe("isolated_review registration wiring", () => {
       indexContent.indexOf("name: isolatedReview.name"),
       indexContent.indexOf("name: sessionCheckpoint.name"),
     )
-    expect(registerBlock).toContain("async execute(_toolCallId, params, signal)")
+    expect(registerBlock).toContain("async execute(_toolCallId, params, signal, onUpdate)")
     expect(registerBlock).toContain("signal,")
+    expect(registerBlock).toContain("onUpdate,")
   })
 })
 

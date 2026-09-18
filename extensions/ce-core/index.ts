@@ -434,7 +434,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     description:
       "Spawn a fresh pi session to run 04-review in isolation (no author bias). Blocks until the reviewer finishes, then returns the findings artifact path. Degrades with a machine-readable isolation: degraded marker when spawn fails.",
     parameters: isolatedReviewParams,
-    async execute(_toolCallId, params, signal) {
+    async execute(_toolCallId, params, signal, onUpdate) {
       const result = await isolatedReview.execute(
         {
           repoRoot: params.repoRoot,
@@ -445,6 +445,7 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
           timeoutMs: params.timeoutMs,
         },
         signal,
+        onUpdate,
       )
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }], details: result }
     },

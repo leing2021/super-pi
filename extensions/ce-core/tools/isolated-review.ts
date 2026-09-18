@@ -1,6 +1,7 @@
 import { spawn as nodeSpawn } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import type { AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent"
 
 export type SpawnErrorCode = "cli_not_found" | "version" | "timeout" | "child_failed"
 
@@ -17,6 +18,9 @@ export type SpawnFn = (
   args: string[],
   options: { cwd: string },
 ) => ReviewChildProcess
+
+/** Progress text pushed to the host UI while the reviewer session runs. */
+export type ProgressReporter = (text: string) => void
 
 export type VersionProbe = (command: string) => Promise<string | null>
 
@@ -50,7 +54,13 @@ export type IsolatedReviewResult =
       findingsWritten: true
       spawnError: SpawnErrorCode
     }
-  | { status: "aborted"; isolation: "aborted"; findingsPath: string }
+  | {
+      status: "aborted"
+      isolation: "aborted"
+      findingsPath: string
+      findingsWritten: boolean
+      elapsedMs: number
+    }
 
 const MIN_PI_VERSION = { major: 0, minor: 85 }
 const DEFAULT_TIMEOUT_MS = 600_000
@@ -118,6 +128,27 @@ function degradedFindingsContent(spawnError: SpawnErrorCode, input: IsolatedRevi
     "",
     `Repo root: ${input.repoRoot}`,
     `Diff base: ${input.diffBase}`,
+  ].join("\n")
+}
+
+function abortedFindingsContent(input: IsolatedReviewInput, elapsedMs: number, stderrTail: string): string {
+  return [
+    "---",
+    "isolation: aborted",
+    "---",
+    "",
+    "# Review findings (aborted)",
+    "",
+    `Isolated review was aborted after ${Math.round(elapsedMs / 1000)}s (abort signal; child killed).`,
+    "The spawned reviewer was interrupted mid-run; no findings were produced.",
+    "Surface this to the user — never silently re-run without a decision.",
+    "",
+    `Repo root: ${input.repoRoot}`,
+    `Diff base: ${input.diffBase}`,
+    "",
+    "## Reviewer stderr tail",
+    "",
+    stderrTail || "(empty)",
   ].join("\n")
 }
 
@@ -193,11 +224,30 @@ function promptArgs(prompt: string): string[] {
   return ["--mode", "json", "--no-session", "-p", prompt]
 }
 
+/** Single-line preview of an assistant message_end event, or null if the line is not one. */
+export function assistantProgressPreview(line: string, maxChars = 120): string | null {
+  let event: { type?: string; message?: { role?: string; content?: Array<{ type?: string; text?: string }> } }
+  try {
+    event = JSON.parse(line)
+  } catch {
+    return null
+  }
+  if (event?.type !== "message_end" || event.message?.role !== "assistant") return null
+  const text = (event.message.content ?? [])
+    .filter((block) => block?.type === "text" && typeof block.text === "string")
+    .map((block) => block.text)
+    .join("")
+  if (text.length === 0) return null
+  const flat = text.replace(/\s+/g, " ").trim()
+  return flat.length <= maxChars ? flat : flat.slice(0, maxChars - 1) + "…"
+}
+
 async function runOnce(
   input: IsolatedReviewInput,
   deps: IsolatedReviewDeps,
   signal: AbortSignal | undefined,
   timeoutMs: number,
+  onProgress?: ProgressReporter,
 ): Promise<{ outcome: "completed" | "timeout" | "enoent" | "child_failed" | "aborted"; output: string | null; stderrTail: string }> {
   const prompt = buildReviewPrompt(input)
   let child: ReviewChildProcess
@@ -207,9 +257,14 @@ async function runOnce(
     if (wrapSpawnError(error)) return { outcome: "enoent", output: null, stderrTail: "" }
     throw error
   }
+  onProgress?.("[isolated_review] reviewer spawned (fresh pi session); typical run 2-5 min")
   const lines: string[] = []
   const stderr = collectStderrTail(child)
-  collectOutput(child, (line) => lines.push(line))
+  collectOutput(child, (line) => {
+    lines.push(line)
+    const preview = assistantProgressPreview(line)
+    if (preview) onProgress?.(`[isolated_review] ${preview}`)
+  })
   const onAbort = () => child.kill()
   signal?.addEventListener("abort", onAbort)
   try {
@@ -227,12 +282,14 @@ export async function runIsolatedReview(
   input: IsolatedReviewInput,
   deps?: Partial<IsolatedReviewDeps>,
   signal?: AbortSignal,
+  onProgress?: ProgressReporter,
 ): Promise<IsolatedReviewResult> {
   const resolvedDeps: IsolatedReviewDeps = {
     spawnFn: deps?.spawnFn ?? defaultSpawnFn,
     probeCliVersion: deps?.probeCliVersion ?? defaultVersionProbe,
   }
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const startedAt = Date.now()
 
   const version = await resolvedDeps.probeCliVersion("pi")
   if (version === null) {
@@ -247,10 +304,12 @@ export async function runIsolatedReview(
 
   let lastStderrTail = ""
   for (let attempt = 0; attempt <= TIMEOUT_RETRIES; attempt++) {
-    const { outcome, output, stderrTail } = await runOnce(input, resolvedDeps, signal, timeoutMs)
+    const { outcome, output, stderrTail } = await runOnce(input, resolvedDeps, signal, timeoutMs, onProgress)
     if (outcome !== "timeout") lastStderrTail = stderrTail
     if (outcome === "aborted") {
-      return { status: "aborted", isolation: "aborted", findingsPath: input.findingsPath }
+      const elapsedMs = Date.now() - startedAt
+      writeFileSync(input.findingsPath, abortedFindingsContent(input, elapsedMs, stderrTail))
+      return { status: "aborted", isolation: "aborted", findingsPath: input.findingsPath, findingsWritten: true, elapsedMs }
     }
     if (outcome === "enoent") {
       writeFileSync(input.findingsPath, degradedFindingsContent("cli_not_found", input))
@@ -327,11 +386,18 @@ export interface IsolatedReviewToolInput {
   timeoutMs?: number
 }
 
-export function createIsolatedReviewTool() {
+export function createIsolatedReviewTool(deps?: Partial<IsolatedReviewDeps>) {
   return {
     name: "isolated_review" as const,
-    async execute(input: IsolatedReviewToolInput, signal?: AbortSignal): Promise<IsolatedReviewResult & { summary: string; promptSource: string }> {
+    async execute(
+      input: IsolatedReviewToolInput,
+      signal?: AbortSignal,
+      onUpdate?: AgentToolUpdateCallback<unknown>,
+    ): Promise<IsolatedReviewResult & { summary: string; promptSource: string }> {
       const prompt = loadPromptTemplate(input.repoRoot, input.promptPath)
+      const onProgress: ProgressReporter | undefined = onUpdate
+        ? (text) => onUpdate({ content: [{ type: "text", text }], details: {} })
+        : undefined
       const result = await runIsolatedReview(
         {
           repoRoot: input.repoRoot,
@@ -343,14 +409,15 @@ export function createIsolatedReviewTool() {
             ? { previousFindingsPath: input.incrementalPreviousFindingsPath }
             : undefined,
         },
-        undefined,
+        deps,
         signal,
+        onProgress,
       )
       const summary =
         result.status === "completed"
           ? `isolated review completed (prompt: ${prompt.source}); findings at ${result.findingsPath} (written: ${result.findingsWritten})`
           : result.status === "aborted"
-            ? `isolated review aborted; findings path ${result.findingsPath}`
+            ? `isolated review aborted after ${Math.round(result.elapsedMs / 1000)}s (abort signal); evidence at ${result.findingsPath}`
             : degradedSummary(result)
       return { ...result, summary, promptSource: prompt.source }
     },
