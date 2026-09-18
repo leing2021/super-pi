@@ -7,6 +7,7 @@ import {
   extractAssistantText,
   loadPromptTemplate,
   runIsolatedReview,
+  toolExecutionPreview,
   type ReviewChildProcess,
   type SpawnFn,
   type VersionProbe,
@@ -79,6 +80,40 @@ describe("extractAssistantText", () => {
   test("ignores malformed JSON lines", () => {
     const lines = ["not json at all", '{"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"ok"}]}}']
     expect(extractAssistantText(lines)).toBe("ok")
+  })
+})
+
+describe("toolExecutionPreview", () => {
+  test("previews tool_execution_start with the primary arg value", () => {
+    const line = JSON.stringify({ type: "tool_execution_start", toolCallId: "t1", toolName: "read", args: { file_path: "/repo/diff.patch" } })
+    expect(toolExecutionPreview(line)).toBe("tool read: /repo/diff.patch")
+  })
+
+  test("flattens and truncates long args like bash commands", () => {
+    const line = JSON.stringify({ type: "tool_execution_start", toolName: "bash", args: { command: `rg pattern\n${"x".repeat(200)}` } })
+    const preview = toolExecutionPreview(line)
+    expect(preview).toMatch(/^tool bash: rg pattern x+/)
+    // maxChars caps the args portion; the "tool bash: " prefix adds 11 chars
+    expect(preview!.length).toBeLessThanOrEqual("tool bash: ".length + 120)
+    expect(preview!.endsWith("…"))
+  })
+
+  test("previews tool_execution_end only when it errored", () => {
+    const failed = JSON.stringify({ type: "tool_execution_end", toolCallId: "t1", toolName: "bash", isError: true, result: "boom" })
+    expect(toolExecutionPreview(failed)).toBe("tool bash failed")
+    const ok = JSON.stringify({ type: "tool_execution_end", toolCallId: "t1", toolName: "bash", isError: false, result: { big: "payload" } })
+    expect(toolExecutionPreview(ok)).toBeNull()
+  })
+
+  test("falls back to stringified args when no known key matches", () => {
+    const line = JSON.stringify({ type: "tool_execution_start", toolName: "custom", args: { nested: { a: 1 } } })
+    expect(toolExecutionPreview(line)).toBe('tool custom: {"nested":{"a":1}}')
+  })
+
+  test("returns null for non-tool or malformed lines", () => {
+    expect(toolExecutionPreview("not json")).toBeNull()
+    expect(toolExecutionPreview('{"type":"message_end","message":{"role":"assistant","content":[]}}')).toBeNull()
+    expect(toolExecutionPreview('{"type":"agent_start"}')).toBeNull()
   })
 })
 
@@ -342,6 +377,35 @@ describe("progress reporting (onProgress)", () => {
     // exactly one preview for the one assistant message_end; newline flattened
     expect(progress.filter((t) => t.includes("Reading diff against main second line")).length).toBe(1)
     expect(progress.length).toBe(2)
+    cleanup(path.dirname(findingsPath))
+  })
+
+  test("reports tool_execution events so tool-only stretches keep the UI moving", async () => {
+    const findingsPath = tmpFindingsPath()
+    const child = makeFakeChild()
+    const spawnFn = makeSpawnFn([child], [])
+    const progress: string[] = []
+
+    const pending = runIsolatedReview(
+      { repoRoot: "/repo", diffBase: "main", findingsPath, promptTemplate: "P" },
+      { spawnFn, probeCliVersion: okVersionProbe },
+      undefined,
+      (text) => progress.push(text),
+    )
+
+    queueMicrotask(() => {
+      child.emitStdout(JSON.stringify({ type: "tool_execution_start", toolCallId: "t1", toolName: "read", args: { file_path: "/repo/rules/review.md" } }) + "\n")
+      child.emitStdout(JSON.stringify({ type: "tool_execution_end", toolCallId: "t1", toolName: "read", isError: false, result: "ok" }) + "\n")
+      child.emitStdout(JSON.stringify({ type: "tool_execution_start", toolCallId: "t2", toolName: "bash", args: { command: "rg TODO" } }) + "\n")
+      child.emitExit(0)
+    })
+
+    const result = await pending
+    expect(result.status).toBe("completed")
+    expect(progress.some((t) => t.includes("tool read: /repo/rules/review.md"))).toBe(true)
+    // non-error tool_execution_end stays silent
+    expect(progress.some((t) => t.includes("tool read failed"))).toBe(false)
+    expect(progress.some((t) => t.includes("tool bash: rg TODO"))).toBe(true)
     cleanup(path.dirname(findingsPath))
   })
 
