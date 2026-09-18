@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { createArtifactHelperTool, type ArtifactType } from "./tools/artifact-helper"
-import { createAskUserQuestionTool, CUSTOM_SENTINEL } from "./tools/ask-user-question"
+import { createAskUserQuestionTool, CUSTOM_SENTINEL, MAX_OPTION_LABEL_WIDTH } from "./tools/ask-user-question"
 import { createAskUserQuestionCustomFactory } from "./tools/ask-user-question-ui"
 import { createWorkflowStateTool } from "./tools/workflow-state"
 import { createWorktreeManagerTool } from "./tools/worktree-manager"
@@ -50,6 +50,14 @@ function runAskUserQuestionExclusive<T>(task: () => Promise<T>): Promise<T> {
  * through the scrollable custom dialog so long questions/options stay readable
  * (see `docs/bug/ask-user-question-long-text-not-scrollable.md`). Otherwise
  * fall back to the built-in `ctx.ui.select()`.
+ *
+ * Label truncation policy:
+ * - Custom selector: no tool-layer cap (`maxLabelWidth` omitted) — it receives
+ *   the real terminal width in `render(width)` and truncates there, so wide
+ *   terminals show the full option text.
+ * - Built-in fallback: cap labels at {@link MAX_OPTION_LABEL_WIDTH} columns,
+ *   because that renderer wraps long text into multiple rows and breaks the
+ *   one-option-per-row layout (see `docs/bug/ask-user-question-long-options-truncated.md`).
  */
 function buildAskUserQuestionUi(ctx: any): import("./tools/ask-user-question").AskUserQuestionUi {
   const useCustom = ctx?.mode === "tui" && typeof ctx?.ui?.custom === "function"
@@ -58,7 +66,7 @@ function buildAskUserQuestionUi(ctx: any): import("./tools/ask-user-question").A
     (await ctx.ui.select(question, options)) ?? null
 
   if (!useCustom) {
-    return { input, select: selectFallback }
+    return { input, select: selectFallback, maxLabelWidth: MAX_OPTION_LABEL_WIDTH }
   }
 
   const select = async (question: string, options: string[]): Promise<string | null> => {

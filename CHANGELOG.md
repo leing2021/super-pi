@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.39.2 — ask_user_question options no longer pre-truncated at 60 columns
+- **Root cause of “options still clipped”**: the 0.25.0 mitigation truncated every option label to 60 terminal columns in the tool layer (`toOptionDisplayLabel`), before any renderer saw the terminal width. The custom scrollable selector receives the real width in `render(width)` and truncates there — but the text was already destroyed upstream, so even wide terminals showed `…` at ~60 columns.
+- **Truncation moved to the renderer that owns the width** (`extensions/ce-core/tools/ask-user-question.ts`, `extensions/ce-core/index.ts`): the `AskUserQuestionUi` adapter now declares an optional `maxLabelWidth`. The built-in `ctx.ui.select()` fallback sets it to 60 (its renderer wraps long text and breaks the one-option-per-row layout); the custom scrollable selector omits it, so labels arrive intact and are truncated against the actual terminal width at draw time. Label→original mapping is computed after the cap, so fallback answers still map back to the full option text.
+- **Label normalization keeps full first line** when no `maxWidth` is passed (`toOptionDisplayLabel(option, maxWidth?)`, `normalizeQuestionOptions(options, maxWidth?)`); all width-measurement semantics (CJK/emoji = 2 columns, grapheme-safe cuts) are unchanged and now exercised via explicit-width tests.
+- Docs: `docs/bug/ask-user-question-long-options-truncated.md` (repo-local, not in the npm package) status updated — custom selector fixed (0.39.2); fallback mitigated.
+- Tests: 260 passing (1041 assertions) +5 (no-cap full label through tool + custom UI, capped fallback mapping, wide-terminal render shows full CJK label, narrow-terminal render stays within width, fallback wiring cap locked at the registration layer); `tsc --noEmit` clean.
+
 ### 0.39.1 — isolated_review progress now covers tool executions
 - **Tool-only stretches stop freezing the UI** (`extensions/ce-core/tools/isolated-review.ts`): live progress keyed only on assistant `message_end` text, so the minutes the spawned reviewer spent calling tools (reading the diff, rg, loading rules) emitted zero output — the host TUI looked frozen mid-review. `tool_execution_start` now streams a one-line preview (`tool read: <path>`, `tool bash: <command>`), and `tool_execution_end` reports failures only; non-error ends stay silent to avoid noise.
 - **Args preview**: picks the primary arg (`file_path`/`path`/`command`/`query`/`pattern`/`url`/`skill`), flattened to one line, capped at 120 chars.

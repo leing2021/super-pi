@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { mkdir, writeFile } from "node:fs/promises"
 import { readFileSync } from "node:fs"
+import { visibleWidth } from "@earendil-works/pi-tui"
 import ceCoreExtension, { COMPACTION_FOCUS_INSTRUCTIONS } from "../extensions/ce-core/index"
 import {
   getBrainstormArtifactPath,
@@ -204,7 +205,7 @@ describe("ask_user_question", () => {
     expect(result.mode).toBe("select")
   })
 
-  test("preserves original full option when display label is truncated", async () => {
+  test("preserves original full option when display label is truncated (ui.maxLabelWidth set)", async () => {
     const tool = createAskUserQuestionTool()
     const longSingleLine = "A".repeat(200)
 
@@ -213,10 +214,51 @@ describe("ask_user_question", () => {
       {
         input: async () => null,
         select: async (_q, options) => options[0],
+        maxLabelWidth: 60,
       },
     )
 
     expect(result.answer).toBe(longSingleLine)
+  })
+
+  test("ui adapter without maxLabelWidth (custom scrollable UI) receives the full untruncated label", async () => {
+    const tool = createAskUserQuestionTool()
+    const longOption = "B".repeat(200)
+    let seen: string[] = []
+
+    await tool.execute(
+      { question: "Pick", options: [longOption], allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, options) => {
+          seen = options
+          return options[0]
+        },
+      },
+    )
+
+    expect(seen[0]).toBe(longOption)
+  })
+
+  test("ui adapter with maxLabelWidth (built-in select fallback) receives truncated labels", async () => {
+    const tool = createAskUserQuestionTool()
+    const longOption = "C".repeat(200)
+    let seen: string[] = []
+
+    const result = await tool.execute(
+      { question: "Pick", options: [longOption], allowCustom: false },
+      {
+        input: async () => null,
+        select: async (_q, options) => {
+          seen = options
+          return options[0]
+        },
+        maxLabelWidth: 60,
+      },
+    )
+
+    expect(seen[0].length).toBeLessThanOrEqual(61) // 60 cols + ellipsis (ASCII)
+    expect(result.answer).toBe(longOption) // full text still mapped back
   })
 
   test("disambiguates duplicate display labels without losing original answer", async () => {
@@ -291,25 +333,33 @@ describe("ask_user_question", () => {
     expect(toOptionDisplayLabel({ label: "Clean" })).toBe("Clean")
   })
 
-  test("toOptionDisplayLabel truncates by terminal display width, not UTF-16 length (CJK counts as 2 columns)", () => {
+  test("toOptionDisplayLabel keeps the full first line when no maxWidth is given (render layer truncates at draw time)", () => {
+    // Regression: the old behavior hard-truncated at 60 columns in the tool
+    // layer, so even the wide custom selector could never show more than 60.
+    expect(toOptionDisplayLabel("汉".repeat(35))).toBe("汉".repeat(35))
+    expect(toOptionDisplayLabel("a".repeat(200))).toBe("a".repeat(200))
+    expect(toOptionDisplayLabel({ label: "T", description: "d".repeat(100) })).toBe(`T — ${"d".repeat(100)}`)
+  })
+
+  test("toOptionDisplayLabel truncates by terminal display width when maxWidth is passed (CJK counts as 2 columns)", () => {
     // 35 CJK chars = 70 display columns > 60 → must truncate (old .length-based check saw 35 ≤ 60 and kept it)
     const cjk35 = "汉".repeat(35)
-    const truncated = toOptionDisplayLabel(cjk35)
+    const truncated = toOptionDisplayLabel(cjk35, 60)
     expect(truncated).toBe("汉".repeat(29) + "…")
     expect([...truncated].length).toBe(30)
 
     // Exactly 60 columns → no truncation
-    expect(toOptionDisplayLabel("汉".repeat(30))).toBe("汉".repeat(30))
+    expect(toOptionDisplayLabel("汉".repeat(30), 60)).toBe("汉".repeat(30))
 
     // Regression: ASCII keeps the old 60-code-unit behavior
-    expect(toOptionDisplayLabel("a".repeat(70))).toBe("a".repeat(59) + "…")
-    expect(toOptionDisplayLabel("a".repeat(60))).toBe("a".repeat(60))
+    expect(toOptionDisplayLabel("a".repeat(70), 60)).toBe("a".repeat(59) + "…")
+    expect(toOptionDisplayLabel("a".repeat(60), 60)).toBe("a".repeat(60))
   })
 
-  test("toOptionDisplayLabel counts emoji as wide characters when truncating", () => {
+  test("toOptionDisplayLabel counts emoji as wide characters when maxWidth is passed", () => {
     // 👍 is 2 columns wide: 40 emoji = 80 columns > 60 → 29 emoji + ellipsis
     const emoji40 = "👍".repeat(40)
-    const truncated = toOptionDisplayLabel(emoji40)
+    const truncated = toOptionDisplayLabel(emoji40, 60)
     expect(truncated).toBe("👍".repeat(29) + "…")
   })
 
@@ -318,13 +368,13 @@ describe("ask_user_question", () => {
     // the cut must keep or drop it as a whole, never emit a dangling ZWJ
     const family = "👨‍👩‍👧"
     const label = "汉".repeat(28) + family + "汉".repeat(10)
-    expect(toOptionDisplayLabel(label)).toBe("汉".repeat(28) + family + "…")
+    expect(toOptionDisplayLabel(label, 60)).toBe("汉".repeat(28) + family + "…")
   })
 
   test("toOptionDisplayLabel handles mixed CJK + ASCII width at the cut boundary", () => {
     // 20 CJK (40 cols) + 19 ASCII (19 cols) = 59 → fits; next ASCII would exceed
     const mixed = "汉".repeat(20) + "a".repeat(39) + "尾"
-    expect(toOptionDisplayLabel(mixed)).toBe("汉".repeat(20) + "a".repeat(19) + "…")
+    expect(toOptionDisplayLabel(mixed, 60)).toBe("汉".repeat(20) + "a".repeat(19) + "…")
   })
 
   test("supports structured { label, description } options returning the label", async () => {
@@ -2260,6 +2310,23 @@ describe("ask_user_question custom selector component", () => {
     expect(lines.join("\n")).toContain("A")
   })
 
+  test("shows long option text in full on wide terminals (render-width truncation, not pre-truncated labels)", () => {
+    // Regression: labels used to be truncated to 60 cols in the tool layer, so
+    // wide terminals still showed `…` even though render() had the real width.
+    const longLabel = `推荐方案 —A2 窗内先做: 批量/自动发车 watcher + ${"x".repeat(60)}`
+    const selector = new AskUserQuestionSelector(
+      { question: "q", displayOptions: [longLabel], customLabel: null },
+      noopTheme,
+      () => {},
+    )
+    const wide = selector.render(220).join("\n")
+    expect(wide).toContain(longLabel)
+    const narrow = selector.render(60)
+    for (const line of narrow) {
+      expect(visibleWidth(line)).toBeLessThanOrEqual(60)
+    }
+  })
+
   test("scrolls down and selects the correct index on Enter", () => {
     const displayOptions = Array.from({ length: 15 }, (_, i) => `opt-${i}`)
     let captured: { selectedLabel: string | null } | null = null
@@ -2523,26 +2590,38 @@ describe("ask_user_question registration serialization", () => {
 
   test("falls back to ctx.ui.select when custom is unavailable even in tui mode", async () => {
     const askUserQuestion = registerOnlyAskUserQuestion()
+    // >60 display columns: locks the fallback wiring (maxLabelWidth = 60), so
+    // removing it (labels wrap, layout breaks) or adding it to the custom
+    // branch (60-col pre-truncation regression) both fail this test.
+    const longOption = `L${"x".repeat(79)}`
     let selectCalled = false
+    let seen: string[] = []
 
     const ctx: any = {
       hasUI: true,
       mode: "tui",
       ui: {
         async input() { return null },
-        async select(_q: string, options: string[]) { selectCalled = true; return options[0] },
+        async select(_q: string, options: string[]) {
+          selectCalled = true
+          seen = options
+          return options[0]
+        },
         // No custom method.
       },
     }
 
     const result = await askUserQuestion.execute(
       "id1",
-      { question: "Pick", options: ["A", "B"], allowCustom: false },
+      { question: "Pick", options: [longOption, "B"], allowCustom: false },
       undefined, undefined, ctx,
     )
 
     expect(selectCalled).toBe(true)
-    expect(result.details.answer).toBe("A")
+    // The fallback adapter's maxLabelWidth cap is applied to what it renders,
+    // while the agent still receives the full original option text.
+    expect(seen[0].length).toBeLessThanOrEqual(61) // 60 cols + ellipsis
+    expect(result.details.answer).toBe(longOption)
   })
 })
 

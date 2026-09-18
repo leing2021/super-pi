@@ -11,6 +11,14 @@ export interface AskUserQuestionInput {
 export interface AskUserQuestionUi {
   input(question: string): Promise<string | null>
   select(question: string, options: string[]): Promise<string | null>
+  /**
+   * Terminal-column cap applied to option labels before display. Set this only
+   * for renderers that cannot truncate at draw time (e.g. the built-in
+   * `ctx.ui.select()` fallback). Renderers that receive the real terminal width
+   * (e.g. the custom scrollable selector) should omit it so the tool layer
+   * never destroys text the renderer could have shown.
+   */
+  maxLabelWidth?: number
 }
 
 export interface AskUserQuestionResult {
@@ -22,10 +30,11 @@ export interface AskUserQuestionResult {
 export const CUSTOM_SENTINEL = "Other"
 
 /**
- * Maximum display width (terminal columns) for a normalized option label. Long
- * labels overflow the selector row in the built-in `ctx.ui.select()` renderer
- * (see `docs/bug/ask-user-question-long-options-truncated.md`), so labels are
- * kept to a single line and truncated to this width. Width is measured in
+ * Default display width (terminal columns) for normalized option labels on the
+ * built-in `ctx.ui.select()` fallback path, whose renderer cannot truncate at
+ * draw time (see `docs/bug/ask-user-question-long-options-truncated.md`). The
+ * custom scrollable selector truncates at render time against the real
+ * terminal width instead, so it opts out of this cap. Width is measured in
  * terminal columns (CJK/emoji count as 2), not UTF-16 length.
  */
 export const MAX_OPTION_LABEL_WIDTH = 60
@@ -63,35 +72,40 @@ function segmentGraphemes(str: string): string[] {
  * Rules:
  * - Take only the first line (drop embedded `\n`).
  * - Trim surrounding whitespace.
- * - Truncate to {@link MAX_OPTION_LABEL_WIDTH} terminal columns with an
- *   ellipsis when needed (CJK/emoji count as 2 columns).
+ * - When `maxWidth` is given, truncate to that many terminal columns with an
+ *   ellipsis (CJK/emoji count as 2 columns). When omitted, keep the full text
+ *   and let a width-aware renderer truncate at draw time.
  */
-export function toOptionDisplayLabel(option: QuestionOption): string {
+export function toOptionDisplayLabel(option: QuestionOption, maxWidth?: number): string {
+  let firstLine: string
   if (typeof option === "object" && option !== null && "label" in option) {
     const label = option.label.trim()
     const desc = option.description?.trim()
     const combined = desc ? `${label} — ${desc}` : label
-    const firstLine = combined.split("\n", 1)[0] ?? ""
-    return truncateToDisplayWidth(firstLine.trim(), MAX_OPTION_LABEL_WIDTH)
+    firstLine = combined.split("\n", 1)[0] ?? ""
+  } else {
+    firstLine = String(option).split("\n", 1)[0] ?? ""
   }
-  const str = String(option)
-  const firstLine = str.split("\n", 1)[0] ?? ""
-  return truncateToDisplayWidth(firstLine.trim(), MAX_OPTION_LABEL_WIDTH)
+  const trimmed = firstLine.trim()
+  return maxWidth === undefined ? trimmed : truncateToDisplayWidth(trimmed, maxWidth)
 }
 
 /**
  * Build display labels for all options, disambiguating collisions with a
  * numeric suffix so the selector never shows two identical rows.
  *
+ * When `maxWidth` is given, labels are truncated to that many terminal
+ * columns before deduplication (see {@link toOptionDisplayLabel}).
+ *
  * @returns A map from display label back to the original full option string.
  *          When collisions exist, labels become `<label> (#<n>)`.
  */
-export function normalizeQuestionOptions(options: QuestionOption[]): Map<string, string> {
+export function normalizeQuestionOptions(options: QuestionOption[], maxWidth?: number): Map<string, string> {
   const labelToOriginal = new Map<string, string>()
   const labelCounts = new Map<string, number>()
 
   for (const original of options) {
-    const baseLabel = toOptionDisplayLabel(original)
+    const baseLabel = toOptionDisplayLabel(original, maxWidth)
     const count = (labelCounts.get(baseLabel) ?? 0) + 1
     labelCounts.set(baseLabel, count)
 
@@ -141,7 +155,7 @@ export function createAskUserQuestionTool() {
       }
 
       const allowCustom = input.allowCustom ?? true
-      const labelToOriginal = normalizeQuestionOptions(input.options)
+      const labelToOriginal = normalizeQuestionOptions(input.options, ui.maxLabelWidth)
       const customLabel = allowCustom
         ? resolveCustomSentinelLabel(labelToOriginal)
         : null
