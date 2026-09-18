@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.39.1 — isolated_review progress now covers tool executions
+- **Tool-only stretches stop freezing the UI** (`extensions/ce-core/tools/isolated-review.ts`): live progress keyed only on assistant `message_end` text, so the minutes the spawned reviewer spent calling tools (reading the diff, rg, loading rules) emitted zero output — the host TUI looked frozen mid-review. `tool_execution_start` now streams a one-line preview (`tool read: <path>`, `tool bash: <command>`), and `tool_execution_end` reports failures only; non-error ends stay silent to avoid noise.
+- **Args preview**: picks the primary arg (`file_path`/`path`/`command`/`query`/`pattern`/`url`/`skill`), flattened to one line, capped at 120 chars.
+- Verified by a real spawn: progress lines land as the reviewer works (`tool bash: …` → `tool read: …` → final text), not just at message boundaries.
+- Tests: 256 passing (1026 assertions) +6; `tsc --noEmit` clean.
+
 ### 0.39.0 — terminal-correct truncation + isolated_review live progress & abort evidence
 - **Display-width option truncation** (`extensions/ce-core/tools/ask-user-question.ts`): `toOptionDisplayLabel` measured labels with UTF-16 `.length`, so 60 CJK chars (= 120 terminal columns) sailed past the cap and still overflowed the selector row. Truncation now measures in terminal columns via pi-tui `visibleWidth` (CJK/emoji = 2 columns) and cuts at grapheme granularity (`Intl.Segmenter`, code-point fallback) — a ZWJ emoji family crossing the cut point is kept or dropped whole instead of leaving a dangling joiner. pi-tui's own `truncateToWidth` was rejected for this: it wraps output in ANSI codes, which would pollute labels that double as map keys.
 - **Prompt-contract root cause fixed** (`skills/01-brainstorm/SKILL.md`, `skills/02-plan/SKILL.md`): since 0.34.0 the rules *required* packing a `✓ 推荐` prefix plus a one-line reason into the option itself — the model complied, so over-long options were born by design and truncation fired on every question. The recommendation and its reason now go into the `question` text on its own line (`✓ 推荐「X」：<reason>`), which the selector renders fully wrapped and never truncated; option labels stay short (≤ 20 chars).

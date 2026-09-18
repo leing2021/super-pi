@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.39.1 — isolated_review 进度覆盖工具执行阶段
+- **纯工具执行段不再冻结 UI**（`extensions/ce-core/tools/isolated-review.ts`）：实时进度原先只认 assistant `message_end` 文本，spawn 出的 reviewer 花几分钟调工具（读 diff、rg、加载规则）期间零输出——主 TUI 中途看似卡死。现 `tool_execution_start` 流式推单行预览（`tool read: <path>`、`tool bash: <command>`），`tool_execution_end` 仅报失败；成功结束保持静默免噪。
+- **Args 预览**：优先取主参数（`file_path`/`path`/`command`/`query`/`pattern`/`url`/`skill`），拍平单行，120 字符截断。
+- 实跑验证：进度随 reviewer 工作实时落地（`tool bash: …` → `tool read: …` → 最终文本），不再只在消息边界跳动。
+- 测试：256 通过（1026 断言）+6；`tsc --noEmit` 干净。
+
 ### 0.39.0 — 终端正确截断 + isolated_review 实时进度与 abort 证据
 - **按终端列宽截断选项**（`extensions/ce-core/tools/ask-user-question.ts`）：`toOptionDisplayLabel` 原按 UTF-16 `.length` 计量，60 个汉字（120 列）直接冲破上限照旧溢出。现改用 pi-tui `visibleWidth` 按列宽计量（汉字/emoji = 2 列），并按 grapheme 粒度（`Intl.Segmenter`，无则回退 code point）切分——ZWJ emoji 家庭跨截断点时整存整弃，不再留悬空连接符。pi-tui 自带 `truncateToWidth` 弃用：输出包 ANSI 码，会污染兼作 map key 的 label。
 - **Prompt 合同根治**（`skills/01-brainstorm/SKILL.md`、`skills/02-plan/SKILL.md`）：0.34.0 起规则*要求*把 `✓ 推荐` 前缀和一句理由塞进选项本身——模型照办，超长选项设计上必然产生，每问必截。现推荐及理由写入 `question` 正文另起一行（`✓ 推荐「X」：<理由>`），selector 完整换行渲染永不截断；选项保持短 label（≤ 20 字）。
