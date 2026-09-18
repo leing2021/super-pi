@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.39.0 — 终端正确截断 + isolated_review 实时进度与 abort 证据
+- **按终端列宽截断选项**（`extensions/ce-core/tools/ask-user-question.ts`）：`toOptionDisplayLabel` 原按 UTF-16 `.length` 计量，60 个汉字（120 列）直接冲破上限照旧溢出。现改用 pi-tui `visibleWidth` 按列宽计量（汉字/emoji = 2 列），并按 grapheme 粒度（`Intl.Segmenter`，无则回退 code point）切分——ZWJ emoji 家庭跨截断点时整存整弃，不再留悬空连接符。pi-tui 自带 `truncateToWidth` 弃用：输出包 ANSI 码，会污染兼作 map key 的 label。
+- **Prompt 合同根治**（`skills/01-brainstorm/SKILL.md`、`skills/02-plan/SKILL.md`）：0.34.0 起规则*要求*把 `✓ 推荐` 前缀和一句理由塞进选项本身——模型照办，超长选项设计上必然产生，每问必截。现推荐及理由写入 `question` 正文另起一行（`✓ 推荐「X」：<理由>`），selector 完整换行渲染永不截断；选项保持短 label（≤ 20 字）。
+- **isolated_review 实时进度**（`extensions/ce-core/tools/isolated-review.ts`、`index.ts`）：工具阻塞 2-5 分钟零可见输出，abort 是唯一不写 findings 不带原因的出口。`onUpdate` 现全链转发（registerTool → tool.execute → runIsolatedReview → runOnce）：spawn 即推带预期耗时的启动消息，reviewer 每条 assistant `message_end` 流式推单行预览到主 TUI。
+- **Abort 证据落盘**：abort 后写入 findings 文件（`isolation: aborted` + 耗时 + reviewer stderr 尾部）；结果携带 `findingsWritten`/`elapsedMs`，summary 变为 `aborted after Ns (abort signal); evidence at <path>`。aborted 自动降级被有意否决——打断是用户的阀，不是重启第二个长时 review 的触发器。
+- 测试：250 通过（1013 断言）+7（列宽/grapheme/混排截断、进度上报、abort 证据、onUpdate 转发与注册契约）；`tsc --noEmit` 干净。CHANGELOG.md 历史条目英文化。
+
 ### 0.38.0 — ask_user_question 选择器体验：数字键快选、transcript 回看、富选项
 - **数字键 1-9 直选**：选项带 `1. ` `2. ` 前缀，按数字键立即选中（单键正则守卫），免去反复箭头导航。社区贡献 PR #16。
 - **Ctrl+] transcript 回看**：折叠为单行提示（问题首行摘要），可回看终端里 agent 的前置分析再作答；Esc 恢复对话框而非取消（防误触丢上下文）；提示前置防窄终端截断。
