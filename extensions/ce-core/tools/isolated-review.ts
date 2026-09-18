@@ -242,6 +242,44 @@ export function assistantProgressPreview(line: string, maxChars = 120): string |
   return flat.length <= maxChars ? flat : flat.slice(0, maxChars - 1) + "…"
 }
 
+/**
+ * Single-line preview of a tool_execution event from the reviewer's JSON stream.
+ * Without this, long tool-only stretches (reading diff, rg, reading rules) emit
+ * zero progress and the host UI appears frozen.
+ */
+export function toolExecutionPreview(line: string, maxChars = 120): string | null {
+  let event: { type?: string; toolName?: string; args?: unknown; isError?: boolean }
+  try {
+    event = JSON.parse(line)
+  } catch {
+    return null
+  }
+  if (!event || typeof event.toolName !== "string") return null
+  if (event.type === "tool_execution_start") {
+    return `tool ${event.toolName}: ${summarizeToolArgs(event.args, maxChars)}`
+  }
+  if (event.type === "tool_execution_end" && event.isError === true) {
+    return `tool ${event.toolName} failed`
+  }
+  return null
+}
+
+const TOOL_ARG_KEYS = ["file_path", "path", "command", "query", "pattern", "url", "skill"] as const
+
+function summarizeToolArgs(args: unknown, maxChars: number): string {
+  if (args && typeof args === "object") {
+    const record = args as Record<string, unknown>
+    const key = TOOL_ARG_KEYS.find((k) => typeof record[k] === "string" && (record[k] as string).length > 0)
+    if (key) return truncateProgressText(record[key] as string, maxChars)
+  }
+  return truncateProgressText(JSON.stringify(args ?? {}), maxChars)
+}
+
+function truncateProgressText(text: string, maxChars: number): string {
+  const flat = text.replace(/\s+/g, " ").trim()
+  return flat.length <= maxChars ? flat : flat.slice(0, maxChars - 1) + "…"
+}
+
 async function runOnce(
   input: IsolatedReviewInput,
   deps: IsolatedReviewDeps,
@@ -262,7 +300,7 @@ async function runOnce(
   const stderr = collectStderrTail(child)
   collectOutput(child, (line) => {
     lines.push(line)
-    const preview = assistantProgressPreview(line)
+    const preview = assistantProgressPreview(line) ?? toolExecutionPreview(line)
     if (preview) onProgress?.(`[isolated_review] ${preview}`)
   })
   const onAbort = () => child.kill()
