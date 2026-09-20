@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
+import { MIN_PI_VERSION } from "../extensions/ce-core/tools/isolated-review"
 
 const repoRoot = path.resolve(import.meta.dir, "..")
 
@@ -36,12 +37,34 @@ describe("package bootstrap structure", () => {
   })
 
   test("peer dependency floor matches APIs used by the extension", () => {
-    // CONFIG_DIR_NAME export (0.79.7) + session_before_compact reason/willRetry (0.79.10)
+    // isolated_review live progress via --mode json tool_execution events (0.85.0)
+    // + CONFIG_DIR_NAME export (0.79.7) + session_before_compact reason/willRetry (0.79.10)
     const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
       peerDependencies: Record<string, string>
     }
     const floor = pkg.peerDependencies["@earendil-works/pi-coding-agent"]
-    expect(floor).toMatch(/>=0\.79\.10/)
+    expect(floor).toMatch(/>=0\.85\.0/)
+  })
+
+  test("peer dependency floor is not below isolated_review runtime gate", () => {
+    // REGRESSION: peer floor drifted below the runtime MIN_PI_VERSION gate in
+    // isolated-review.ts, so installs on older pi loaded fine but isolated_review
+    // always degraded with spawn_error: "version". Floor must never trail the gate.
+    const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
+      peerDependencies: Record<string, string>
+    }
+    const floorRaw = pkg.peerDependencies["@earendil-works/pi-coding-agent"]
+    const match = />=(\d+)\.(\d+)\.\d+/.exec(floorRaw)
+    expect(match).not.toBeNull()
+    const [, floorMajor, floorMinor] = match!
+    const gate = MIN_PI_VERSION
+    const floorIsNewer = Number(floorMajor) > gate.major
+      || (Number(floorMajor) === gate.major && Number(floorMinor) >= gate.minor)
+    expect(floorIsNewer).toBe(true)
+
+    // pi-tui floor is kept in lockstep with pi-coding-agent in this repo;
+    // assert equality so it cannot silently drift below the gate either.
+    expect(pkg.peerDependencies["@earendil-works/pi-tui"]).toBe(floorRaw)
   })
 
   test("README documents installation and the Phase 1 commands", () => {

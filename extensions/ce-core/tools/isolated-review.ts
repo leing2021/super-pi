@@ -62,7 +62,8 @@ export type IsolatedReviewResult =
       elapsedMs: number
     }
 
-const MIN_PI_VERSION = { major: 0, minor: 85 }
+/** Minimum pi CLI version required by the spawned reviewer session. */
+export const MIN_PI_VERSION = { major: 0, minor: 85 }
 const DEFAULT_TIMEOUT_MS = 600_000
 const TIMEOUT_RETRIES = 1
 

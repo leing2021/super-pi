@@ -18,6 +18,8 @@ Install, describe what you want to build, then keep saying "continue." Super Pi 
 pi install npm:@leing2021/super-pi
 ```
 
+> **Requires pi ≥ 0.85.0** (isolated review depends on the `--mode json` `tool_execution` event stream). Upgrade with `pi update`.
+>
 > **Project trust (pi ≥ 0.79):** Pi asks before loading project-local settings, resources, and packages. On first use, approve the project trust prompt so Super Pi can read `.pi/settings.json` and load its skills/extensions. Use `pi --approve` for non-interactive runs.
 
 ## Highlights
@@ -101,6 +103,8 @@ Configure in `.pi/settings.json`:
 Model and thinking level switch automatically — no manual `/model` needed.
 
 Routing triggers on explicit `/skill:` commands **and** when the agent reads a stage's `SKILL.md` on its own. If no strategy is configured, routing is a no-op — the session model is never touched. Project-level settings take precedence; missing keys fall back to global `~/.pi/agent/settings.json`.
+
+**Recommended (pi ≥ 0.86):** add `"cacheWarming": "streaming"` to the same settings file (project `.pi/settings.json`, or global `~/.pi/agent/settings.json`) — Super Pi's long tool runs and 2-5 min `isolated_review` blocks otherwise let the prompt cache expire and re-pay full input price. See [pipeline config](skills/references/pipeline-config.md) for the full example including per-model compaction budgets.
 
 ## Design Philosophy & Acknowledgements
 

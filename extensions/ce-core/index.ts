@@ -237,6 +237,11 @@ const contextHandoffParams = Type.Object({
   artifacts: Type.Optional(Type.Record(Type.String(), Type.Optional(Type.String()), { description: "Artifact paths (requirements, plan, checkpoint, proof)" })),
   handoffMarkdown: Type.Optional(Type.String({ description: "Custom handoff markdown content" })),
   handoffPath: Type.Optional(Type.String({ description: "Specific handoff file path to load" })),
+  contextUsage: Type.Optional(Type.Object({
+    tokens: Type.Union([Type.Number(), Type.Null()], { description: "Estimated context tokens, or null if unknown (e.g. right after compaction)" }),
+    contextWindow: Type.Number({ description: "Model context window size in tokens" }),
+    percent: Type.Union([Type.Number(), Type.Null()], { description: "Usage as percentage of context window, or null if unknown" }),
+  }, { description: "Measured context usage. Omit — injected automatically from ctx.getContextUsage() when the caller does not supply it" })),
   currentTruth: Type.Optional(Type.Array(Type.String(), { description: "Known true statements validated during session" })),
   invalidatedAssumptions: Type.Optional(Type.Array(Type.String(), { description: "Assumptions proven wrong during session" })),
   openDecisions: Type.Optional(Type.Array(Type.String(), { description: "Pending decisions that affect next steps" })),
@@ -566,13 +571,16 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
     label: "Context Handoff",
     description: "Manage cross-stage context handoffs with evidence-first templates. Supports save (write handoff + state), load (read handoff + state), latest (read latest dated handoff), status (read current state), and validate (check continuation readiness with deterministic probes).",
     parameters: contextHandoffParams,
-    async execute(_toolCallId, params) {
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const injectedUsage = params.contextUsage
+        ?? (typeof ctx?.getContextUsage === "function" ? ctx.getContextUsage() : undefined)
       const result = await contextHandoff.execute({
         operation: params.operation,
         repoRoot: params.repoRoot,
         currentStage: params.currentStage,
         nextStage: params.nextStage,
         contextHealth: params.contextHealth,
+        contextUsage: injectedUsage,
         activeFiles: params.activeFiles,
         blocker: params.blocker,
         verification: params.verification,

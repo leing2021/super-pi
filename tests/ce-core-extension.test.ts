@@ -2249,6 +2249,105 @@ describe("ce-core extension runtime registration", () => {
     expect(result.details.compressionRisk).toEqual(["Risk Z"])
   })
 
+  test("context_handoff wrapper injects measured context usage from ctx", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {},
+      registerCommand(_name: string, _def: any) {},
+    }
+
+    ceCoreExtension(pi as never)
+
+    const contextHandoff = definitions.get("context_handoff")
+    const repoRoot = `/tmp/pi-ce-handoff-usage-ctx-${Date.now()}`
+    const ctx = {
+      getContextUsage: () => ({ tokens: 160_000, contextWindow: 200_000, percent: 80 }),
+    }
+
+    const result = await contextHandoff.execute(
+      "tool-call-id",
+      { operation: "save", repoRoot, currentStage: "03-work" },
+      undefined,
+      undefined,
+      ctx,
+    )
+
+    expect(result.details.contextHealth).toBe("heavy")
+    expect(result.details.contextHealthSource).toBe("measured")
+    expect(result.details.contextUsage?.percent).toBe(80)
+  })
+
+  test("context_handoff wrapper: explicit contextUsage param wins over ctx measurement", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {},
+      registerCommand(_name: string, _def: any) {},
+    }
+
+    ceCoreExtension(pi as never)
+
+    const contextHandoff = definitions.get("context_handoff")
+    const repoRoot = `/tmp/pi-ce-handoff-usage-param-${Date.now()}`
+    let ctxCalls = 0
+    const ctx = {
+      getContextUsage: () => {
+        ctxCalls += 1
+        return { tokens: 160_000, contextWindow: 200_000, percent: 80 }
+      },
+    }
+
+    const result = await contextHandoff.execute(
+      "tool-call-id",
+      {
+        operation: "save",
+        repoRoot,
+        currentStage: "03-work",
+        contextUsage: { tokens: 40_000, contextWindow: 200_000, percent: 20 },
+      },
+      undefined,
+      undefined,
+      ctx,
+    )
+
+    expect(ctxCalls).toBe(0)
+    expect(result.details.contextHealth).toBe("good")
+    expect(result.details.contextUsage?.percent).toBe(20)
+  })
+
+  test("context_handoff wrapper: ctx without getContextUsage keeps default behavior", async () => {
+    const definitions = new Map<string, any>()
+    const pi = {
+      registerTool(definition: { name: string }) {
+        definitions.set(definition.name, definition)
+      },
+      on(_event: string, _handler: any) {},
+      registerCommand(_name: string, _def: any) {},
+    }
+
+    ceCoreExtension(pi as never)
+
+    const contextHandoff = definitions.get("context_handoff")
+    const repoRoot = `/tmp/pi-ce-handoff-usage-noctx-${Date.now()}`
+
+    const result = await contextHandoff.execute(
+      "tool-call-id",
+      { operation: "save", repoRoot, currentStage: "03-work" },
+      undefined,
+      undefined,
+      {},
+    )
+
+    expect(result.details.contextHealth).toBe("watch")
+    expect(result.details.contextHealthSource).toBe("default")
+    expect(result.details.contextUsage).toBeUndefined()
+  })
+
   test("context_handoff wrapper supports validate operation with probes and checks", async () => {
     const definitions = new Map<string, any>()
     const pi = {

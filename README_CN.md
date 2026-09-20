@@ -22,6 +22,8 @@ Super Pi 是 Pi-native 的工程 workflow 层：它给 coding agent 加上阶段
 pi install npm:@leing2021/super-pi
 ```
 
+> **要求 pi ≥ 0.85.0**（isolated review 依赖 `--mode json` 的 `tool_execution` 事件流）。升级命令 `pi update`。
+>
 > **项目信任 (pi ≥ 0.79)：** Pi 加载项目本地 settings、resources 和 packages 前会询问。首次使用时批准项目信任提示，让 Super Pi 能读取 `.pi/settings.json` 并加载其 skills/extensions。非交互运行用 `pi --approve`。
 
 ## 五步核心循环
@@ -64,6 +66,8 @@ pi install npm:@leing2021/super-pi
 模型和思考深度自动切换——无需手动 `/model`。
 
 路由在两种情况下触发：显式 `/skill:` 命令，以及 agent 自主读取阶段 `SKILL.md` 时。若未配置策略，路由不做任何事——不会碰当前会话模型。项目级配置优先；缺失的键回退到全局 `~/.pi/agent/settings.json`。
+
+**推荐配置（pi ≥ 0.86）：** 在同一 settings 文件（项目 `.pi/settings.json`，或全局 `~/.pi/agent/settings.json`）加 `"cacheWarming": "streaming"` —— 否则 Super Pi 的长工具执行和 2–5 分钟 `isolated_review` 阻塞会让 prompt cache 过期，下次调用重付全价输入。含 per-model compaction 预算的完整示例见 [pipeline config](skills/references/pipeline-config.md)。
 
 ## 设计哲学与致谢
 

@@ -22,6 +22,24 @@ Supported `modelStrategy` formats in `.pi/settings.json`:
 - Full reference: `"02-plan": "anthropic/claude-opus-4-1"`
 - Bare model id (reuses current provider): `"02-plan": "claude-opus-4-1"`
 
+## Recommended pi settings
+
+Super Pi runs long tool executions (03-work) and blocks 2-5 minutes inside `isolated_review` while a fresh reviewer session runs. Two pi settings (both require pi ≥ 0.86) directly reduce cost in those scenarios — add them to the project `.pi/settings.json`, or to the user-level global settings file for all projects (see README for the exact global path):
+
+```json
+{
+  "cacheWarming": "streaming",
+  "compaction": {
+    "modelOverrides": {
+      "anthropic/claude-opus-4-1": { "reserveTokens": 32000, "keepRecentTokens": 20000 }
+    }
+  }
+}
+```
+
+- `cacheWarming: "streaming"` — keeps the prompt cache alive during long tool runs, so the next LLM call after `isolated_review` or a long build/test cycle pays cache-read instead of full input price. Pi only refreshes when the expected savings clear its cost threshold; set to `"idle"` to also cover idle gaps between stages.
+- `compaction.modelOverrides` — per-model `reserveTokens`/`keepRecentTokens` override the global compaction budgets, useful when stage routing switches between models with different context windows. Omit the block entirely to use pi's global defaults; it is a tuning option, not a requirement.
+
 ## Start of skill: context loading
 
 Before reading any project files or running repository-wide scans, load the most recent handoff:

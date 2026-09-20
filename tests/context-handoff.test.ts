@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
-import { createContextHandoffTool } from "../extensions/ce-core/tools/context-handoff"
+import { classifyContextHealth, createContextHandoffTool, type ContextUsageMeasurement } from "../extensions/ce-core/tools/context-handoff"
 
 function readRepoFile(relativePath: string): string {
   const repoRoot = path.resolve(__dirname, "..")
@@ -860,5 +860,100 @@ describe("context_handoff", () => {
 
     expect(result.found).toBe(true)
     expect(result.path).toBe(".context/compound-engineering/handoffs/legacy.md")
+  })
+
+  describe("measured context usage (ctx.getContextUsage)", () => {
+    const usage = (percent: number | null, tokens: number | null = percent === null ? null : Math.round(percent * 2000)): ContextUsageMeasurement => ({
+      tokens,
+      contextWindow: 200_000,
+      percent,
+    })
+
+    test("classifyContextHealth maps percent bands deterministically", () => {
+      expect(classifyContextHealth(usage(10))).toBe("good")
+      expect(classifyContextHealth(usage(49.9))).toBe("good")
+      expect(classifyContextHealth(usage(50))).toBe("watch")
+      expect(classifyContextHealth(usage(74.9))).toBe("watch")
+      expect(classifyContextHealth(usage(75))).toBe("heavy")
+      expect(classifyContextHealth(usage(89.9))).toBe("heavy")
+      expect(classifyContextHealth(usage(90))).toBe("critical")
+      expect(classifyContextHealth(usage(98))).toBe("critical")
+    })
+
+    test("classifyContextHealth returns undefined when tokens are unknown (post-compaction)", () => {
+      expect(classifyContextHealth(usage(null))).toBeUndefined()
+    })
+
+    test("save without explicit contextHealth classifies from measured usage", async () => {
+      const repoRoot = `/tmp/pi-ce-handoff-usage-${Date.now()}`
+      const tool = createContextHandoffTool()
+
+      const result = await tool.execute({
+        operation: "save",
+        repoRoot,
+        currentStage: "03-work",
+        nextStage: "04-review",
+        contextUsage: usage(80),
+      })
+
+      expect(result.contextHealth).toBe("heavy")
+      expect(result.contextHealthSource).toBe("measured")
+      expect(result.contextUsage?.percent).toBe(80)
+
+      const state = JSON.parse(
+        readFileSync(path.join(repoRoot, ".context", "compound-engineering", "context-state.json"), "utf8"),
+      )
+      expect(state.contextHealth).toBe("heavy")
+      expect(state.contextHealthSource).toBe("measured")
+      expect(state.contextUsage.percent).toBe(80)
+    })
+
+    test("explicit contextHealth wins over measured usage, usage recorded as evidence", async () => {
+      const repoRoot = `/tmp/pi-ce-handoff-usage-explicit-${Date.now()}`
+      const tool = createContextHandoffTool()
+
+      const result = await tool.execute({
+        operation: "save",
+        repoRoot,
+        currentStage: "03-work",
+        contextHealth: "critical",
+        contextUsage: usage(30),
+      })
+
+      expect(result.contextHealth).toBe("critical")
+      expect(result.contextHealthSource).toBe("explicit")
+      expect(result.contextUsage?.percent).toBe(30)
+    })
+
+    test("null tokens (post-compaction) falls back to watch default and records no measured source", async () => {
+      const repoRoot = `/tmp/pi-ce-handoff-usage-null-${Date.now()}`
+      const tool = createContextHandoffTool()
+
+      const result = await tool.execute({
+        operation: "save",
+        repoRoot,
+        currentStage: "03-work",
+        contextUsage: usage(null),
+      })
+
+      expect(result.contextHealth).toBe("watch")
+      expect(result.contextHealthSource).toBe("default")
+      expect(result.contextUsage?.tokens).toBeNull()
+    })
+
+    test("backward compatibility: no contextUsage behaves exactly as before", async () => {
+      const repoRoot = `/tmp/pi-ce-handoff-usage-absent-${Date.now()}`
+      const tool = createContextHandoffTool()
+
+      const result = await tool.execute({
+        operation: "save",
+        repoRoot,
+        currentStage: "03-work",
+      })
+
+      expect(result.contextHealth).toBe("watch")
+      expect(result.contextHealthSource).toBe("default")
+      expect(result.contextUsage).toBeUndefined()
+    })
   })
 })

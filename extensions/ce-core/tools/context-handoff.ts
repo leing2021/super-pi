@@ -5,6 +5,33 @@ import { normalizeSlug } from "../utils/name-utils"
 
 export type ContextHealth = "good" | "watch" | "heavy" | "critical"
 
+/** Where the effective contextHealth came from. */
+export type ContextHealthSource = "measured" | "explicit" | "default"
+
+/**
+ * Measured context usage, shaped after pi's `ctx.getContextUsage()`.
+ * `tokens`/`percent` are null when unknown (e.g. right after compaction).
+ */
+export interface ContextUsageMeasurement {
+  tokens: number | null
+  contextWindow: number
+  percent: number | null
+}
+
+/**
+ * Classify measured usage into a ContextHealth band.
+ * Returns undefined when usage is unknown (tokens/percent null) — callers fall
+ * back to their default instead of guessing a health level.
+ * Bands: <50% good, 50–75% watch, 75–90% heavy, ≥90% critical.
+ */
+export function classifyContextHealth(usage: ContextUsageMeasurement): ContextHealth | undefined {
+  if (usage.tokens === null || usage.percent === null) return undefined
+  if (usage.percent < 50) return "good"
+  if (usage.percent < 75) return "watch"
+  if (usage.percent < 90) return "heavy"
+  return "critical"
+}
+
 export type ContextHandoffRecommendedAction = "continue" | "save_handoff" | "fill_required_context"
 
 export interface ContextHandoffValidationCheck {
@@ -26,6 +53,7 @@ export interface ContextHandoffInput {
   currentStage?: string
   nextStage?: string
   contextHealth?: ContextHealth
+  contextUsage?: ContextUsageMeasurement
   activeFiles?: string[]
   blocker?: string
   verification?: string
@@ -44,6 +72,8 @@ export interface ContextStateEntry {
   currentStage: string
   nextStage?: string
   contextHealth: ContextHealth
+  contextHealthSource?: ContextHealthSource
+  contextUsage?: ContextUsageMeasurement
   latestHandoffPath?: string
   latestDatedHandoffPath?: string
   activeFiles: string[]
@@ -68,6 +98,8 @@ export interface ContextHandoffResult {
   currentStage?: string
   nextStage?: string
   contextHealth?: ContextHealth
+  contextHealthSource?: ContextHealthSource
+  contextUsage?: ContextUsageMeasurement
   activeFiles?: string[]
   blocker?: string
   verification?: string
@@ -239,6 +271,8 @@ function normalizeStateEntry(raw: unknown): ContextStateEntry | null {
     currentStage: typeof state.currentStage === "string" ? state.currentStage : "unknown",
     nextStage: typeof state.nextStage === "string" ? state.nextStage : undefined,
     contextHealth: isContextHealth(state.contextHealth) ? state.contextHealth : "watch",
+    contextHealthSource: isContextHealthSource(state.contextHealthSource) ? state.contextHealthSource : undefined,
+    contextUsage: isContextUsageMeasurement(state.contextUsage) ? state.contextUsage : undefined,
     latestHandoffPath: typeof state.latestHandoffPath === "string" ? state.latestHandoffPath : undefined,
     latestDatedHandoffPath: typeof state.latestDatedHandoffPath === "string" ? state.latestDatedHandoffPath : undefined,
     activeFiles,
@@ -260,6 +294,18 @@ function normalizeStateEntry(raw: unknown): ContextStateEntry | null {
 
 function isContextHealth(value: unknown): value is ContextHealth {
   return value === "good" || value === "watch" || value === "heavy" || value === "critical"
+}
+
+function isContextHealthSource(value: unknown): value is ContextHealthSource {
+  return value === "measured" || value === "explicit" || value === "default"
+}
+
+function isContextUsageMeasurement(value: unknown): value is ContextUsageMeasurement {
+  if (!value || typeof value !== "object") return false
+  const usage = value as Record<string, unknown>
+  return typeof usage.contextWindow === "number"
+    && (usage.tokens === null || typeof usage.tokens === "number")
+    && (usage.percent === null || typeof usage.percent === "number")
 }
 
 function isStringRecord(value: unknown): value is Record<string, string | undefined> {
@@ -310,7 +356,10 @@ export function createContextHandoffTool() {
 async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
   const currentStage = input.currentStage ?? "unknown"
   const nextStage = input.nextStage
-  const contextHealth = input.contextHealth ?? "watch"
+  const measured = input.contextUsage ? classifyContextHealth(input.contextUsage) : undefined
+  const contextHealth = input.contextHealth ?? measured ?? "watch"
+  const contextHealthSource: ContextHealthSource = input.contextHealth ? "explicit" : measured ? "measured" : "default"
+  const contextUsage = input.contextUsage
   const activeFiles = input.activeFiles ?? []
   const blocker = input.blocker
   const verification = input.verification
@@ -355,6 +404,8 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     currentStage,
     nextStage,
     contextHealth,
+    contextHealthSource,
+    contextUsage,
     latestHandoffPath: relativeLatestPath,
     latestDatedHandoffPath: relativeDatedPath,
     activeFiles,
@@ -381,6 +432,8 @@ async function save(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     currentStage,
     nextStage,
     contextHealth,
+    contextHealthSource,
+    contextUsage,
     activeFiles,
     blocker,
     verification,
@@ -422,6 +475,8 @@ async function load(input: ContextHandoffInput): Promise<ContextHandoffResult> {
     currentStage: state.currentStage,
     nextStage: state.nextStage,
     contextHealth: state.contextHealth,
+    contextHealthSource: state.contextHealthSource,
+    contextUsage: state.contextUsage,
     activeFiles: state.activeFiles,
     blocker: state.blocker,
     verification: state.verification,
@@ -457,6 +512,8 @@ async function latest(input: ContextHandoffInput): Promise<ContextHandoffResult>
     currentStage: state.currentStage,
     nextStage: state.nextStage,
     contextHealth: state.contextHealth,
+    contextHealthSource: state.contextHealthSource,
+    contextUsage: state.contextUsage,
     activeFiles: state.activeFiles,
     blocker: state.blocker,
     verification: state.verification,
@@ -760,6 +817,8 @@ async function status(input: ContextHandoffInput): Promise<ContextHandoffResult>
     currentStage: state.currentStage,
     nextStage: state.nextStage,
     contextHealth: state.contextHealth,
+    contextHealthSource: state.contextHealthSource,
+    contextUsage: state.contextUsage,
     activeFiles: state.activeFiles,
     blocker: state.blocker,
     verification: state.verification,
