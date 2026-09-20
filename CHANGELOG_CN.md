@@ -1,5 +1,18 @@
 # 更新日志
 
+### 0.40.0 — 对齐 Pi 0.86：强制 pi ≥ 0.85 floor + context_handoff 实测 context usage
+- **peer floor 提到 `>=0.85.0`**（`package.json`）：isolated_review 自 0.39.0 起就要求 pi ≥ 0.85（live progress 依赖 `--mode json` 的 `tool_execution` 事件流），但声明的 peer floor 仍允许 0.79.10+——老版 pi 能正常装、扩展正常加载，isolated_review 却永远 degraded（`spawn_error: version`）。现 floor 与运行时 gate 一致；新增回归测试 import `MIN_PI_VERSION`，floor 一旦落后 gate 即测试失败，并断言 `pi-tui` floor 与其保持 lockstep。README 已注明最低版本（`pi update` 升级）。
+- **devDependencies 升 `^0.86.0`**：CI 改在最新 pi 上验证；0.86.0 的三个 breaking（`details` 限 JSON、`TranscriptContext`、`user_bash` fail-closed）已验证不影响 super-pi（0.86.0 下 `tsc --noEmit` + 全量测试绿）。
+- **`context_handoff` 接入实测 context usage**（`extensions/ce-core/tools/context-handoff.ts`、`index.ts`）：`contextHealth` 原先纯靠 agent 自评。save 现在自动接收 `ctx.getContextUsage()`（新的可选 `contextUsage` 参数可覆盖）：agent 未传 `contextHealth` 时按实测百分比自动评级（<50 good / 50–75 watch / 75–90 heavy / ≥90 critical）；显式传入的 `contextHealth` 永远优先，实测值降级为 evidence 记录。`tokens: null`（刚 compact 完）回落 `watch` 默认而非瞎猜。新字段 `contextHealthSource`（`measured`/`explicit`/`default`）与 `contextUsage` 在 state 与所有读操作中 round-trip。
+- **pi 推荐配置写入文档**（`skills/references/pipeline-config.md`、README 中英）：`cacheWarming: "streaming"` 在长工具执行与 2–5 分钟 isolated_review 阻塞期间保住 prompt cache（pi ≥ 0.86），附 per-model `compaction.modelOverrides` 示例。
+- 测试：270 passing（1077 assertions）+10；pi 0.86.0 下 `tsc --noEmit` 干净。
+
+### 0.39.2 — ask_user_question 选项不再被工具层预截断到 60 列
+- **「选项仍被截断」的根因**：0.25.0 的缓解措施在工具层（`toOptionDisplayLabel`）把每个选项标签预截到 60 终端列，早于任何渲染器见到终端宽度——custom 可滚动选择器本应在 `render(width)` 按真实宽度截断，但文本在上游已被破坏，宽终端也只能显示约 60 列后接 `…`。
+- **截断权移交给持有宽度的渲染层**（`extensions/ce-core/tools/ask-user-question.ts`、`extensions/ce-core/index.ts`）：`AskUserQuestionUi` adapter 现在声明可选 `maxLabelWidth`——内置 `ctx.ui.select()` 回退设为 60（其渲染器会折行、破坏一行一选项布局）；custom 可滚动选择器不设，标签完整到达、按实际终端宽度在绘制时截断。Label→原文映射在截断后计算，回退答案仍能映射回完整选项文本。
+- **标签归一化在无 `maxWidth` 时保留完整首行**（`toOptionDisplayLabel(option, maxWidth?)`、`normalizeQuestionOptions(options, maxWidth?)`）；全部宽度测量语义（CJK/emoji = 2 列、grapheme 安全截断）不变，改为通过显式宽度测试覆盖。
+- 测试：260 passing（1041 assertions）+5；`tsc --noEmit` 干净。
+
 ### 0.39.1 — isolated_review 进度覆盖工具执行阶段
 - **纯工具执行段不再冻结 UI**（`extensions/ce-core/tools/isolated-review.ts`）：实时进度原先只认 assistant `message_end` 文本，spawn 出的 reviewer 花几分钟调工具（读 diff、rg、加载规则）期间零输出——主 TUI 中途看似卡死。现 `tool_execution_start` 流式推单行预览（`tool read: <path>`、`tool bash: <command>`），`tool_execution_end` 仅报失败；成功结束保持静默免噪。
 - **Args 预览**：优先取主参数（`file_path`/`path`/`command`/`query`/`pattern`/`url`/`skill`），拍平单行，120 字符截断。
