@@ -1,5 +1,11 @@
 # 更新日志
 
+### 0.40.1 — CI 验证环境升至 pi 1.0.2
+- **devDependencies 升 `^1.0.2`**（`package.json`）：CI 改在 pi 1.0.x 上验证。0.86 以来的全部 breaking（0.87.0 的 `SessionManager` canonical context、`ContextEditEntry`、actionable `turn_end` 边界；0.99.0 的扩展包依赖告警）验证均不影响 super-pi：1.0.2 下 `tsc --noEmit` 干净、270 测试全绿。
+- **`--mode json` 事件流在 1.0.2 实测复验**：isolated_review 依赖的假设（`message_end` 的 `message.role`/`content[].type`、`tool_execution_start|end`）在真实 spawn 下不变；bash/read 输出 filter 消费的 `tool_result` 事件形状（`content` 文本块、`input.command`、`details.fullOutputPath`）在发布类型中也未变。
+- 无运行时代码变更 — floor 保持 `pi ≥ 0.85.0`，`MIN_PI_VERSION` 不变。
+- 测试：270 passing（1077 assertions）；pi 1.0.2 下 `tsc --noEmit` 干净。
+
 ### 0.40.0 — 对齐 Pi 0.86：强制 pi ≥ 0.85 floor + context_handoff 实测 context usage
 - **peer floor 提到 `>=0.85.0`**（`package.json`）：isolated_review 自 0.39.0 起就要求 pi ≥ 0.85（live progress 依赖 `--mode json` 的 `tool_execution` 事件流），但声明的 peer floor 仍允许 0.79.10+——老版 pi 能正常装、扩展正常加载，isolated_review 却永远 degraded（`spawn_error: version`）。现 floor 与运行时 gate 一致；新增回归测试 import `MIN_PI_VERSION`，floor 一旦落后 gate 即测试失败，并断言 `pi-tui` floor 与其保持 lockstep。README 已注明最低版本（`pi update` 升级）。
 - **devDependencies 升 `^0.86.0`**：CI 改在最新 pi 上验证；0.86.0 的三个 breaking（`details` 限 JSON、`TranscriptContext`、`user_bash` fail-closed）已验证不影响 super-pi（0.86.0 下 `tsc --noEmit` + 全量测试绿）。

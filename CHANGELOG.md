@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.40.1 — CI verification moved to pi 1.0.2
+- **devDependencies moved to `^1.0.2`** (`package.json`): CI now verifies against pi 1.0.x. All breaking changes since 0.86 (0.87.0's `SessionManager`-canonical context, `ContextEditEntry`, actionable `turn_end` boundaries; 0.99.0's extension-package dependency warnings) were verified to not affect super-pi: `tsc --noEmit` clean and 270 tests green on 1.0.2.
+- **`--mode json` stream re-verified on 1.0.2**: isolated_review's assumptions (`message_end` with `message.role`/`content[].type`, `tool_execution_start|end`) hold unchanged in a live spawn; the `tool_result` event shape consumed by the bash/read output filters (`content` text blocks, `input.command`, `details.fullOutputPath`) is also unchanged in the shipped types.
+- No runtime code changes — floor stays `pi ≥ 0.85.0`, `MIN_PI_VERSION` unchanged.
+- Tests: 270 passing (1077 assertions); `tsc --noEmit` clean against pi 1.0.2.
+
 ### 0.40.0 — Pi 0.86 alignment: enforced pi ≥ 0.85 floor + measured context usage in handoffs
 - **Peer floor raised to `>=0.85.0`** (`package.json`): isolated_review has required pi ≥ 0.85 since 0.39.0 (its live progress consumes the `--mode json` `tool_execution` event stream), but the declared peer floor still allowed 0.79.10+ — installs on older pi loaded fine while isolated_review always degraded with `spawn_error: version`. The floor now matches the runtime gate; a new regression test imports `MIN_PI_VERSION` and fails if the floor ever trails the gate again, and asserts the `pi-tui` floor stays in lockstep. README states the requirement (`pi update` to upgrade).
 - **devDependencies moved to `^0.86.0`**: CI now verifies against the latest pi; the 0.86.0 breaking changes (JSON-only `details`, `TranscriptContext`, fail-closed `user_bash`) were verified to not affect super-pi (`tsc --noEmit` + full suite green on 0.86.0).
