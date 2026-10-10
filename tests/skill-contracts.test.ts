@@ -125,6 +125,9 @@ describe("skill package contracts", () => {
     expect(content).toContain("GREEN")
     expect(content).toContain("REFACTOR")
     expect(content).toContain("TDD violation")
+    // Scope discipline: no unrequested machinery (compound #1800)
+    expect(content).toContain("Scope discipline")
+    expect(content).toContain("unrequested guards")
     expect(content).toContain("docs/brainstorms/")
     expect(content).toContain("docs/plans/")
     expect(content).toContain("Status: draft")
@@ -417,6 +420,9 @@ describe("skill package contracts", () => {
     expect(debug).toContain("non-deterministic")
     // Phase 2: minimise
     expect(debug).toContain("minimise")
+    // Phase 5: mutation-landed proof before trusting a forced red
+    expect(debug).toContain("diff")
+    expect(debug).toContain("mutation actually landed")
     // Phase 6: post-mortem handoff to 05-learn
     expect(debug).toContain("post-mortem")
     expect(debug).toContain("05-learn")
@@ -490,6 +496,15 @@ describe("skill package contracts", () => {
     expect(domain).toContain("hard to reverse")
     // Consumption rule
     expect(domain).toContain("CONTEXT-MAP.md")
+    // GLOSSARY.md compat read (mattpocock renamed CONTEXT.md -> GLOSSARY.md)
+    expect(domain).toContain("GLOSSARY.md")
+    // Compat must cover every consuming stage, not just the entry skills
+    const work = readFileSync(path.join(repoRoot, "skills", "03-work", "SKILL.md"), "utf8")
+    const review = readFileSync(path.join(repoRoot, "skills", "04-review", "SKILL.md"), "utf8")
+    expect(work).toContain("GLOSSARY.md")
+    expect(review).toContain("GLOSSARY.md")
+    const brain = readFileSync(path.join(repoRoot, "skills", "01-brainstorm", "SKILL.md"), "utf8")
+    expect(brain).toContain("GLOSSARY.md")
   })
 
   test("every SKILL.md stays under 100 lines", () => {

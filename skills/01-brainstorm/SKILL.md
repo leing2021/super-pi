@@ -62,7 +62,7 @@ Before summarizing, ensure the design answers:
 
 ## Domain vocabulary (optional)
 
-After mode-specific questions, check if the project has a `CONTEXT.md` at root.
+After mode-specific questions, check if the project has a `CONTEXT.md` (or `GLOSSARY.md`) at root.
 If not, and the brainstorm reveals 3+ domain-specific terms with ambiguous meanings,
 offer to create one using `references/context-glossary.md` (contract: `../references/domain-language.md`).
 Update it inline during the session — don't batch. If it exists, cross-reference and flag conflicts:
@@ -80,7 +80,7 @@ Stop and ask instead of guessing when: requirements conflict, success criteria u
 ## Workflow
 
 1. Scan repository for nearby context
-2. Check for existing `CONTEXT.md` at repo root
+2. Check for existing `CONTEXT.md` or `GLOSSARY.md` at repo root
 3. Determine mode (Startup / Builder / CE)
 4. Run mode-specific questions (use reference files)
 5. Run Premise Challenge
