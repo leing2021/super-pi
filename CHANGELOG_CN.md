@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.41.0 — 上游吸收：计划范围纪律、mutation 落地证明、GLOSSARY.md 兼容
+- **计划范围纪律**（`skills/02-plan/SKILL.md`）：unit 只加需求点名的东西 — 不加没人要的 guards、retries、modes、kill switches、runbooks；不偷偷缩水用户点名的功能。源自 [compound-engineering-plugin #1800](https://github.com/EveryInc/compound-engineering-plugin/pull/1800) — 盲评实测 Claude 计划中 speculative mechanisms 减约 40%，功能缩水事故归零。
+- **Mutation 落地证明**（`skills/03-work/references/debug-discipline.md` Phase 5）：通过修改代码/fixture 强制制造 RED 时，先 `diff` 对照未改副本证明 mutation 真的落地再信这个红。源自 [mattpocock/skills #1209](https://github.com/mattpocock/skills/pull/1209) — 真实事故：`sed -i ''` exit 0 但什么都没改，agent 仍报告已 mutation 验证。
+- **GLOSSARY.md 兼容读取**（`skills/references/domain-language.md`，全部消费 stage）：mattpocock/skills 已全仓把 `CONTEXT.md` 约定改名 `GLOSSARY.md`，`CONTEXT-MAP.md` 同改 `GLOSSARY-MAP.md`（[#876](https://github.com/mattpocock/skills/pull/876)）— 用他们 skill 的仓库现在带着 super-pi 发现不了的词汇表。词汇表读取现在在 01/02/03/04 与多上下文 map 全部认双名（两者都存在时优先 `CONTEXT.md` 并标记重复）；新建仍默认 `CONTEXT.md`。不做改名 churn。被拒吸收的完整理由落在 `docs/out-of-scope/2026-10-10-upstream-absorption-rejections.md`，后续 02-plan 扫描可命中。
+- 扫描了 0.40.1 以来全部九个致谢上游仓库；其余均按极简原则拒绝并记录理由：superpowers v7 重写 brainstorming（skip-offer 已由 skill 触发条件承担；builder check 与 CEO Review 重复；visual companion 与 token 成本方向冲突）、compound #1839 CODING_STANDARDS.md 与 mattpocock #1208 standards 文件搜索（super-pi 的 `rules/` 项目级覆盖机制已是同一理念的实现）、ponytail 5.0 重建（形态不匹配；其"每次回复以未检查项收尾"已记录但未采纳）、mattpocock #1193 问句措辞（premise-challenge 的推荐答案机制已是更结构化的等价实现）、zoom-out/caveman（feature 分支实验品，未进 main）。
+- 测试：270 passing（1085 assertions）+8 contract 锚点（范围纪律、mutation 证明、GLOSSARY 兼容含逐 stage 覆盖）；`tsc --noEmit` 干净。隔离 review 第 1 轮（0 high / 1 moderate / 2 low）在条目定稿前驱动三处修复：逐 stage GLOSSARY 兼容（03-work/04-review + domain-language per-skill 清单）、`GLOSSARY-MAP.md` 多上下文兼容、被拒吸收理由从 CHANGELOG 散文移入可 grep 的 `docs/out-of-scope/` 条目。
+
 ### 0.40.1 — CI 验证环境升至 pi 1.0.2
 - **devDependencies 升 `^1.0.2`**（`package.json`）：CI 改在 pi 1.0.x 上验证。0.86 以来的全部 breaking（0.87.0 的 `SessionManager` canonical context、`ContextEditEntry`、actionable `turn_end` 边界；0.99.0 的扩展包依赖告警）验证均不影响 super-pi：1.0.2 下 `tsc --noEmit` 干净、270 测试全绿。
 - **`--mode json` 事件流在 1.0.2 实测复验**：isolated_review 依赖的假设（`message_end` 的 `message.role`/`content[].type`、`tool_execution_start|end`）在真实 spawn 下不变；bash/read 输出 filter 消费的 `tool_result` 事件形状（`content` 文本块、`input.command`、`details.fullOutputPath`）在发布类型中也未变。
