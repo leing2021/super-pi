@@ -1,5 +1,14 @@
 # 更新日志
 
+### 0.41.1 — CI 验证环境升级到 pi 1.4.0
+- **devDependencies 升到 `^1.4.0`**（`package.json`）：CI 现在针对 pi 1.4.x 验证。1.0.3 → 1.4.0 全部变更已审计，确认不影响 super-pi：`tsc --noEmit` 干净，pi 1.4.0 实测 270 测试全绿。
+- **审计过的 breaking，均不影响本项目**：1.0.3 Azure provider 改名（未使用）、1.2.0 `before_agent_start` messageType union（super-pi 未注册该 handler）、1.2.0 theme schema 迁移（未随包发 theme）、1.2.0 `pi mcp list --json` resources 形状（未使用）、system 消息 `replace` 字段移除（代码只用 `String.prototype.replace`）。
+- **`--mode json` 事件流在 1.4.0 重新验证**：isolated_review 的假设成立 — `message_end` 带 `message.role`/`content[].type`、`tool_execution_start|end` 形状不变；`tool_execution_end` 新增 `durationMs`（纯新增，忽略即可）。bash/read 过滤器消费的 `tool_result` 形状（`content` 文本块、`input.command`、`details.fullOutputPath`）不变。`SessionBeforeTreeResult.customInstructions`/`replaceInstructions` 原样导出。
+- **文档同步到 pi 1.4.0 语义**：`skills/references/pipeline-config.md` 说明 `compaction.modelOverrides.reserveTokens` 现在只决定自动 compaction 触发时机（summary 请求改用模型 output limit，长 summary 不再撞 token 上限 — 也消除了我们注入的 branch-summary focus instructions 的旧失败模式）；`docs/bug/ask-user-question-parallel-call-silent-failure.md` 上游状态更新为 pi 1.4.0 已修复（#11166）— 串行化队列保留，继续服务 pi ≥ 0.85 旧版与 `ctx.ui.select` fallback 路径。
+- **pi 1.4.0 免费收益，零代码改动**：恢复 session 后 extension 工具保持激活（#11062 — super-pi 工具在 1.4.0 上 session 恢复后不再失效）；branch summary 不再因固定输出上限失败（#9512 — 利好 `session_before_tree` focus instructions）；并发 extension dialog 改为排队不再死锁（#11166）。
+- 无运行时代码变更 — floor 保持 `pi ≥ 0.85.0`，`MIN_PI_VERSION` 不变。
+- 测试：270 passing（1085 assertions）；针对 pi 1.4.0 `tsc --noEmit` 干净。
+
 ### 0.41.0 — 上游吸收：计划范围纪律、mutation 落地证明、GLOSSARY.md 兼容
 - **计划范围纪律**（`skills/02-plan/SKILL.md`）：unit 只加需求点名的东西 — 不加没人要的 guards、retries、modes、kill switches、runbooks；不偷偷缩水用户点名的功能。源自 [compound-engineering-plugin #1800](https://github.com/EveryInc/compound-engineering-plugin/pull/1800) — 盲评实测 Claude 计划中 speculative mechanisms 减约 40%，功能缩水事故归零。
 - **Mutation 落地证明**（`skills/03-work/references/debug-discipline.md` Phase 5）：通过修改代码/fixture 强制制造 RED 时，先 `diff` 对照未改副本证明 mutation 真的落地再信这个红。源自 [mattpocock/skills #1209](https://github.com/mattpocock/skills/pull/1209) — 真实事故：`sed -i ''` exit 0 但什么都没改，agent 仍报告已 mutation 验证。
