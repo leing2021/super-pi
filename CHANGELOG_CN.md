@@ -1,5 +1,10 @@
 # 更新日志
 
+### 0.42.1 — 评审第 1 轮修复：notice 路径转义 + 边界测试
+- **过滤提示路径内嵌引号已转义**（`extensions/ce-core/tools/read-output-filter.ts`）：0.42.0 给恢复提示加了引号（`bash cat "docs/my settings.md"`）但未转义路径内的 `"`，名为 `docs/a"b.md` 的文件提示仍不可照用。现先转义再包引号（`bash cat "docs/a\"b.md"`）。此为隔离评审第 1 轮 LOW-1 发现在 tag 之后只落在 main、缺席已发布包——本 patch 即同步。
+- **边界测试落地**（仅仓库，`tests/` 不进 npm 包）：0.42.0 测试套件缺的两条 plan 明列场景（MOD-1）— 未闭合 frontmatter 整文件保留、列表后 4 空格段落续行不误判为缩进代码 — 以及两个结构测试的 `filtered` 状态断言（LOW-3）。仓库测试 280 passing（1163 assertions）；`tsc --noEmit` 干净。
+- LOW-2（filterMarkdown 长度 vs <50 行仓规）维持评审裁决延后。无其他行为变更；相对 0.42.0 的运行时差异仅转义一行。
+
 ### 0.42.0 — read 过滤器结构块保真：表格 / frontmatter / 缩进代码
 - **Markdown 结构块不再被当段落截断**（`extensions/ce-core/tools/read-output-filter.ts`）：`filterMarkdown()` 把表格行、frontmatter、4 空格缩进代码块当普通段落，「段落」第 3 行之后全部静默丢弃。实测 11.5KB 配置表文档：120 行数据只剩 1 行（丢失 >97%），且省略标记严重低估损失 — 模型随后基于一份已不存在的配置表推理。三类结构现在识别为块并整块保留：`|` 开头的表格连续块、文件头 `---`…`---` frontmatter（未闭合则整文件保留）、空行后开始的缩进代码块（按 markdown 规范它不能打断段落或列表项，列表续行不受影响）。
 - **大表格文件走既有 <20% gate 返回原文，而不是被摧毁**：表格保留后纯表格文件压缩不足，`filterReadOutput` 返回原文（`strategy: none (markdown: filtering insufficient, <20% reduction)`）— 兑底正确而非静默截断。混合文档（表格+散文）仍压缩，表格完整。
