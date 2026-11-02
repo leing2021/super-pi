@@ -485,7 +485,8 @@ function appendFilterNotice(
   path?: string,
 ): string {
   const saved = formatBytes(originalBytes - filteredBytes)
-  const pathHint = path ? `: bash cat "${path}"` : ': bash cat "<path>"'
+  const escapedPath = path ? path.replace(/"/g, '\\"') : null
+  const pathHint = escapedPath ? `: bash cat "${escapedPath}"` : ': bash cat "<path>"'
   return `${output}\n\n[Read output filtered: ${formatBytes(originalBytes)} → ${formatBytes(filteredBytes)} (${saved} saved, strategy: ${strategy}). If you need the full content, use${pathHint}]`
 }
 

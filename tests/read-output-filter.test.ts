@@ -271,6 +271,45 @@ describe("read-output-filter: markdown files", () => {
     expect(result.output).toContain('bash cat "guide.md"')
   })
 
+  test("unclosed frontmatter: whole file kept verbatim", () => {
+    const lines = [
+      "---",
+      "title: Unclosed",
+      "author: team",
+      "version: 3",
+      ...Array(200).fill("A frontmatter-style line that keeps the file above the threshold."),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "unclosed.md", output })
+    // Unclosed frontmatter keeps the whole file — fidelity over compression
+    expect(result.filtered).toBe(false)
+    expect(result.output).toContain("version: 3")
+    expect(result.output).toContain(lines[lines.length - 1])
+  })
+
+  test("indented paragraph continuation after a list item is not mistaken for indented code", () => {
+    const lines = [
+      "# Contract",
+      "",
+      "- item one",
+      "  continuation of item one that runs past three lines",
+      "  continuation line two of item one with more detail",
+      "  continuation line three of item one keeps going here",
+      "    HIDDEN-INDENTED-LINE-FOUR must be omitted",
+      "    HIDDEN-INDENTED-LINE-FIVE must be omitted",
+      "",
+      ...Array(200).fill("Ordinary filler paragraph line to push the file over the threshold."),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "contract-continuation.md", output })
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("- item one")
+    expect(result.output).not.toContain("HIDDEN-INDENTED-LINE-FOUR")
+    expect(result.output).not.toContain("HIDDEN-INDENTED-LINE-FIVE")
+  })
+
   test("filter notice quotes paths containing spaces", () => {
     const lines = [
       "# Guide",
@@ -291,6 +330,26 @@ describe("read-output-filter: markdown files", () => {
     const result = filterReadOutput({ path: "docs/my settings.md", output })
     expect(result.filtered).toBe(true)
     expect(result.output).toContain('bash cat "docs/my settings.md"')
+  })
+
+  test("filter notice escapes quotes embedded in the path", () => {
+    const lines = [
+      "# Guide",
+      "",
+      "Intro text.",
+      ...Array(300).fill("More intro text."),
+      "",
+      "```typescript",
+      "const y = x + 1",
+      "```",
+      "",
+      "After code block text.",
+      ...Array(300).fill("More after text."),
+    ]
+    const output = lines.join("\n")
+    const result = filterReadOutput({ path: 'docs/a"b.md', output })
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain('bash cat "docs/a\\"b.md"')
   })
 })
 
