@@ -307,27 +307,80 @@ function filterCodeFile(output: string): string {
 
 function filterMarkdown(output: string): string {
   const lines = output.split("\n")
+
+  // Frontmatter: a leading `---` ... `---` block is metadata, kept verbatim.
+  // Unclosed frontmatter keeps the whole file — fidelity over compression.
+  let bodyStart = 0
+  let frontmatter: string | null = null
+  if (lines[0]?.trim() === "---") {
+    const closeIndex = lines.findIndex((l, i) => i > 0 && l.trim() === "---")
+    if (closeIndex === -1) {
+      frontmatter = output
+      bodyStart = lines.length
+    } else {
+      frontmatter = lines.slice(0, closeIndex + 1).join("\n")
+      bodyStart = closeIndex + 1
+    }
+  }
+
   const kept: string[] = []
+  if (frontmatter !== null && bodyStart > 0) {
+    kept.push(frontmatter, "")
+  }
+
   let inParagraph = false
   let paragraphLineCount = 0
   let inCodeBlock = false
+  let inIndentedCode = false
+  let prevKeptBlank = true
   let omitMarkerPlaced = false
 
   const MAX_PARAGRAPH_LINES = 3 // Keep first N lines of each paragraph (vs 1 before)
+  const INDENT_RE = /^(\s{4}|\t)/
 
-  for (const line of lines) {
+  for (let i = bodyStart; i < lines.length; i++) {
+    const line = lines[i]
     const trimmed = line.trim()
+    const isBlank = trimmed === ""
 
     // Track code block state
     if (trimmed.startsWith("```")) {
       inCodeBlock = !inCodeBlock
       kept.push(line)
+      prevKeptBlank = isBlank
+      omitMarkerPlaced = false
       continue
     }
 
     // Keep all lines inside code blocks
     if (inCodeBlock) {
       kept.push(line)
+      prevKeptBlank = isBlank
+      omitMarkerPlaced = false
+      continue
+    }
+
+    // Indented code block: a 4-space/tab indented run starting after a blank
+    // line (per markdown spec, it cannot interrupt a paragraph or list item).
+    if (!inIndentedCode && !isBlank && prevKeptBlank && INDENT_RE.test(line)) {
+      inIndentedCode = true
+    }
+    if (inIndentedCode) {
+      if (isBlank || INDENT_RE.test(line)) {
+        kept.push(line)
+        prevKeptBlank = isBlank
+        omitMarkerPlaced = false
+        continue
+      }
+      // Non-indented non-blank line exits the block
+      inIndentedCode = false
+    }
+
+    // Table rows: any `|`-prefixed line belongs to a table — kept verbatim,
+    // since table cells are position-dependent data, not paragraph filler.
+    if (trimmed.startsWith("|")) {
+      kept.push(line)
+      prevKeptBlank = isBlank
       omitMarkerPlaced = false
       continue
     }
@@ -337,15 +390,17 @@ function filterMarkdown(output: string): string {
       kept.push(line)
       inParagraph = false
       paragraphLineCount = 0
+      prevKeptBlank = isBlank
       omitMarkerPlaced = false
       continue
     }
 
     // Empty lines — reset paragraph state
-    if (trimmed === "") {
+    if (isBlank) {
       kept.push(line)
       inParagraph = false
       paragraphLineCount = 0
+      prevKeptBlank = true
       omitMarkerPlaced = false
       continue
     }
@@ -353,6 +408,9 @@ function filterMarkdown(output: string): string {
     // Always keep list items (-, *, numbered) — they often contain key definitions
     if (/^[-*+]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed)) {
       kept.push(line)
+      inParagraph = false
+      paragraphLineCount = 0
+      prevKeptBlank = false
       omitMarkerPlaced = false
       // List items don't count as paragraph continuation
       continue
@@ -363,6 +421,7 @@ function filterMarkdown(output: string): string {
       kept.push(line)
       inParagraph = true
       paragraphLineCount = 1
+      prevKeptBlank = false
       omitMarkerPlaced = false
     } else {
       paragraphLineCount++
@@ -426,7 +485,7 @@ function appendFilterNotice(
   path?: string,
 ): string {
   const saved = formatBytes(originalBytes - filteredBytes)
-  const pathHint = path ? `: bash cat ${path}` : ": bash cat <path>"
+  const pathHint = path ? `: bash cat "${path}"` : ': bash cat "<path>"'
   return `${output}\n\n[Read output filtered: ${formatBytes(originalBytes)} → ${formatBytes(filteredBytes)} (${saved} saved, strategy: ${strategy}). If you need the full content, use${pathHint}]`
 }
 

@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.42.0 — read 过滤器结构块保真：表格 / frontmatter / 缩进代码
+- **Markdown 结构块不再被当段落截断**（`extensions/ce-core/tools/read-output-filter.ts`）：`filterMarkdown()` 把表格行、frontmatter、4 空格缩进代码块当普通段落，「段落」第 3 行之后全部静默丢弃。实测 11.5KB 配置表文档：120 行数据只剩 1 行（丢失 >97%），且省略标记严重低估损失 — 模型随后基于一份已不存在的配置表推理。三类结构现在识别为块并整块保留：`|` 开头的表格连续块、文件头 `---`…`---` frontmatter（未闭合则整文件保留）、空行后开始的缩进代码块（按 markdown 规范它不能打断段落或列表项，列表续行不受影响）。
+- **大表格文件走既有 <20% gate 返回原文，而不是被摧毁**：表格保留后纯表格文件压缩不足，`filterReadOutput` 返回原文（`strategy: none (markdown: filtering insufficient, <20% reduction)`）— 兑底正确而非静默截断。混合文档（表格+散文）仍压缩，表格完整。
+- **过滤提示路径加引号**（`appendFilterNotice`）：恢复提示原是 `bash cat docs/my settings.md` — 带空格路径不可用。现在输出 `bash cat "docs/my settings.md"`。
+- **测试去空过化**（`tests/read-output-filter.test.ts`）：11 个测试中 9 个把断言包在 `if (result.filtered)` 里而 fixture 根本没跨过触发阈值 — 包括 2026-04-25 修复时加的两个列表保留测试，即该回归保护从未真正执行过。所有条件断言改为无条件，fixture 尺寸调整为真实触发各策略。调整过程中发现并记录两个隐性 fixture 陷阱：注释行 padding 永远不压缩（注释始终保留）；fixture body 里的字符串 `todo` 会命中 `\bTODO\b/i` 保留规则，两者都会让 <20% gate 静默接住。
+- 已知相邻问题，本次不变更：`bash-output-filter.ts` 自己的提示（`Full output: ${fullOutputPath}`）存在同样的未引号路径模式；修复需另行验证后单独变更。
+- 测试：277 passing（1150 assertions）；`tsc --noEmit` 干净。真实 pi 会话活体验证（本地构建，`pi -ne -e`）：9.6KB/120 行表格文档不过滤全行返回；18.7KB 散文文档仍正常过滤（18.3KB → 11.8KB）且提示正确引号带空格路径。
+
 ### 0.41.1 — CI 验证环境升级到 pi 1.4.0
 - **devDependencies 升到 `^1.4.0`**（`package.json`）：CI 现在针对 pi 1.4.x 验证。1.0.3 → 1.4.0 全部变更已审计，确认不影响 super-pi：`tsc --noEmit` 干净，pi 1.4.0 实测 270 测试全绿。
 - **审计过的 breaking，均不影响本项目**：1.0.3 Azure provider 改名（未使用）、1.2.0 `before_agent_start` messageType union（super-pi 未注册该 handler）、1.2.0 theme schema 迁移（未随包发 theme）、1.2.0 `pi mcp list --json` resources 形状（未使用）、system 消息 `replace` 字段移除（代码只用 `String.prototype.replace`）。

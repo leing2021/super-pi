@@ -141,48 +141,55 @@ describe("read-output-filter: large code files", () => {
       "    return input",
       "  }",
       "",
+      "  reset(): void {",
+      ...Array(20).fill("    cache.clear()"),
+      "  }",
+      "",
       "  helper(x: number): void {",
       ...Array(20).fill("    console.log(x)"),
       "  }",
+      "}",
+      "",
+      "function resetAllState(): void {",
+      ...Array(400).fill("  cache.clear()"),
       "}",
     ]
     const output = lines.join("\n")
     // Pad to exceed threshold
     const padded = output + "\n" + repeatLines("// padding line", 100)
     const result = filterReadOutput({ path: "src/service.ts", output: padded })
-    if (result.filtered) {
-      // Should keep imports and class signature
-      expect(result.output).toContain("import")
-      expect(result.output).toContain("class MyService")
-      // Should collapse long function bodies
-      expect(result.filteredBytes).toBeLessThan(result.originalBytes)
-    }
+    expect(result.filtered).toBe(true)
+    // Should keep imports and class signature
+    expect(result.output).toContain("import")
+    expect(result.output).toContain("class MyService")
+    // Should collapse long function bodies
+    expect(result.filteredBytes).toBeLessThan(result.originalBytes)
   })
 
   test("keeps TODO/FIXME/HACK comments in compressed output", () => {
     const lines = [
       "export function simple(): void {",
       "  // TODO: fix this later",
-      "  console.log('todo item')",
+      "  console.log('step done')",
+      ...Array(400).fill("  console.log('step done')"),
       "}",
-      ...Array(200).fill("// regular comment"),
       "export function other(): void {",
       "  // HACK: workaround for bug #123",
-      "  console.log('hack')",
+      "  console.log('hack output')",
+      ...Array(400).fill("  console.log('step done')"),
       "}",
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "src/code.ts", output })
-    if (result.filtered) {
-      expect(result.output).toContain("TODO")
-      expect(result.output).toContain("HACK")
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("TODO")
+    expect(result.output).toContain("HACK")
   })
 
   test("preserves export signatures", () => {
     const lines = [
       "export function foo(a: string, b: number): boolean {",
-      ...Array(50).fill("  // body"),
+      ...Array(400).fill("  compute(key, value)"),
       "  return true",
       "}",
       "",
@@ -190,12 +197,11 @@ describe("read-output-filter: large code files", () => {
       ...Array(50).fill("  key: 'value',"),
       "}",
     ]
-    const output = repeatLines("// header\n", 50) + lines.join("\n")
+    const output = repeatLines("// header\n", 200) + lines.join("\n")
     const result = filterReadOutput({ path: "src/exports.ts", output })
-    if (result.filtered) {
-      expect(result.output).toContain("export function foo")
-      expect(result.output).toContain("export const CONFIG")
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("export function foo")
+    expect(result.output).toContain("export const CONFIG")
   })
 })
 
@@ -210,28 +216,27 @@ describe("read-output-filter: markdown files", () => {
       "",
       "This is a long description of the project.",
       "It spans many lines with details.",
-      ...Array(50).fill("More details about the project here."),
+      ...Array(150).fill("More details about the project here."),
       "",
       "## Installation",
       "",
       "Run the following commands:",
-      ...Array(30).fill("Additional installation notes."),
+      ...Array(80).fill("Additional installation notes."),
       "",
       "## API Reference",
       "",
       "Details about the API.",
-      ...Array(100).fill("API documentation line."),
+      ...Array(150).fill("API documentation line."),
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "README.md", output })
-    if (result.filtered) {
-      expect(result.output).toContain("# Project README")
-      expect(result.output).toContain("## Installation")
-      expect(result.output).toContain("## API Reference")
-      // Paragraph content is now expanded (3 lines instead of 1)
-      expect(result.output).toContain("It spans many lines with details.")
-      expect(result.filteredBytes).toBeLessThan(result.originalBytes * 0.8)
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("# Project README")
+    expect(result.output).toContain("## Installation")
+    expect(result.output).toContain("## API Reference")
+    // Paragraph content is now expanded (3 lines instead of 1)
+    expect(result.output).toContain("It spans many lines with details.")
+    expect(result.filteredBytes).toBeLessThan(result.originalBytes * 0.8)
   })
 
   test("preserves code block content in markdown", () => {
@@ -239,7 +244,7 @@ describe("read-output-filter: markdown files", () => {
       "# Guide",
       "",
       "Intro text.",
-      ...Array(50).fill("More intro text."),
+      ...Array(300).fill("More intro text."),
       "",
       "## Example",
       "",
@@ -252,19 +257,40 @@ describe("read-output-filter: markdown files", () => {
       "```",
       "",
       "After code block text.",
-      ...Array(50).fill("More after text."),
+      ...Array(300).fill("More after text."),
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "guide.md", output })
-    if (result.filtered) {
-      // Code block lines must be preserved
-      expect(result.output).toContain("import { foo } from 'bar'")
-      expect(result.output).toContain("const y = x + 1")
-      // Paragraph compression keeps first 3 lines + following line
-      expect(result.output).toContain("After code block text.")
-      // Filter notice should include actionable guidance with actual path
-      expect(result.output).toContain("bash cat guide.md")
-    }
+    expect(result.filtered).toBe(true)
+    // Code block lines must be preserved
+    expect(result.output).toContain("import { foo } from 'bar'")
+    expect(result.output).toContain("const y = x + 1")
+    // Paragraph compression keeps first 3 lines + following line
+    expect(result.output).toContain("After code block text.")
+    // Filter notice should include actionable guidance with quoted path
+    expect(result.output).toContain('bash cat "guide.md"')
+  })
+
+  test("filter notice quotes paths containing spaces", () => {
+    const lines = [
+      "# Guide",
+      "",
+      "Intro text.",
+      ...Array(300).fill("More intro text."),
+      "",
+      "## Example",
+      "",
+      "```typescript",
+      "const y = x + 1",
+      "```",
+      "",
+      "After code block text.",
+      ...Array(300).fill("More after text."),
+    ]
+    const output = lines.join("\n")
+    const result = filterReadOutput({ path: "docs/my settings.md", output })
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain('bash cat "docs/my settings.md"')
   })
 })
 
@@ -289,19 +315,18 @@ describe("read-output-filter: markdown list preservation", () => {
       "## Details",
       "",
       "Each subsystem is described below.",
-      ...Array(100).fill("Detail paragraph content that is very long and repetitive."),
+      ...Array(150).fill("Detail paragraph content that is very long and repetitive."),
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "docs/architecture.md", output })
-    if (result.filtered) {
-      // All list items must be preserved
-      expect(result.output).toContain("**Builder**")
-      expect(result.output).toContain("**Schema OS**")
-      expect(result.output).toContain("**Prompt OS**")
-      expect(result.output).toContain("**Pipeline OS**")
-      expect(result.output).toContain("**QA OS**")
-      expect(result.output).toContain("**Versioning OS**")
-    }
+    expect(result.filtered).toBe(true)
+    // All list items must be preserved
+    expect(result.output).toContain("**Builder**")
+    expect(result.output).toContain("**Schema OS**")
+    expect(result.output).toContain("**Prompt OS**")
+    expect(result.output).toContain("**Pipeline OS**")
+    expect(result.output).toContain("**QA OS**")
+    expect(result.output).toContain("**Versioning OS**")
   })
 
   test("preserves numbered list items", () => {
@@ -319,14 +344,13 @@ describe("read-output-filter: markdown list preservation", () => {
       "## Extra",
       "",
       "More text.",
-      ...Array(100).fill("Padding line to exceed threshold."),
+      ...Array(300).fill("Padding line to exceed threshold."),
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "setup.md", output })
-    if (result.filtered) {
-      expect(result.output).toContain("1. Install dependencies")
-      expect(result.output).toContain("5. Verify deployment")
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("1. Install dependencies")
+    expect(result.output).toContain("5. Verify deployment")
   })
 })
 
@@ -369,11 +393,11 @@ describe("read-output-filter: unknown and edge cases", () => {
   })
 
   test("generic filter for large unknown text files", () => {
-    const output = repeatLines("line of text that repeats many times here", 500)
+    // Generic strategy only kicks in above 30KB (MAX_FILTERED_SIZE)
+    const output = repeatLines("line of text that repeats many times here", 900)
     const result = filterReadOutput({ path: "data/trace.log", output })
-    if (result.filtered) {
-      expect(result.filteredBytes).toBeLessThan(result.originalBytes)
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.filteredBytes).toBeLessThan(result.originalBytes)
   })
 
   test("handles empty output", () => {
@@ -388,11 +412,149 @@ describe("read-output-filter: unknown and edge cases", () => {
       ),
     }, null, 2)
     const result = filterReadOutput({ path: "package-lock.json", output })
-    if (result.filtered) {
-      expect(result.output).toContain("filtered")
-      // Filter notice should include actual path
-      expect(result.output).toContain("package-lock.json")
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("filtered")
+    // Filter notice should include actual path
+    expect(result.output).toContain("package-lock.json")
+  })
+})
+
+// ============================================================================
+// Markdown: structure block fidelity (tables / frontmatter / indented code)
+// ============================================================================
+
+describe("read-output-filter: markdown structure fidelity", () => {
+  function tableRows(count: number): string[] {
+    return Array.from({ length: count }, (_, i) =>
+      `| opt-${i} | string | "${i}" | description for option number ${i} with detail |`,
+    )
+  }
+
+  test("pure large table file: rows survive, insufficient reduction returns original", () => {
+    const lines = [
+      "# Settings",
+      "",
+      "| Option | Type | Default | Description |",
+      "| --- | --- | --- | --- |",
+      ...tableRows(120),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "docs/settings.md", output })
+    // 表格整块保留后压缩不足 20%，20% gate 应回退为原文
+    expect(result.filtered).toBe(false)
+    expect(result.output).toContain("| opt-0 |")
+    expect(result.output).toContain("| opt-59 |")
+    expect(result.output).toContain("| opt-119 |")
+  })
+
+  test("mixed doc: table intact even when overall filtering still triggers", () => {
+    const lines = [
+      "# Config Reference",
+      "",
+      "Intro paragraph line one with substance.",
+      "Intro paragraph line two with more substance.",
+      "Intro paragraph line three finishes the intro.",
+      "",
+      "| Option | Type | Default | Description |",
+      "| --- | --- | --- | --- |",
+      ...tableRows(60),
+      "",
+      "## Notes",
+      "",
+      ...Array(80).fill("Long prose paragraph line that can be safely compressed away."),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "docs/reference.md", output })
+    // 无论整体是否触发过滤，表格行必须完整
+    expect(result.output).toContain("| opt-0 |")
+    expect(result.output).toContain("| opt-29 |")
+    expect(result.output).toContain("| opt-59 |")
+  })
+
+  test("two tables separated by prose: both kept", () => {
+    const lines = [
+      "# Two Tables",
+      "",
+      "| A | B |",
+      "| --- | --- |",
+      ...tableRows(30).map((r) => r.replace("| opt-", "| alpha-")),
+      "",
+      "Prose paragraph between the tables with some length.",
+      "",
+      "| A | B |",
+      "| --- | --- |",
+      ...tableRows(30).map((r) => r.replace("| opt-", "| beta-")),
+      "",
+      ...Array(120).fill("Filler paragraph line with plenty of words to exceed threshold."),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "docs/two-tables.md", output })
+    expect(result.output).toContain("| alpha-0 |")
+    expect(result.output).toContain("| alpha-29 |")
+    expect(result.output).toContain("| beta-0 |")
+    expect(result.output).toContain("| beta-29 |")
+  })
+
+  test("frontmatter preserved beyond 3 lines", () => {
+    const fm = [
+      "---",
+      "title: Guide",
+      "author: team",
+      "version: 3",
+      "status: draft",
+      "tags: a, b",
+      "priority: high",
+      "---",
+    ]
+    const lines = [...fm, "", ...Array(200).fill("Body paragraph line with enough words to add real bytes here.")]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "post.md", output })
+    expect(result.output).toContain("version: 3")
+    expect(result.output).toContain("status: draft")
+    expect(result.output).toContain("priority: high")
+  })
+
+  test("indented code block preserved beyond 3 lines", () => {
+    const lines = [
+      "# Example",
+      "",
+      "    def f():",
+      "        a = 1",
+      "        b = 2",
+      "        c = 3",
+      "        d = 4",
+      "        return a",
+      "",
+      ...Array(200).fill("Filler paragraph line with plenty of words to exceed the threshold."),
+    ]
+    const output = lines.join("\n")
+    expect(sizeOf(output)).toBeGreaterThan(8192)
+    const result = filterReadOutput({ path: "example.md", output })
+    expect(result.output).toContain("def f():")
+    expect(result.output).toContain("d = 4")
+    expect(result.output).toContain("return a")
+  })
+
+  test("paragraph truncation still applies outside structure blocks", () => {
+    const lines = [
+      "# Contract",
+      "",
+      "Visible line one of the clause.",
+      "Visible line two of the clause.",
+      "Visible line three of the clause.",
+      "HIDDEN-CLAUSE-ON-LINE-FOUR must never appear.",
+      "",
+      ...Array(200).fill("Ordinary filler paragraph line to push the file over the threshold."),
+    ]
+    const output = lines.join("\n")
+    const result = filterReadOutput({ path: "contract.md", output })
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("Visible line one")
+    expect(result.output).not.toContain("HIDDEN-CLAUSE-ON-LINE-FOUR")
   })
 })
 
@@ -422,9 +584,8 @@ describe("read-output-filter: real-world savings", () => {
     const output = JSON.stringify(pkg, null, 2)
     const result = filterReadOutput({ path: "package-lock.json", output })
     console.log(`package-lock.json: ${sizeOf(output)} → ${result.filteredBytes} bytes (${((1 - result.filteredBytes / sizeOf(output)) * 100).toFixed(0)}% reduction, strategy: ${result.strategy})`)
-    if (result.filtered) {
-      expect(result.filteredBytes).toBeLessThan(sizeOf(output) * 0.05) // >95% reduction expected
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.filteredBytes).toBeLessThan(sizeOf(output) * 0.05) // >95% reduction expected
   })
 
   test("large TS file ~20KB → structural compression", () => {
@@ -435,19 +596,18 @@ describe("read-output-filter: real-world savings", () => {
       "interface Props { name: string; age: number }",
       "",
       "export class BigComponent {",
-      ...Array(100).fill("  private method(): void { /* body */ }"),
+      ...Array(250).fill("  private method(): void { /* body */ }"),
       "",
       "  render(): JSX.Element {",
-      ...Array(150).fill("    <div>content</div>"),
+      ...Array(300).fill("    <div>content</div>"),
       "  }",
       "}",
     ]
     const output = lines.join("\n")
     const result = filterReadOutput({ path: "src/BigComponent.tsx", output })
     console.log(`BigComponent.tsx: ${sizeOf(output)} → ${result.filteredBytes} bytes (${((1 - result.filteredBytes / sizeOf(output)) * 100).toFixed(0)}% reduction, strategy: ${result.strategy})`)
-    if (result.filtered) {
-      expect(result.output).toContain("import")
-      expect(result.output).toContain("class BigComponent")
-    }
+    expect(result.filtered).toBe(true)
+    expect(result.output).toContain("import")
+    expect(result.output).toContain("class BigComponent")
   })
 })
