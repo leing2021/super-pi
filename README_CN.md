@@ -65,9 +65,17 @@ pi install npm:@leing2021/super-pi
 
 模型和思考深度自动切换——无需手动 `/model`。
 
-路由在两种情况下触发：显式 `/skill:` 命令，以及 agent 自主读取阶段 `SKILL.md` 时。若未配置策略，路由不做任何事——不会碰当前会话模型。项目级配置优先；缺失的键回退到全局 `~/.pi/agent/settings.json`。
+路由在两种情况下触发：显式 `/skill:` 命令，以及 agent 自主读取阶段 `SKILL.md` 时。直接键入的命令，与作为唯一 `pi -p @file` 参数首行的同一命令，都会触发路由；该载体形态只在会话首条 user 输入时生效，后续附件（含 `/skill:` 示例文本的文档）永远不路由。若未配置策略，路由不做任何事——不会碰当前会话模型。项目级配置优先；缺失的键回退到全局 `~/.pi/agent/settings.json`。
 
-**推荐配置（pi ≥ 0.86）：** 在同一 settings 文件（项目 `.pi/settings.json`，或全局 `~/.pi/agent/settings.json`）加 `"cacheWarming": "streaming"` —— 否则 Super Pi 的长工具执行和 2–5 分钟 `isolated_review` 阻塞会让 prompt cache 过期，下次调用重付全价输入。含 per-model compaction 预算的完整示例见 [pipeline config](skills/references/pipeline-config.md)。
+headless 模式（`pi -p`、`--mode json`）下，路由通知与警告（无效策略引用、模型不存在、缺 API key、未知 thinking 档位）以每行一个 JSON 对象写入 **stderr**——stdout 保持应答流：
+
+```json
+{"source":"ce-core","event":"stage-routing","stage":"03-work","level":"info","message":"Switched model for 03-work: provider/model"}
+```
+
+已知限制：显式 `--model`/`--thinking` CLI 参数不会钉住会话以免受阶段路由影响——input hook 的切换仍可能覆盖它。必须保持 flag 权威的编排器应在传 prompt 时去掉 `/skill:` 前缀，或从 `modelStrategy` 移除该阶段。
+
+**缓存保温：** pi ≥ 1.5.1 默认 `"cacheWarming": "idle"`，已覆盖 Super Pi 的长工具执行与 2–5 分钟 `isolated_review` 阻塞（并在 run 间保温最长 30 分钟）——无需任何配置。更老的 pi 版本才需要在同一 settings 文件（项目 `.pi/settings.json`，或全局 `~/.pi/agent/settings.json`）加 `"cacheWarming": "streaming"`，避免下次调用重付全价输入。含 per-model compaction 预算的完整示例见 [pipeline config](skills/references/pipeline-config.md)。
 
 ## 设计哲学与致谢
 

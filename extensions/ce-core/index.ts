@@ -16,7 +16,7 @@ import { createContextHandoffTool } from "./tools/context-handoff"
 import { filterBashOutput } from "./tools/bash-output-filter"
 import { filterReadOutput } from "./tools/read-output-filter"
 import { COMPACTION_FOCUS_INSTRUCTIONS } from "./tools/compaction-optimizer"
-import { applyStageStrategies, parseStageSkillName, parseStageSkillPath } from "./utils/stage-routing"
+import { applyStageStrategies, looksLikeFileCarrier, parseStageSkillName, parseStageSkillPath } from "./utils/stage-routing"
 
 /**
  * Module-level promise chain that serializes interactive `ask_user_question`
@@ -256,7 +256,12 @@ export default function ceCoreExtension(pi: ExtensionAPI) {
       return { action: "continue" as const }
     }
 
-    const stageKey = parseStageSkillName(event.text)
+    // A sole @file may carry the initial command; later attachments remain data.
+    const allowFileCarrier = looksLikeFileCarrier(event.text)
+      && (ctx.sessionManager?.getBranch().every(
+        entry => entry.type !== "message" || entry.message.role !== "user",
+      ) ?? false)
+    const stageKey = parseStageSkillName(event.text, allowFileCarrier)
     if (!stageKey) {
       return { action: "continue" as const }
     }

@@ -102,9 +102,17 @@ Configure in `.pi/settings.json`:
 
 Model and thinking level switch automatically — no manual `/model` needed.
 
-Routing triggers on explicit `/skill:` commands **and** when the agent reads a stage's `SKILL.md` on its own. If no strategy is configured, routing is a no-op — the session model is never touched. Project-level settings take precedence; missing keys fall back to global `~/.pi/agent/settings.json`.
+Routing triggers on explicit `/skill:` commands **and** when the agent reads a stage's `SKILL.md` on its own. A command typed directly and the same command as the first line of a sole `pi -p @file` argument both trigger routing; that carrier form is only honored for the first user input of a session, so later attachments (docs, examples containing `/skill:` text) never route. If no strategy is configured, routing is a no-op — the session model is never touched. Project-level settings take precedence; missing keys fall back to global `~/.pi/agent/settings.json`.
 
-**Recommended (pi ≥ 0.86):** add `"cacheWarming": "streaming"` to the same settings file (project `.pi/settings.json`, or global `~/.pi/agent/settings.json`) — Super Pi's long tool runs and 2-5 min `isolated_review` blocks otherwise let the prompt cache expire and re-pay full input price. See [pipeline config](skills/references/pipeline-config.md) for the full example including per-model compaction budgets.
+In headless modes (`pi -p`, `--mode json`), routing notices and warnings (invalid strategy reference, model not found, missing API key, unknown thinking level) are written to **stderr** as one JSON object per line — stdout stays the response stream:
+
+```json
+{"source":"ce-core","event":"stage-routing","stage":"03-work","level":"info","message":"Switched model for 03-work: provider/model"}
+```
+
+Known limitation: an explicit `--model`/`--thinking` CLI flag does not pin the session against stage routing — the input-hook switch may still override it. Orchestrators that must keep a flag authoritative should pass the prompt without a leading `/skill:` command (e.g. strip the prefix) or omit the stage from `modelStrategy`.
+
+**Cache warming:** pi ≥ 1.5.1 defaults to `"cacheWarming": "idle"`, which already keeps prompt caches warm during Super Pi's long tool runs and 2-5 min `isolated_review` blocks — and up to 30 minutes between runs — so no configuration is needed. On older pi versions, add `"cacheWarming": "streaming"` to the same settings file (project `.pi/settings.json`, or global `~/.pi/agent/settings.json`) to avoid re-paying full input price. See [pipeline config](skills/references/pipeline-config.md) for the full example including per-model compaction budgets.
 
 ## Design Philosophy & Acknowledgements
 

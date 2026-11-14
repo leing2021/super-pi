@@ -24,7 +24,7 @@ Supported `modelStrategy` formats in `.pi/settings.json`:
 
 ## Recommended pi settings
 
-Super Pi runs long tool executions (03-work) and blocks 2-5 minutes inside `isolated_review` while a fresh reviewer session runs. Two pi settings (both require pi ≥ 0.86) directly reduce cost in those scenarios — add them to the project `.pi/settings.json`, or to the user-level global settings file for all projects (see README for the exact global path):
+Super Pi runs long tool executions (03-work) and blocks 2-5 minutes inside `isolated_review` while a fresh reviewer session runs. Two pi settings directly reduce cost in those scenarios — add them to the project `.pi/settings.json`, or to the user-level global settings file for all projects (see README for the exact global path). `cacheWarming` only needs setting on pi < 1.5.1; newer versions already default to the recommended behavior:
 
 ```json
 {
@@ -37,7 +37,7 @@ Super Pi runs long tool executions (03-work) and blocks 2-5 minutes inside `isol
 }
 ```
 
-- `cacheWarming: "streaming"` — keeps the prompt cache alive during long tool runs, so the next LLM call after `isolated_review` or a long build/test cycle pays cache-read instead of full input price. Pi only refreshes when the expected savings clear its cost threshold; set to `"idle"` to also cover idle gaps between stages.
+- `cacheWarming` — pi ≥ 1.5.1 defaults to `"idle"`, which keeps the cache alive during long tool runs and up to 30 minutes between runs, so the next LLM call after `isolated_review` or a long build/test cycle pays cache-read instead of full input price with no setting needed. On older pi versions set `"cacheWarming": "streaming"` (as in the JSON above); pi only refreshes when the expected savings clear its cost threshold either way.
 - `compaction.modelOverrides` — per-model `reserveTokens`/`keepRecentTokens` override the global compaction budgets, useful when stage routing switches between models with different context windows. Since pi 1.4.0, `reserveTokens` only decides when auto-compaction starts; summary requests use the model's output limit, so long summaries no longer fail on the token cap. Omit the block entirely to use pi's global defaults; it is a tuning option, not a requirement.
 
 ## Start of skill: context loading

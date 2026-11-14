@@ -31,12 +31,18 @@ interface StageRoutingContext {
   ui?: { notify(message: string, level?: string): void }
 }
 
-/**
- * Model/thinking strategies only matter where the user can see the switch
- * notification; silent hosts would swallow failures.
- */
-function shouldNotifyRouting(ctx: StageRoutingContext): boolean {
-  return ctx.mode === "tui" || ctx.mode === "rpc"
+/** Preserve UI notices while keeping headless diagnostics off the response stream. */
+function notifyRouting(
+  ctx: StageRoutingContext,
+  stageKey: string,
+  message: string,
+  level: "info" | "warning",
+): void {
+  if (ctx.mode === "tui" || ctx.mode === "rpc") {
+    ctx.ui?.notify(message, level)
+  } else if (ctx.mode === "print" || ctx.mode === "json") {
+    process.stderr.write(`${JSON.stringify({ source: "ce-core", event: "stage-routing", stage: stageKey, level, message })}\n`)
+  }
 }
 
 async function applyModelStrategy(
@@ -49,9 +55,7 @@ async function applyModelStrategy(
     return
   }
   const notify = (message: string, level: "info" | "warning") => {
-    if (shouldNotifyRouting(ctx)) {
-      ctx.ui?.notify(message, level)
-    }
+    notifyRouting(ctx, stageKey, message, level)
   }
 
   const targetModelRef = strategy[stageKey] ?? strategy.default
@@ -108,14 +112,12 @@ function applyThinkingStrategy(
   const rawThinking = targetThinking.toLowerCase()
   const knownLevel = levelMap[rawThinking]
   const normalized = knownLevel ?? "medium"
-  if (!knownLevel && shouldNotifyRouting(ctx)) {
-    ctx.ui?.notify(`Unknown thinking level for ${stageKey}: ${targetThinking}, falling back to medium`, "warning")
+  if (!knownLevel) {
+    notifyRouting(ctx, stageKey, `Unknown thinking level for ${stageKey}: ${targetThinking}, falling back to medium`, "warning")
   }
   if (pi.getThinkingLevel() !== normalized) {
     pi.setThinkingLevel(normalized)
-    if (shouldNotifyRouting(ctx)) {
-      ctx.ui?.notify(`Switched thinking level for ${stageKey}: ${normalized}`, "info")
-    }
+    notifyRouting(ctx, stageKey, `Switched thinking level for ${stageKey}: ${normalized}`, "info")
   }
 }
 
@@ -191,8 +193,25 @@ export function parseStageSkillPath(filePath: string): string | null {
   return PIPELINE_STAGE_KEYS.has(stageKey) ? stageKey : null
 }
 
-export function parseStageSkillName(text: string): string | null {
-  const trimmed = text.trim()
+/** Cheap prefix check for the pi `<file name="…">` attachment wrapper. */
+export function looksLikeFileCarrier(text: string): boolean {
+  return text.trimStart().startsWith("<file ")
+}
+
+/**
+ * Parse an explicit stage command, optionally carried by one complete pi file
+ * wrapper (opt-in: only the initial user input may travel as a sole @file).
+ * Never scan reference text or unwrap nested/multiple attachments.
+ */
+export function parseStageSkillName(text: string, allowFileCarrier = false): string | null {
+  let trimmed = text.trim()
+  if (allowFileCarrier && looksLikeFileCarrier(trimmed)) {
+    const carrier = trimmed.match(/^<file name="[^"\r\n]+">\r?\n([\s\S]*)\r?\n<\/file>$/)
+    if (!carrier || /<\/?file(?:\s|>)/.test(carrier[1])) {
+      return null
+    }
+    trimmed = carrier[1].trim()
+  }
   const match = trimmed.match(/^\/skill:([^\s]+)/)
   if (!match) {
     return null
