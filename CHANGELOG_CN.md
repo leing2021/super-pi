@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.42.2 — 阶段路由兼容 pi `@file` 载体 + headless 路由诊断
+- **`/skill:` 路由现在支持唯一 `pi -p @file` 载体**（`extensions/ce-core/utils/stage-routing.ts`、`extensions/ce-core/index.ts`）：pi 会把 `@file` 参数包装成 `<file name="...">` 加围栏正文的附件形态再作为首条 user 消息，input hook 的 `^/skill:` 前缀匹配对文件载体永不命中——某编排器（PU devloop daemon）全部阶段静默跑在启动默认模型上两天。现在仅当整条输入是单个完整单层包装且 body trim 后以 `/skill:` 开头时才剥一层包装解析；嵌套/多重/畸形包装、前后缀散文、参考附件内的 `/skill:` 示例文本全部拒绝（不做正文扫描）。载体解析 opt-in（`allowFileCarrier` 默认 `false`），input hook 仅在会话首条 user 输入时开启（`getBranch()` 无既有 user 消息），后续附件保持为数据。
+- **路由通知在 headless 模式下可观测**（`stage-routing.ts`）：原 `shouldNotifyRouting` 只认 tui/rpc，print/json 吞掉所有警告——无效 modelStrategy、模型不存在、缺 API key、未知 thinking 档位——失效完全不可见（本 bug 隐藏两天的直接原因）。通知现按模式分流：tui/rpc 保持 `ui.notify`；print/json 每条通知写一行 JSON 到 stderr（source/event/stage/level/message 字段），stdout 保持应答流（pi headless 会经 `takeOverStdout` 把扩展 stdout 重定向到 stderr，stderr 是唯一正确诊断通道）。
+- **已知限制已文档化**（README、README_CN、pipeline-config）：显式 `--model`/`--thinking` CLI 参数仍不会钉住会话以免受阶段路由影响；必须保持 flag 权威的编排器应去掉 `/skill:` 前缀或从 `modelStrategy` 移除该阶段。
+- **文档同步 pi >= 1.5.1 默认值**：pi 1.5.1+ 的 `cacheWarming` 默认改为 `"idle"`——是此前推荐的 `"streaming"` 的超集（活跃运行期间保温 + run 间最长 30 分钟）——当前 pi 无需任何配置；README/README_CN/pipeline-config 的设置指引现仅针对更老版本。
+- 测试：313 passing（1242 assertions）——新增 33 项 stage-routing 测试（包装正例、10 个畸形/参考负例、首条 user 守卫、steer/extension 跳过、幂等、stderr JSON schema 且 stdout 零写入、tui/rpc 不变、CRLF、安全默认值）。真实 pi 1.5.2 CLI 验证：10/10 smoke 矩阵（print/json × argv/单文件/参考文件/多文件/警告），隔离 `PI_CODING_AGENT_DIR` + 桩 provider，探针在 provider 请求前拦截。`tsc --noEmit` 干净。隔离评审：0 high / 1 moderate（文档缺失，已修）/ 3 low（已修：安全默认值、共享前缀谓词、CRLF 测试）。
+
 ### 0.42.1 — 评审第 1 轮修复：notice 路径转义 + 边界测试
 - **过滤提示路径内嵌引号已转义**（`extensions/ce-core/tools/read-output-filter.ts`）：0.42.0 给恢复提示加了引号（`bash cat "docs/my settings.md"`）但未转义路径内的 `"`，名为 `docs/a"b.md` 的文件提示仍不可照用。现先转义再包引号（`bash cat "docs/a\"b.md"`）。此为隔离评审第 1 轮 LOW-1 发现在 tag 之后只落在 main、缺席已发布包——本 patch 即同步。
 - **边界测试落地**（仅仓库，`tests/` 不进 npm 包）：0.42.0 测试套件缺的两条 plan 明列场景（MOD-1）— 未闭合 frontmatter 整文件保留、列表后 4 空格段落续行不误判为缩进代码 — 以及两个结构测试的 `filtered` 状态断言（LOW-3）。仓库测试 280 passing（1163 assertions）；`tsc --noEmit` 干净。
