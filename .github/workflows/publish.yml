@@ -28,6 +28,15 @@ jobs:
             echo "Version $VERSION already exists on npm, skipping publish."
             echo "skip_publish=true" >> $GITHUB_ENV
           fi
+      - name: Preflight — verify NPM_TOKEN is valid before publish
+        if: env.skip_publish != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if ! npm whoami >/dev/null 2>&1; then
+            echo "::error::NPM_TOKEN is invalid or expired. Rotate it: npmjs.com → Access Tokens → generate a granular token with publish permission for @leing2021/super-pi, then update repo Settings → Secrets → NPM_TOKEN. Afterwards rerun this workflow (gh run rerun <run-id>). Do NOT bump the version — an E404'd version was never published."
+            exit 1
+          fi
       - run: npm publish --access public
         if: env.skip_publish != 'true'
         env:
