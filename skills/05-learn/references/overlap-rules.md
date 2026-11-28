@@ -8,6 +8,8 @@ Use these overlap levels when deciding whether to create a new solution doc or u
 
 ## Retirement
 
+Judge staleness by the cited symbol name against the current tree — a cited line number is never drift evidence by itself, because unrelated edits move lines.
+
 When an existing solution is discovered stale — the described code/API no longer exists, or the fix has been superseded:
 
 - **Superseded** — fold into the replacing solution (keep the old tags searchable there) and delete the old one.

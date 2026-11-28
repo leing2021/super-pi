@@ -14,7 +14,7 @@ that have ambiguous or overloaded meanings. Skip for trivial features.
 
 ## Language
 
-**Term**: One-sentence definition.
+**Term**: One-sentence definition, cross-referencing **Term2** when related.
 _Avoid_: aliases to discourage
 
 **Term2**: One-sentence definition.
@@ -34,6 +34,7 @@ _Avoid_: aliases to discourage
 ## Rules
 
 - One definition per term, 1-2 sentences max. Define what it IS, not what it does.
+- **Bold other glossary terms inside a definition** — when a definition mentions another term, write it as **Term2** and let the sentence say how the two relate.
 - Pick one canonical term, list alternatives as _Avoid_.
 - Only project-specific concepts — general programming terms don't belong.
 - Flag ambiguities explicitly.

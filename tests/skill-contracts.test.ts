@@ -189,6 +189,10 @@ describe("skill package contracts", () => {
     expect(categoryMap).toContain("workflow")
     expect(overlapRules).toContain("High")
     expect(overlapRules).toContain("Moderate")
+    // Citation discipline: symbol names, not file:line (compound #2086/#2088)
+    expect(content).toContain("symbol name")
+    expect(content).toContain("file:line")
+    expect(overlapRules).toContain("never drift evidence")
     // Template must include YAML frontmatter block
     expect(template).toContain("---")
     expect(template).toContain("title:")
@@ -423,6 +427,9 @@ describe("skill package contracts", () => {
     // Phase 5: mutation-landed proof before trusting a forced red
     expect(debug).toContain("diff")
     expect(debug).toContain("mutation actually landed")
+    // Phase 5: multi-guard proof — break each guard alone (compound #2078)
+    expect(debug).toContain("each guard")
+    expect(debug).toContain("restore it before breaking the next")
     // Phase 6: post-mortem handoff to 05-learn
     expect(debug).toContain("post-mortem")
     expect(debug).toContain("05-learn")
@@ -505,6 +512,21 @@ describe("skill package contracts", () => {
     expect(review).toContain("GLOSSARY.md")
     const brain = readFileSync(path.join(repoRoot, "skills", "01-brainstorm", "SKILL.md"), "utf8")
     expect(brain).toContain("GLOSSARY.md")
+  })
+
+  test("01-brainstorm context-glossary defines in-definition term relationships", () => {
+    const glossary = readFileSync(
+      path.join(repoRoot, "skills", "01-brainstorm", "references", "context-glossary.md"),
+      "utf8",
+    )
+
+    // In-definition relationships: bold the other term, sentence says how they relate (mattpocock #1485)
+    expect(glossary).toContain("Bold other glossary terms")
+    expect(glossary).toContain("how the two relate")
+    expect(glossary).toContain("cross-referencing **Term2** when related")
+    // The existing Relationships section and multi-context map stay intact
+    expect(glossary).toContain("## Relationships")
+    expect(glossary).toContain("CONTEXT-MAP.md")
   })
 
   test("every SKILL.md stays under 100 lines", () => {

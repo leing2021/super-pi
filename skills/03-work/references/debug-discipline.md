@@ -106,6 +106,7 @@ If a correct seam exists:
 
 1. Turn the minimised repro into a failing test at that seam.
 2. Watch it fail. If you forced the red by mutating code or a fixture, `diff` against a pristine copy to prove the mutation actually landed before trusting it — a command can exit 0 and change nothing, and the "red" then proves nothing.
+   **Multi-guard proof:** if the regression test guards a property that rests on more than one guard, break each guard **alone** — remove or break one, watch the test fail, then restore it before breaking the next. One red proves only one guard; a test that stays green while the second guard is deleted proves nothing about it. Single-guard properties keep the one-break rule above.
 3. Apply the fix.
 4. Watch it pass.
 5. Re-run the Phase 1 tight loop against the original (un-minimised) scenario.

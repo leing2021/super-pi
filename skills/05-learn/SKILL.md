@@ -36,6 +36,7 @@ See [shared pipeline instructions](../references/pipeline-config.md) for model r
 
 - Every solution MUST include YAML frontmatter per `references/solution-schema.yaml` (title, category, severity, tags, applies_when).
 - Use `references/category-map.md` to map the problem to the correct solution category.
+- **Cite code by symbol name, not `file:line`** — reference the function, class, or config key plus its file path. Line numbers rot after unrelated edits and mislead staleness checks. A line number may appear only when the prose explicitly marks a pre-fix state (e.g. the bug's original location).
 - Check for overlap with nearby solution docs before creating a new artifact.
 - Use `references/overlap-rules.md` to decide whether to create, update, consolidate, or retire.
 - Before writing, scan existing artifacts yourself for recurring patterns — read the nearby solution docs and note repeated themes (no dedicated tool needed).
